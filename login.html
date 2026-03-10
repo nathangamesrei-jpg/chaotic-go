@@ -4,42 +4,86 @@
     <meta charset="UTF-8">
     <title>Chaotic GO - Login</title> 
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Garantindo que as modais funcionem caso o CSS não tenha isso */
+        .modal-oculto { display: none; }
+        .modal-ativo { display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-conteudo { background: #111; border: 2px solid #4CAF50; padding: 20px; border-radius: 10px; text-align: center; }
+    </style>
 </head>
 <body>
 
-    <img src="logo.png" alt="Logotipo Chaotic GO Pequeno" id="logo-login">
+    <img src="logo.png" alt="Logotipo Chaotic GO Pequeno" id="logo-login" style="max-width: 200px; margin: 20px auto; display: block;">
 
-    <div class="caixa-botoes">
+    <div class="caixa-botoes" style="text-align: center;">
         <button class="botao-padrao" id="btn-abrir-login">Fazer Login</button>
         <button class="botao-padrao" id="btn-abrir-cadastro">Criar Conta</button>
-        <button class="botao-admin">Painel Admin</button>
+        <button class="botao-admin" style="margin-top: 10px;">Painel Admin</button>
     </div>
 
     <div id="modal-login" class="modal-oculto">
         <div class="modal-conteudo">
-            <h2>Acessar Scanner</h2>
+            <h2 style="color: white;">Acessar Scanner</h2>
             
-            <input type="text" id="usuario" placeholder="Nome de Usuário">
-            <input type="password" id="senha" placeholder="Senha">
+            <input type="text" id="usuario" placeholder="Nome de Usuário" style="display: block; width: 90%; margin: 10px auto; padding: 10px;">
+            <input type="password" id="senha" placeholder="Senha" style="display: block; width: 90%; margin: 10px auto; padding: 10px;">
             
-            <button class="botao-padrao" id="btn-entrar">Entrar</button>
-            <button class="botao-voltar" id="btn-fechar-login">Voltar</button>
+            <button class="botao-padrao" id="btn-entrar" style="margin-top: 10px;">Entrar</button>
+            <button class="botao-voltar" id="btn-fechar-login" style="margin-top: 10px; background: red; color: white;">Voltar</button>
         </div>
     </div>
 
     <div id="modal-cadastro" class="modal-oculto">
         <div class="modal-conteudo">
-            <h2>Nova Conta</h2>
+            <h2 style="color: white;">Nova Conta</h2>
             
-            <input type="email" id="novo-email" placeholder="Seu E-mail">
-            <input type="text" id="novo-usuario" placeholder="Nome de Usuário">
-            <input type="password" id="nova-senha" placeholder="Crie uma Senha">
+            <input type="email" id="novo-email" placeholder="Seu E-mail" style="display: block; width: 90%; margin: 10px auto; padding: 10px;">
+            <input type="text" id="novo-usuario" placeholder="Nome de Usuário" style="display: block; width: 90%; margin: 10px auto; padding: 10px;">
+            <input type="password" id="nova-senha" placeholder="Crie uma Senha" style="display: block; width: 90%; margin: 10px auto; padding: 10px;">
             
-            <button class="botao-padrao" id="btn-cadastrar">Cadastrar</button>
-            <button class="botao-voltar" id="btn-fechar-cadastro">Voltar</button>
+            <button class="botao-padrao" id="btn-cadastrar" style="margin-top: 10px;">Cadastrar</button>
+            <button class="botao-voltar" id="btn-fechar-cadastro" style="margin-top: 10px; background: red; color: white;">Voltar</button>
         </div>
     </div>
     
-    <script src="script.js"></script>
+    <script>
+        // Elementos da Tela
+        const modalLogin = document.getElementById('modal-login');
+        const modalCadastro = document.getElementById('modal-cadastro');
+
+        // Funções para Abrir as Modais
+        document.getElementById('btn-abrir-login').onclick = () => {
+            modalLogin.className = 'modal-ativo';
+        };
+        document.getElementById('btn-abrir-cadastro').onclick = () => {
+            modalCadastro.className = 'modal-ativo';
+        };
+
+        // Funções para Fechar as Modais
+        document.getElementById('btn-fechar-login').onclick = () => {
+            modalLogin.className = 'modal-oculto';
+        };
+        document.getElementById('btn-fechar-cadastro').onclick = () => {
+            modalCadastro.className = 'modal-oculto';
+        };
+
+        // Função de ENTRAR (Login)
+        document.getElementById('btn-entrar').onclick = () => {
+            let nomeUsuario = document.getElementById('usuario').value.trim();
+            if(!nomeUsuario) nomeUsuario = "Jogador"; // Nome padrão se deixar em branco
+            
+            localStorage.setItem("chaoticJogadorAtual", nomeUsuario); // Salva o nome na memória
+            window.location.href = "scanner.html"; // Joga para o Scanner
+        };
+
+        // Função de CADASTRAR
+        document.getElementById('btn-cadastrar').onclick = () => {
+            let novoUsuario = document.getElementById('novo-usuario').value.trim();
+            if(!novoUsuario) novoUsuario = "Novo Jogador";
+            
+            localStorage.setItem("chaoticJogadorAtual", novoUsuario);
+            window.location.href = "scanner.html"; // Joga para o Scanner
+        };
+    </script>
 </body>
 </html>
