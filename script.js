@@ -191,9 +191,9 @@ function voltarAoRadar() {
         document.getElementById("painel-viagem").style.display = "none";
         document.getElementById("tela-mapa").style.display = "flex";
         document.getElementById("painel-botoes-fisicos").style.display = "flex";
-        navigator.geolocation.getCurrentPosition((pos) => {
-            spawnMonstro(pos.coords.latitude, pos.coords.longitude);
-        });
+        
+        // Em vez de gerar um novo no mesmo lugar (como antes), apenas deixamos o mapa ativo
+        // O motor de spawn passivo cuidará de gerar novos quando o jogador andar
     }, 1500);
 }
 
@@ -257,10 +257,9 @@ function verificarAcerto() {
 function finalizarMinigame(vitoria) {
     clearInterval(timerInterval);
     clearInterval(miraInterval);
-    if (marcadorMonstro) { 
-        mapaScanner.removeLayer(marcadorMonstro); 
-        marcadorMonstro = null;
-    }
+    
+    // O monstro é removido do mapa pela função criarMarcadorMonstro agora
+    
     if(vitoria) {
         mostrarMensagemScanner("SINCRONIZAÇÃO COMPLETA!");
         setTimeout(() => {
@@ -278,51 +277,79 @@ function finalizarMinigame(vitoria) {
 }
 
 // ==========================================
-// 4. LÓGICA DO RADAR E BIOMAS
+// 4. LÓGICA DO RADAR, BIOMAS E SPAWN (ESTILO POKÉMON GO)
 // ==========================================
 
-function spawnMonstro(lat, lon) {
+let marcadoresMonstros = [];
+let ultimaLatSpawn = 0;
+let ultimaLonSpawn = 0;
+
+// Calcula a distância real em metros entre duas coordenadas (Fórmula de Haversine)
+function calcularDistancia(lat1, lon1, lat2, lon2) {
+    const R = 6371e3; // Raio da Terra em metros
+    const p1 = lat1 * Math.PI / 180;
+    const p2 = lat2 * Math.PI / 180;
+    const dp = (lat2 - lat1) * Math.PI / 180;
+    const dl = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Retorna em metros
+}
+
+function criarMarcadorMonstro(latM, lonM, sorteado, ehPassivo = false) {
+    let icone = L.icon({ iconUrl: sorteado.iconeMapa, iconSize: [45, 45], iconAnchor: [22, 22] });
+    
+    let novoMarcador = L.marker([latM, lonM], { 
+        icon: icone, 
+        opacity: ehPassivo ? 0.8 : 1.0 
+    }).addTo(mapaScanner);
+    
+    novoMarcador.on('click', () => {
+        iniciarMinigame(sorteado);
+        mapaScanner.removeLayer(novoMarcador);
+        marcadoresMonstros = marcadoresMonstros.filter(m => m !== novoMarcador);
+    });
+    
+    marcadoresMonstros.push(novoMarcador);
+}
+
+function spawnMonstrosNaArea(lat, lon, forcarPassivo = false) {
     if (typeof MONSTROS === 'undefined' || MONSTROS.length === 0) return;
 
-    // Limpa monstros antigos do mapa para não acumular
-    if (window.listaMarcadoresMonstros) {
-        window.listaMarcadoresMonstros.forEach(m => mapaScanner.removeLayer(m));
-    }
-    window.listaMarcadoresMonstros = [];
+    let listaFiltrada = MONSTROS.filter(m => !triboLocalParaViagem || triboLocalParaViagem === "Qualquer" || m.tribo === triboLocalParaViagem);
+    if (listaFiltrada.length === 0) listaFiltrada = MONSTROS; 
 
-    // Cria a "Semente" baseada no Local + Dia + Hora atual
-    // Assim os monstros mudam a cada 1 hora, mas são iguais para todos os jogadores naquela hora.
     let agora = new Date();
     let sementeBase = localParaViagem + agora.getDate() + agora.getHours();
     
-    // Vamos gerar 6 criaturas espalhadas pela região
-    for (let i = 0; i < 6; i++) {
-        let sementeUnica = sementeBase + i;
-        let sorteioLocal = sementeRandom(sementeUnica);
+    if (forcarPassivo === false) {
+        marcadoresMonstros.forEach(m => mapaScanner.removeLayer(m));
+        marcadoresMonstros = [];
+
+        for (let i = 0; i < 5; i++) {
+            let sementeUnica = sementeBase + i;
+            let indexMonstro = Math.floor(sementeRandom(sementeUnica) * listaFiltrada.length);
+            const sorteado = listaFiltrada[indexMonstro];
+            
+            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.015;
+            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.015;
+            
+            criarMarcadorMonstro(lat + offLat, lon + offLon, sorteado, false);
+        }
+    }
+
+    if (forcarPassivo) {
+        let sorteioRaridade = Math.random();
+        let listaRaridade = listaFiltrada.filter(m => m.raridade >= sorteioRaridade);
+        const sorteadoPassivo = listaRaridade.length > 0 ? listaRaridade[Math.floor(Math.random() * listaRaridade.length)] : listaFiltrada[0];
+
+        let offLat = (Math.random() - 0.5) * 0.0005;
+        let offLon = (Math.random() - 0.5) * 0.0005;
         
-        // Filtra por tribo do bioma
-        let listaFiltrada = MONSTROS.filter(m => !triboLocalParaViagem || triboLocalParaViagem === "Qualquer" || m.tribo === triboLocalParaViagem);
-        if (listaFiltrada.length === 0) listaFiltrada = MONSTROS;
-
-        // Escolhe o monstro baseado na semente
-        let indexMonstro = Math.floor(sementeRandom(sementeUnica + 100) * listaFiltrada.length);
-        const sorteado = listaFiltrada[indexMonstro];
-
-        let icone = L.icon({ 
-            iconUrl: sorteado.iconeMapa, 
-            iconSize: [45, 45], 
-            iconAnchor: [22, 22] 
-        });
-
-        // Define a distância: monstros podem aparecer em um raio de até ~2km (0.015 de offset)
-        // Usamos a semente para que a posição seja IGUAL para todos
-        let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.02;
-        let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.02;
-
-        let novoMarcador = L.marker([lat + offLat, lon + offLon], { icon: icone }).addTo(mapaScanner);
-        novoMarcador.on('click', () => iniciarMinigame(sorteado));
+        criarMarcadorMonstro(lat + offLat, lon + offLon, sorteadoPassivo, true);
         
-        window.listaMarcadoresMonstros.push(novoMarcador);
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        console.log("Uma criatura se aproximou de você!");
     }
 }
 
@@ -332,11 +359,11 @@ window.iniciarGPS = function() {
     document.getElementById("tela-mapa").style.display = "flex";
     document.getElementById("painel-botoes-fisicos").style.display = "flex";
 
-    // Mostra carregando até pegar o sinal
     document.getElementById("texto-carregando").style.display = "block";
     document.getElementById("meu-mapa").style.display = "none";
 
-    // watchPosition: Monitora o movimento do Diretor em tempo real
+    let tempoUltimoSpawn = Date.now();
+
     watchID = navigator.geolocation.watchPosition((pos) => {
         let lat = pos.coords.latitude; 
         let lon = pos.coords.longitude;
@@ -346,32 +373,40 @@ window.iniciarGPS = function() {
         document.getElementById("btn-sair-radar").style.display = "block";
 
         if (!mapaScanner) {
-            // Inicializa o mapa pela primeira vez
-            mapaScanner = L.map('meu-mapa', { zoomControl: false }).setView([lat, lon], 15);
+            mapaScanner = L.map('meu-mapa', { zoomControl: false }).setView([lat, lon], 16);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapaScanner);
             
-            let corRadar = triboLocalParaViagem === "Azul" ? "#00ccff" : "#ff3300"; // Simplificado para o exemplo
-            
-            circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 100, fillOpacity: 0.1 }).addTo(mapaScanner);
+            let corRadar = triboLocalParaViagem === "Azul" ? "#00ccff" : "#ff3300"; 
+            circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 600, fillOpacity: 0.1 }).addTo(mapaScanner);
             marcadorJogador = L.circleMarker([lat, lon], { radius: 8, fillColor: corRadar, color: "#fff", fillOpacity: 1 }).addTo(mapaScanner);
             
-            // Gera os monstros iniciais
-            spawnMonstro(lat, lon);
+            spawnMonstrosNaArea(lat, lon, false);
+            ultimaLatSpawn = lat;
+            ultimaLonSpawn = lon;
+
         } else {
-            // Apenas atualiza a posição do jogador e do brilho do radar no mapa sem recarregar tudo
             marcadorJogador.setLatLng([lat, lon]);
             circuloRadar.setLatLng([lat, lon]);
-            
-            // Se o Diretor quiser que o mapa centralize sempre nele enquanto anda:
             mapaScanner.panTo([lat, lon]);
+            
+            let distanciaAndada = calcularDistancia(ultimaLatSpawn, ultimaLonSpawn, lat, lon);
+            let tempoPassado = Date.now() - tempoUltimoSpawn;
+
+            // Gera spawn passivo a cada 100m andados OU 3 minutos parado
+            if (distanciaAndada > 100 || tempoPassado > 180000) {
+                spawnMonstrosNaArea(lat, lon, true); 
+                ultimaLatSpawn = lat;
+                ultimaLonSpawn = lon;
+                tempoUltimoSpawn = Date.now();
+            }
         }
     }, (err) => {
         console.error("Erro no GPS: ", err);
         mostrarMensagemScanner("SINAL DE GPS FRACO!");
     }, {
-        enableHighAccuracy: true, // Usa o GPS de alta precisão do celular
-        maximumAge: 1000,
-        timeout: 5000
+        enableHighAccuracy: true, 
+        maximumAge: 10000, 
+        timeout: 10000 
     });
 };
 
@@ -394,7 +429,6 @@ function escanearLocalAtual() {
     }
     localStorage.setItem("chaoticAlbum", JSON.stringify(inventario));
     
-    // Feedback visual de scan
     let mapaTela = document.getElementById("tela-mapa");
     mapaTela.style.boxShadow = "inset 0 0 50px #4CAF50";
     setTimeout(() => { mapaTela.style.boxShadow = "none"; }, 500);
@@ -408,12 +442,10 @@ function escanearLocalAtual() {
 let btnSairRadar = document.getElementById("btn-sair-radar");
 if (btnSairRadar) {
     btnSairRadar.onclick = () => {
-        // Se o rastreador em tempo real estiver ligado, nós o desligamos aqui
         if (typeof watchID !== 'undefined' && watchID !== null) {
             navigator.geolocation.clearWatch(watchID);
             console.log("Sinal de GPS encerrado pelo Scanner.");
         }
-        // Recarrega para voltar ao estado inicial do Scanner
         location.reload();
     };
 }
