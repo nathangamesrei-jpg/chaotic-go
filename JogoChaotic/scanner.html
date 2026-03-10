@@ -6,6 +6,13 @@
     <link rel="stylesheet" href="style.css"> 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="manifest" href="manifest.json">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
 </head>
 <body class="fundo-scanner">
 
@@ -190,4 +197,5 @@
     <script src="cartas.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>
