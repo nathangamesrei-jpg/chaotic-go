@@ -377,7 +377,7 @@ window.iniciarGPS = function() {
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapaScanner);
             
             let corRadar = triboLocalParaViagem === "Azul" ? "#00ccff" : "#ff3300"; 
-            circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 600, fillOpacity: 0.1 }).addTo(mapaScanner);
+            circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 100, fillOpacity: 0.1 }).addTo(mapaScanner);
             marcadorJogador = L.circleMarker([lat, lon], { radius: 8, fillColor: corRadar, color: "#fff", fillOpacity: 1 }).addTo(mapaScanner);
             
             spawnMonstrosNaArea(lat, lon, false);
@@ -393,7 +393,7 @@ window.iniciarGPS = function() {
             let tempoPassado = Date.now() - tempoUltimoSpawn;
 
             // Gera spawn passivo a cada 100m andados OU 3 minutos parado
-            if (distanciaAndada > 100 || tempoPassado > 180000) {
+            if (distanciaAndada > 50 || tempoPassado > 60000) {
                 spawnMonstrosNaArea(lat, lon, true); 
                 ultimaLatSpawn = lat;
                 ultimaLonSpawn = lon;
@@ -911,3 +911,4 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
