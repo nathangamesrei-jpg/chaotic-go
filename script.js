@@ -154,20 +154,22 @@ onValue(conviteLobbyRef, (snapshot) => {
 // A função que os novos botões do HTML vão acionar
 window.responderChamadaTroca = function(resposta) {
     document.getElementById("modal-chamada-troca").style.display = "none";
-    if (!chamadaPendente) return;
+    
+    if (!chamadaPendente) {
+        mostrarMensagemScanner("Sinal perdido...");
+        return;
+    }
 
     if (resposta === 'aceitar') {
         entrarNaSalaDeTroca(chamadaPendente.salaId, false, chamadaPendente.de, chamadaPendente.nome);
         
     } else if (resposta === 'esperar') {
-        // Avisa a sala (e o celular do amigo) que você pediu para esperar
         update(ref(db, 'salas_troca/' + chamadaPendente.salaId), { status: "ocupado" });
-        mostrarMensagemScanner("Mensagem de 'Aguarde' enviada!");
+        mostrarMensagemScanner("Aviso de 'Aguarde' enviado!");
         
     } else if (resposta === 'recusar') {
-        // Avisa a sala que você cancelou
         update(ref(db, 'salas_troca/' + chamadaPendente.salaId), { status: "recusado" });
-        mostrarMensagemScanner("Conexão do portal rejeitada.");
+        mostrarMensagemScanner("Chamada rejeitada.");
     }
     
     chamadaPendente = null;
@@ -1134,6 +1136,8 @@ window.iniciarTroca = function(index) {
 }
 
 function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
+    abrirSocial(); // <-- CORREÇÃO: Puxa o jogador para a tela certa na marra!
+    
     salaTrocaAtual = salaId;
     souP1 = isP1;
     minhaCartaOfertada = null;
@@ -1142,7 +1146,6 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
     document.getElementById("nome-troca-amigo").innerText = "Lobby com " + nomeAmigo;
     document.getElementById("modal-troca").style.display = "flex";
     
-    // Reseta o visual da mesa de troca
     document.getElementById("slot-minha-carta").style.backgroundImage = "none";
     document.getElementById("slot-minha-carta").innerHTML = "+";
     document.getElementById("slot-carta-amigo").style.backgroundImage = "none";
@@ -1153,7 +1156,6 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
     btnConf.innerText = "CONFIRMAR";
     btnConf.style.background = "#555"; btnConf.style.color = "#222";
 
-    // O ESCUTADOR DA SALA: Vê tudo em tempo real
     onValue(ref(db, 'salas_troca/' + salaId), (snapshot) => {
         if (!snapshot.exists()) {
             if (document.getElementById("modal-troca").style.display === "flex") {
@@ -1165,16 +1167,15 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
 
         let sala = snapshot.val();
         
-        // Se a troca foi concluída!
         if (sala.status === "concluida") {
             mostrarMensagemScanner("TROCA ÉPICA CONCLUÍDA!");
             fecharTroca();
             return;
         }
 
-        // Novas reações ao botão ESPERE e RECUSAR
+        // CORREÇÃO: Avisos blindados
         if (sala.status === "ocupado" && isP1) {
-            mostrarMensagemScanner("O JOGADOR ESTÁ OCUPADO. TENTE MAIS TARDE!");
+            mostrarMensagemScanner("O JOGADOR PEDIU PARA ESPERAR!");
             fecharTroca();
             return;
         }
@@ -1187,7 +1188,6 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
         let meusDados = isP1 ? sala.p1 : sala.p2;
         let dadosAmigo = isP1 ? sala.p2 : sala.p1;
 
-        // Se o amigo colocou uma carta na mesa, mostra pra você!
         let slotAmigo = document.getElementById("slot-carta-amigo");
         if (dadosAmigo.carta) {
             slotAmigo.innerHTML = "";
@@ -1200,7 +1200,6 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
             cartaSimuladaAmigo = null;
         }
 
-        // Se OS DOIS apertaram confirmar, Executa a Troca! (Apenas o P1 faz os cálculos para não bugar)
         if (sala.p1.pronto && sala.p2.pronto && isP1 && sala.status === "aberta") {
             executarTrocaFinal(sala);
         }
@@ -1306,7 +1305,10 @@ function executarTrocaFinal(sala) {
 }
 
 window.fecharTroca = function() { 
-    if(salaTrocaAtual) remove(ref(db, 'salas_troca/' + salaTrocaAtual)); // Se fechar, cancela a sala
+    // CORREÇÃO: Apenas quem iniciou a chamada (P1) tem o poder de deletar a sala da nuvem
+    if(salaTrocaAtual && souP1) {
+        remove(ref(db, 'salas_troca/' + salaTrocaAtual));
+    }
     salaTrocaAtual = null;
     document.getElementById("modal-troca").style.display = "none"; 
 }
@@ -1377,6 +1379,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
