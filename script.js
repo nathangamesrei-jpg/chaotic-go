@@ -160,24 +160,31 @@ window.responderChamadaTroca = function(resposta) {
         return;
     }
 
+    // 1. SALVA OS DADOS NO COFRE ANTES DE APAGAR A CHAMADA!
+    let idDaSala = chamadaPendente.salaId;
+    let idDoAmigo = chamadaPendente.de;
+    let nomeDoAmigo = chamadaPendente.nome;
+
     if (resposta === 'aceitar') {
         // MUDA PARA A TELA SOCIAL PRIMEIRO
         abrirSocial(); 
         
-        // DEPOIS DE ABRIR A TELA, CHAMA A SALA COM UM PEQUENO ATRASO PARA GARANTIR O RENDER
+        // AGORA USA OS DADOS SALVOS NO COFRE (Não dá mais erro!)
         setTimeout(() => {
-            entrarNaSalaDeTroca(chamadaPendente.salaId, false, chamadaPendente.de, chamadaPendente.nome);
-        }, 100); 
+            entrarNaSalaDeTroca(idDaSala, false, idDoAmigo, nomeDoAmigo);
+        }, 150); 
         
     } else if (resposta === 'esperar') {
-        update(ref(db, 'salas_troca/' + chamadaPendente.salaId), { status: "ocupado" });
+        // Envia o status para a nuvem usando o ID seguro
+        update(ref(db, 'salas_troca/' + idDaSala), { status: "ocupado" });
         mostrarMensagemScanner("Aviso de 'Aguarde' enviado!");
         
     } else if (resposta === 'recusar') {
-        update(ref(db, 'salas_troca/' + chamadaPendente.salaId), { status: "recusado" });
+        update(ref(db, 'salas_troca/' + idDaSala), { status: "recusado" });
         mostrarMensagemScanner("Chamada rejeitada.");
     }
     
+    // 2. Agora sim podemos limpar a chamada pendente com segurança
     chamadaPendente = null;
 }
 // ==========================================
@@ -1395,6 +1402,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
