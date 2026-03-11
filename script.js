@@ -2,7 +2,7 @@
 // ☁️ CONEXÃO CLOUD (FIREBASE) E MÓDULO PRINCIPAL
 // ==========================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+import { getDatabase, ref, set, get, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyD9o1B06TShDaO--6-DQsS8abutVXuU_jo",
@@ -120,6 +120,28 @@ onValue(pedidosRef, (snapshot) => {
     } else {
         window.pedidosAmizade = null;
         if (document.getElementById("tela-social").style.display === "flex") renderizarAmigos();
+    }
+});
+// ==========================================
+// 2.5 ESCUTANDO CHAMADAS PARA O LOBBY DE TROCA
+// ==========================================
+let salaTrocaAtual = null;
+let souP1 = false; // Define quem criou a sala
+
+const conviteLobbyRef = ref(db, 'jogadores/' + uid + '/chamada_troca');
+onValue(conviteLobbyRef, (snapshot) => {
+    if (snapshot.exists()) {
+        let chamada = snapshot.val();
+        
+        // Exibe um aviso no meio da tela se o jogador aceita entrar na sala
+        let aceitou = confirm("⚠️ O jogador " + chamada.nome + " está te chamando para o Portal de Trocas! Deseja entrar?");
+        
+        if (aceitou) {
+            entrarNaSalaDeTroca(chamada.salaId, false, chamada.de, chamada.nome);
+        }
+        
+        // Apaga o convite da nuvem (já foi lido)
+        set(ref(db, 'jogadores/' + uid + '/chamada_troca'), null);
     }
 });
 
@@ -1032,54 +1054,95 @@ window.mostrarPerfilDoAmigo = function(index) {
     // Na próxima fase vamos abrir uma janelinha com os status reais dele!
 }
 
+// Cria a sala e chama o amigo
 window.iniciarTroca = function(index) {
     amigoAtualTroca = amigos[index];
-    if (amigoAtualTroca.jaTrocou) return; 
-
-    document.getElementById("nome-troca-amigo").innerText = "Trocando com " + amigoAtualTroca.nome;
+    let salaId = uid + "_" + amigoAtualTroca.uid; // ID único da sala
     
+    mostrarMensagemScanner("CHAMANDO " + amigoAtualTroca.nome.toUpperCase() + "...");
+
+    // Cria a sala no servidor
+    set(ref(db, 'salas_troca/' + salaId), {
+        p1: { uid: uid, nome: perfilJogador.nome, carta: null, pronto: false },
+        p2: { uid: amigoAtualTroca.uid, nome: amigoAtualTroca.nome, carta: null, pronto: false },
+        status: "aberta"
+    });
+
+    // Envia o "toca o telefone" pro celular do amigo
+    set(ref(db, 'jogadores/' + amigoAtualTroca.uid + '/chamada_troca'), {
+        de: uid, nome: perfilJogador.nome, salaId: salaId
+    });
+
+    entrarNaSalaDeTroca(salaId, true, amigoAtualTroca.uid, amigoAtualTroca.nome);
+}
+
+function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
+    salaTrocaAtual = salaId;
+    souP1 = isP1;
     minhaCartaOfertada = null;
-    document.getElementById("slot-minha-carta").innerHTML = "+"; 
-    document.getElementById("slot-minha-carta").style.backgroundImage = "none";
-    
-    // Easter Egg Johnes visível no slot do Amigo
-    let monstroBase = typeof MONSTROS !== 'undefined' ? MONSTROS[0] : null; 
-    let slotAmigo = document.getElementById("slot-carta-amigo");
-    if(monstroBase) {
-        slotAmigo.innerHTML = ""; 
-        slotAmigo.style.backgroundImage = `url('${monstroBase.cartaBlank}')`;
-        slotAmigo.style.backgroundSize = "cover";
-        slotAmigo.style.backgroundPosition = "center";
-        slotAmigo.style.cursor = "pointer";
-        // Adiciona a função de inspeção ao clicar na carta do amigo
-        slotAmigo.onclick = () => inspecionarCartaAmigo();
-    }
-    
-    document.getElementById("btn-confirmar-troca").disabled = true;
-    document.getElementById("btn-confirmar-troca").style.background = "#555"; document.getElementById("btn-confirmar-troca").style.color = "#222";
-    
+    cartaSimuladaAmigo = null;
+
+    document.getElementById("nome-troca-amigo").innerText = "Lobby com " + nomeAmigo;
     document.getElementById("modal-troca").style.display = "flex";
+    
+    // Reseta o visual da mesa de troca
+    document.getElementById("slot-minha-carta").style.backgroundImage = "none";
+    document.getElementById("slot-minha-carta").innerHTML = "+";
+    document.getElementById("slot-carta-amigo").style.backgroundImage = "none";
+    document.getElementById("slot-carta-amigo").innerHTML = "?";
+    
+    let btnConf = document.getElementById("btn-confirmar-troca");
+    btnConf.disabled = true;
+    btnConf.innerText = "CONFIRMAR";
+    btnConf.style.background = "#555"; btnConf.style.color = "#222";
+
+    // O ESCUTADOR DA SALA: Vê tudo em tempo real
+    onValue(ref(db, 'salas_troca/' + salaId), (snapshot) => {
+        if (!snapshot.exists()) {
+            if (document.getElementById("modal-troca").style.display === "flex") {
+                fecharTroca();
+                mostrarMensagemScanner("A SALA DE TROCA FOI FECHADA.");
+            }
+            return;
+        }
+
+        let sala = snapshot.val();
+        
+        // Se a troca foi concluída!
+        if (sala.status === "concluida") {
+            mostrarMensagemScanner("TROCA ÉPICA CONCLUÍDA!");
+            fecharTroca();
+            return;
+        }
+
+        let meusDados = isP1 ? sala.p1 : sala.p2;
+        let dadosAmigo = isP1 ? sala.p2 : sala.p1;
+
+        // Se o amigo colocou uma carta na mesa, mostra pra você!
+        let slotAmigo = document.getElementById("slot-carta-amigo");
+        if (dadosAmigo.carta) {
+            slotAmigo.innerHTML = "";
+            slotAmigo.style.backgroundImage = `url('${dadosAmigo.carta.img}')`;
+            slotAmigo.style.backgroundSize = "cover";
+            cartaSimuladaAmigo = dadosAmigo.carta;
+        } else {
+            slotAmigo.innerHTML = "?";
+            slotAmigo.style.backgroundImage = "none";
+            cartaSimuladaAmigo = null;
+        }
+
+        // Se OS DOIS apertaram confirmar, Executa a Troca! (Apenas o P1 faz os cálculos para não bugar)
+        if (sala.p1.pronto && sala.p2.pronto && isP1 && sala.status === "aberta") {
+            executarTrocaFinal(sala);
+        }
+    });
 }
 
-function inspecionarCartaAmigo() {
-    let monstroBase = typeof MONSTROS !== 'undefined' ? MONSTROS[0] : null;
-    if(!monstroBase) return;
-    
-    // Abre em tela cheia com tipo especial de inspeção
-    abrirDetalheCarta(monstroBase.nome, monstroBase.tribo, monstroBase.cartaBlank, "inspecao_troca");
-    
-    // Mostra status máximos
-    document.getElementById("camada-stats").style.display = "block";
-    document.getElementById("stat-coragem").innerText = monstroBase.statsMax.coragem;
-    document.getElementById("stat-poder").innerText = monstroBase.statsMax.poder;
-    document.getElementById("stat-sabedoria").innerText = monstroBase.statsMax.sabedoria;
-    document.getElementById("stat-velocidade").innerText = monstroBase.statsMax.velocidade;
-    document.getElementById("stat-energia").innerText = monstroBase.statsMax.energia;
-}
-
+// Quando você clica no [+] para escolher a sua carta
 window.abrirSelecaoTroca = function() {
     document.getElementById("modal-selecao-troca").style.display = "flex";
-    let lista = document.getElementById("lista-cartas-troca"); lista.innerHTML = "";
+    let lista = document.getElementById("lista-cartas-troca"); 
+    lista.innerHTML = "";
     
     let disponiveis = inventario.filter(c => !c.favorito); 
     if(disponiveis.length === 0) { lista.innerHTML = "<p style='color:#ff5555; font-size:10px; text-align:center;'>Nenhuma carta disponível.</p>"; return; }
@@ -1093,48 +1156,93 @@ window.abrirSelecaoTroca = function() {
     });
 }
 
+// Quando você escolhe a carta, ela vai para a nuvem na hora!
 window.selecionarMinhaCartaTroca = function(idCarta) {
     minhaCartaOfertada = inventario.find(c => c.id === idCarta);
-    document.getElementById("slot-minha-carta").innerHTML = "";
-    document.getElementById("slot-minha-carta").style.backgroundImage = `url('${minhaCartaOfertada.img}')`;
-    document.getElementById("slot-minha-carta").style.backgroundSize = "cover";
-    document.getElementById("slot-minha-carta").style.backgroundPosition = "center";
     
-    document.getElementById("btn-confirmar-troca").disabled = false;
-    document.getElementById("btn-confirmar-troca").style.background = "#4CAF50"; document.getElementById("btn-confirmar-troca").style.color = "#000";
+    // Mostra na sua tela
+    let slot = document.getElementById("slot-minha-carta");
+    slot.innerHTML = "";
+    slot.style.backgroundImage = `url('${minhaCartaOfertada.img}')`;
+    slot.style.backgroundSize = "cover";
+    
+    // Manda pra Nuvem para o amigo ver
+    let jogadorKey = souP1 ? 'p1' : 'p2';
+    update(ref(db, 'salas_troca/' + salaTrocaAtual + '/' + jogadorKey), { carta: minhaCartaOfertada });
+    
+    let btnConf = document.getElementById("btn-confirmar-troca");
+    btnConf.disabled = false;
+    btnConf.style.background = "#4CAF50"; btnConf.style.color = "#000";
+    
     fecharSelecaoTroca();
 }
 
 window.confirmarTroca = function() {
-    if(minhaCartaOfertada.quantidade > 1) minhaCartaOfertada.quantidade--;
-    else inventario = inventario.filter(c => c.id !== minhaCartaOfertada.id);
-
-    let monstroBase = typeof MONSTROS !== 'undefined' ? MONSTROS[0] : null; 
-    if(monstroBase) {
-        cartaSimuladaAmigo = {
-            id: Date.now(), nome: monstroBase.nome, tribo: monstroBase.tribo, tipoCarta: "Criatura", img: monstroBase.cartaBlank, favorito: false, quantidade: 1,
-            stats: {
-                c: monstroBase.statsMax.coragem, p: monstroBase.statsMax.poder,
-                s: monstroBase.statsMax.sabedoria, v: monstroBase.statsMax.velocidade, e: monstroBase.statsMax.energia
-            }
-        };
-        inventario.push(cartaSimuladaAmigo);
+    if(!minhaCartaOfertada || !cartaSimuladaAmigo) {
+        mostrarMensagemScanner("Aguarde a oferta do outro escaneador!"); return;
     }
     
-    amigoAtualTroca.jaTrocou = true; 
-    salvarAmigosNaNuvem(); // Correção: Removido o localStorage daqui
-    salvarAlbumNaNuvem();  // Correção: Removido o localStorage daqui
+    // Avisa a sala que você está pronto
+    let jogadorKey = souP1 ? 'p1' : 'p2';
+    update(ref(db, 'salas_troca/' + salaTrocaAtual + '/' + jogadorKey), { pronto: true });
     
-    mostrarMensagemScanner("TROCA ÉPICA CONCLUÍDA!");
-    fecharTroca();
-    renderizarAmigos(); 
+    let btnConf = document.getElementById("btn-confirmar-troca");
+    btnConf.innerText = "AGUARDANDO O OUTRO...";
+    btnConf.disabled = true;
+    btnConf.style.background = "#ffd700";
 }
 
-window.fecharTroca = function() { document.getElementById("modal-troca").style.display = "none"; }
-window.fecharSelecaoTroca = function() { document.getElementById("modal-selecao-troca").style.display = "none"; }
+// O Servidor faz a troca física das cartas (Só o P1 roda isso para evitar duplicar as cartas)
+function executarTrocaFinal(sala) {
+    update(ref(db, 'salas_troca/' + salaTrocaAtual), { status: "processando" });
 
-let btnVoltarSocial = document.getElementById("btn-voltar-social");
-if(btnVoltarSocial) { btnVoltarSocial.onclick = () => location.reload(); }
+    // Puxa o álbum do Amigo
+    get(ref(db, 'jogadores/' + sala.p2.uid + '/album')).then(snap2 => {
+        let albumAmigo = snap2.exists() ? snap2.val() : [];
+        
+        // Remove a carta do amigo do álbum dele
+        let c2Index = albumAmigo.findIndex(c => c.id === sala.p2.carta.id);
+        if(c2Index > -1) {
+            if(albumAmigo[c2Index].quantidade > 1) albumAmigo[c2Index].quantidade--;
+            else albumAmigo.splice(c2Index, 1);
+        }
+        
+        // Dá a SUA carta pro amigo
+        let cartaDeP1 = {...sala.p1.carta};
+        cartaDeP1.id = Date.now() + 1; // ID novo
+        cartaDeP1.quantidade = 1;
+        albumAmigo.push(cartaDeP1);
+        
+        // Remove a SUA carta do SEU álbum
+        let c1Index = inventario.findIndex(c => c.id === sala.p1.carta.id);
+        if(c1Index > -1) {
+            if(inventario[c1Index].quantidade > 1) inventario[c1Index].quantidade--;
+            else inventario.splice(c1Index, 1);
+        }
+        
+        // Dá a carta do AMIGO pra VOCÊ
+        let cartaDeP2 = {...sala.p2.carta};
+        cartaDeP2.id = Date.now();
+        cartaDeP2.quantidade = 1;
+        inventario.push(cartaDeP2);
+        
+        // Salva tudo na nuvem!
+        set(ref(db, 'jogadores/' + sala.p2.uid + '/album'), albumAmigo);
+        salvarAlbumNaNuvem();
+        
+        // Avisa a sala que acabou e destrói ela
+        update(ref(db, 'salas_troca/' + salaTrocaAtual), { status: "concluida" });
+        setTimeout(() => remove(ref(db, 'salas_troca/' + salaTrocaAtual)), 2000);
+    });
+}
+
+window.fecharTroca = function() { 
+    if(salaTrocaAtual) remove(ref(db, 'salas_troca/' + salaTrocaAtual)); // Se fechar, cancela a sala
+    salaTrocaAtual = null;
+    document.getElementById("modal-troca").style.display = "none"; 
+}
+
+window.fecharSelecaoTroca = function() { document.getElementById("modal-selecao-troca").style.display = "none"; }
 
 // ==========================================
 // 9. BOTÕES FÍSICOS E INICIALIZAÇÃO
@@ -1196,6 +1304,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
