@@ -127,23 +127,43 @@ onValue(pedidosRef, (snapshot) => {
 // ==========================================
 let salaTrocaAtual = null;
 let souP1 = false; // Define quem criou a sala
+let chamadaPendente = null;
 
 const conviteLobbyRef = ref(db, 'jogadores/' + uid + '/chamada_troca');
 onValue(conviteLobbyRef, (snapshot) => {
     if (snapshot.exists()) {
-        let chamada = snapshot.val();
+        chamadaPendente = snapshot.val();
         
-        // Exibe um aviso no meio da tela se o jogador aceita entrar na sala
-        let aceitou = confirm("⚠️ O jogador " + chamada.nome + " está te chamando para o Portal de Trocas! Deseja entrar?");
+        // Em vez de um pop-up feio, mostra a nossa tela hacker customizada!
+        document.getElementById("texto-chamada-troca").innerText = chamadaPendente.nome.toUpperCase() + "\nABRIU UM PORTAL DE TROCAS!";
+        document.getElementById("modal-chamada-troca").style.display = "flex";
         
-        if (aceitou) {
-            entrarNaSalaDeTroca(chamada.salaId, false, chamada.de, chamada.nome);
-        }
-        
-        // Apaga o convite da nuvem (já foi lido)
+        // Remove a notificação da nuvem para não apitar duas vezes
         set(ref(db, 'jogadores/' + uid + '/chamada_troca'), null);
     }
 });
+
+// A função que os novos botões do HTML vão acionar
+window.responderChamadaTroca = function(resposta) {
+    document.getElementById("modal-chamada-troca").style.display = "none";
+    if (!chamadaPendente) return;
+
+    if (resposta === 'aceitar') {
+        entrarNaSalaDeTroca(chamadaPendente.salaId, false, chamadaPendente.de, chamadaPendente.nome);
+        
+    } else if (resposta === 'esperar') {
+        // Avisa a sala (e o celular do amigo) que você pediu para esperar
+        update(ref(db, 'salas_troca/' + chamadaPendente.salaId), { status: "ocupado" });
+        mostrarMensagemScanner("Mensagem de 'Aguarde' enviada!");
+        
+    } else if (resposta === 'recusar') {
+        // Avisa a sala que você cancelou
+        update(ref(db, 'salas_troca/' + chamadaPendente.salaId), { status: "recusado" });
+        mostrarMensagemScanner("Conexão do portal rejeitada.");
+    }
+    
+    chamadaPendente = null;
+}
 
 // ==========================================
 // 3. FUNÇÕES DE SALVAMENTO NA NUVEM
@@ -1144,6 +1164,18 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
             return;
         }
 
+        // Novas reações ao botão ESPERE e RECUSAR
+        if (sala.status === "ocupado" && isP1) {
+            mostrarMensagemScanner("O JOGADOR ESTÁ OCUPADO. TENTE MAIS TARDE!");
+            fecharTroca();
+            return;
+        }
+        if (sala.status === "recusado" && isP1) {
+            mostrarMensagemScanner("O JOGADOR RECUSOU A TROCA.");
+            fecharTroca();
+            return;
+        }
+
         let meusDados = isP1 ? sala.p1 : sala.p2;
         let dadosAmigo = isP1 ? sala.p2 : sala.p1;
 
@@ -1272,6 +1304,7 @@ window.fecharTroca = function() {
 }
 
 window.fecharSelecaoTroca = function() { document.getElementById("modal-selecao-troca").style.display = "none"; }
+
 // Ativando o botão Voltar da Aba Social
 let btnVoltarSocial = document.getElementById("btn-voltar-social");
 if(btnVoltarSocial) { btnVoltarSocial.onclick = () => location.reload(); }
@@ -1336,6 +1369,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
