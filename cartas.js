@@ -228,7 +228,7 @@ const MONSTROS = [
     }
 ];
 
-// ==========================================
+/ ==========================================
 // 2. BANCO DE DADOS: ATAQUES (Neutros)
 // ==========================================
 const ATAQUES = [
@@ -240,7 +240,8 @@ const ATAQUES = [
         danoElemental: { fogo: 5, agua: 5, terra: 0, vento: 0 },
         tipoCarta: "Ataque",
         img: "cartas/ataques/acido_gastrico.jpg",
-        efeito: "Remove o equipamento do campeão ativo do oponente."
+        efeito: "Remove o equipamento do campeão ativo do oponente.",
+        raridade: 0.6 // NOVO!
     }
 ];
 
@@ -253,7 +254,8 @@ const EQUIPAMENTOS = [
         nome: "Anel Precioso",
         tipoCarta: "Equipamento",
         img: "cartas/equips/anel_precioso.png",
-        efeito: "O campeão equipado perde 15 de energia, mas ignora danos elementais. Indestrutível."
+        efeito: "O campeão equipado perde 15 de energia, mas ignora danos elementais. Indestrutível.",
+        raridade: 0.3 // NOVO! Muito raro.
     }
 ];
 
@@ -264,11 +266,12 @@ const MAGIAS = [
     {
         id: 301,
         nome: "Canção da Criação",
-        triboRestricao: null, // null = Sem restrição (Qualquer tribo usa)
+        triboRestricao: null, 
         custoAtivacao: 1, 
         tipoCarta: "Magia",
         img: "cartas/magias/cancao_criacao.png",
-        efeito: "Adicione qualquer elemento a um campeão. Gaste 3 fichas para adicionar 2 elementos."
+        efeito: "Adicione qualquer elemento a um campeão. Gaste 3 fichas para adicionar 2 elementos.",
+        raridade: 0.5 // NOVO!
     }
 ];
 
@@ -280,20 +283,23 @@ const LOCAIS_DB = [
         id: 501,
         nome: "Cidade de Kiru",
         iniciativa: "Sabedoria",
-        triboNativa: "Azul", // <--- Define que aqui só aparecem criaturas Azuis
-        img: "cartas/locais/locais azul/cidade de kiru.png"
+        triboNativa: "Azul", 
+        img: "cartas/locais/locais azul/cidade de kiru.png",
+        tipoCarta: "Local",
+        raridade: 0.8 // NOVO! Comum
     },
     {
         id: 502,
         nome: "O Túnel da Tempestade",
         iniciativa: "Poder",
-        triboNativa: "Qualquer", // <--- "Qualquer" permite monstros de todas as tribos
-        img: "cartas/locais/tunel_tempestade.jpg"
+        triboNativa: "Qualquer", 
+        img: "cartas/locais/tunel_tempestade.jpg",
+        tipoCarta: "Local",
+        raridade: 0.5 // NOVO!
     }
 ];
 
 const CENARIOS = {
     "Cidade de Kiru": "cartas/locais/locais azul/kiru-bg.png",
     "O Túnel da Tempestade": "cartas/locais/tempestade-bg.jpg"
-
 };
