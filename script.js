@@ -7,7 +7,7 @@ import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/fir
 const firebaseConfig = {
     apiKey: "AIzaSyD9o1B06TShDaO--6-DQsS8abutVXuU_jo",
     authDomain: "chaotic-go.firebaseapp.com",
-    databaseURL: "https://chaotic-go-default-rtdb.firebaseio.com",
+    databaseURL: "https://chaotic-go-default-rtdb.firebaseio.com", 
     projectId: "chaotic-go",
     storageBucket: "chaotic-go.firebasestorage.app",
     messagingSenderId: "394870191188",
@@ -53,11 +53,17 @@ let minhaCartaOfertada = null;
 
 // 2.1 Puxando Perfil
 const perfilRef = ref(db, 'jogadores/' + uid);
-(perfilRef, (snapshot) => {
+onValue(perfilRef, (snapshot) => {
     if (snapshot.exists()) {
         window.perfilJogador = snapshot.val();
-        // Atualiza a tela de perfil se ela estiver aberta
-        if (document.getElementById("tela-perfil").style.display === "flex") abrirPerfil();
+    } else {
+        // O PLANO B: Se a nuvem estiver vazia, cria um perfil básico
+        window.perfilJogador = { nome: "Novato(a)", avatar: "👤", vitorias: 0, derrotas: 0 };
+    }
+    
+    // Atualiza a tela se ela estiver aberta
+    if (document.getElementById("tela-perfil").style.display === "flex") {
+        abrirPerfil();
     }
 });
 
@@ -1133,6 +1139,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
