@@ -1272,6 +1272,9 @@ window.fecharTroca = function() {
 }
 
 window.fecharSelecaoTroca = function() { document.getElementById("modal-selecao-troca").style.display = "none"; }
+// Ativando o botão Voltar da Aba Social
+let btnVoltarSocial = document.getElementById("btn-voltar-social");
+if(btnVoltarSocial) { btnVoltarSocial.onclick = () => location.reload(); }
 
 // ==========================================
 // 9. BOTÕES FÍSICOS E INICIALIZAÇÃO
@@ -1333,6 +1336,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
