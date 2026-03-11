@@ -46,7 +46,7 @@ window.perfilJogador = { nome: "Carregando...", avatar: "👤", vitorias: 0, der
 window.amigos = [];
 let amigoAtualTroca = null;
 let minhaCartaOfertada = null;
-
+let cartaSimuladaAmigo = null;
 // ==========================================
 // 2. SINCRONIZAÇÃO EM TEMPO REAL COM O FIREBASE
 // ==========================================
@@ -1402,6 +1402,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
