@@ -1135,10 +1135,47 @@ window.excluirAmigo = function(index) {
     renderizarAmigos();
 }
 
-// Placeholder: Função para ver o perfil do amigo (Faremos na próxima etapa!)
+// Função para ver o perfil do amigo em tempo real!
 window.mostrarPerfilDoAmigo = function(index) {
-    mostrarMensagemScanner("Buscando status de " + amigos[index].nome + " na nuvem...");
-    // Na próxima fase vamos abrir uma janelinha com os status reais dele!
+    let amigo = amigos[index];
+    mostrarMensagemScanner("Acessando dados de " + amigo.nome.toUpperCase() + "...");
+    
+    // Conecta na pasta pessoal do amigo na nuvem
+    get(ref(db, 'jogadores/' + amigo.uid)).then((snapshot) => {
+        if (snapshot.exists()) {
+            let dadosAmigo = snapshot.val();
+            
+            // Preenche o nome
+            document.getElementById("nome-amigo-modal").innerText = dadosAmigo.nome;
+            
+            // Preenche o Avatar (suporta Emojis e Fotos com compressão)
+            let avatarBox = document.getElementById("avatar-amigo-modal");
+            if (dadosAmigo.avatar && (dadosAmigo.avatar.startsWith("http") || dadosAmigo.avatar.startsWith("data:"))) {
+                avatarBox.innerHTML = "";
+                avatarBox.style.backgroundImage = `url('${dadosAmigo.avatar}')`;
+            } else {
+                avatarBox.style.backgroundImage = "none";
+                avatarBox.innerHTML = dadosAmigo.avatar || "👤";
+            }
+
+            // Preenche as estatísticas de batalha
+            document.getElementById("vitorias-amigo-modal").innerText = dadosAmigo.vitorias || 0;
+            document.getElementById("derrotas-amigo-modal").innerText = dadosAmigo.derrotas || 0;
+            
+            // Exibe a tela hacker!
+            document.getElementById("modal-perfil-amigo").style.display = "flex";
+            
+        } else {
+            mostrarMensagemScanner("SINAL PERDIDO! Dados corrompidos.");
+        }
+    }).catch(error => {
+        mostrarMensagemScanner("ERRO DE COMUNICAÇÃO NO RADAR!");
+    });
+}
+
+// O botão de fechar a inspeção
+window.fecharPerfilAmigo = function() {
+    document.getElementById("modal-perfil-amigo").style.display = "none";
 }
 
 // Cria a sala e chama o amigo
@@ -1471,6 +1508,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
