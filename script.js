@@ -1,5 +1,30 @@
 // ==========================================
-// 1. VARIÁVEIS GLOBAIS
+// ☁️ CONEXÃO CLOUD (FIREBASE) E MÓDULO PRINCIPAL
+// ==========================================
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+import { getDatabase, ref, set, get, onValue } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyD9o1B06TShDaO--6-DQsS8abutVXuU_jo",
+    authDomain: "chaotic-go.firebaseapp.com",
+    databaseURL: "https://chaotic-go-default-rtdb.firebaseio.com",
+    projectId: "chaotic-go",
+    storageBucket: "chaotic-go.firebasestorage.app",
+    messagingSenderId: "394870191188",
+    appId: "1:394870191188:web:5e6040097ec0a4a4d7e9c1"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Verifica Segurança: O jogador está logado?
+const uid = localStorage.getItem("chaoticUID");
+if (!uid) {
+    window.location.href = "login.html"; // Manda de volta pro login se não tiver UID
+}
+
+// ==========================================
+// 1. VARIÁVEIS GLOBAIS DA NUVEM
 // ==========================================
 let mapaScanner, marcadorJogador, marcadorMonstro, watchID, circuloRadar;
 let localParaViagem = "";
@@ -11,29 +36,72 @@ let monstroAtual = null;
 let tipoDeCartaAtual = ""; 
 let cartaVisualizadaId = null; 
 
-let inventario = JSON.parse(localStorage.getItem("chaoticAlbum")) || [];
-inventario.forEach(item => { 
-    if(!item.id) item.id = Math.random(); 
-    if(!item.quantidade) item.quantidade = 1;
-});
-
-// MEMÓRIA DO JOGADOR
-let perfilJogador = JSON.parse(localStorage.getItem("chaoticPerfil")) || {
-    nome: "Chaotic Player",
-    avatar: "👤",
-    vitorias: 0,
-    derrotas: 0
-};
-
-// AMIGOS E SOCIAL
-let amigos = JSON.parse(localStorage.getItem("chaoticAmigos")) || [];
-let amigoAtualTroca = null;
-let minhaCartaOfertada = null;
-let cartaSimuladaAmigo = null;
-
 let circulosParaAcertar = 0;
 let tempoRestante = 10;
 let timerInterval, miraInterval;
+
+// Os dados do jogador agora começam vazios e são preenchidos pela nuvem
+window.inventario = []; 
+window.perfilJogador = { nome: "Carregando...", avatar: "👤", vitorias: 0, derrotas: 0 };
+window.amigos = [];
+let amigoAtualTroca = null;
+let minhaCartaOfertada = null;
+
+// ==========================================
+// 2. SINCRONIZAÇÃO EM TEMPO REAL COM O FIREBASE
+// ==========================================
+
+// 2.1 Puxando Perfil
+const perfilRef = ref(db, 'jogadores/' + uid);
+onValue(perfilRef, (snapshot) => {
+    if (snapshot.exists()) {
+        window.perfilJogador = snapshot.val();
+        // Atualiza a tela de perfil se ela estiver aberta
+        if (document.getElementById("tela-perfil").style.display === "flex") abrirPerfil();
+    }
+});
+
+// 2.2 Puxando Álbum (Inventário)
+const albumRef = ref(db, 'jogadores/' + uid + '/album');
+onValue(albumRef, (snapshot) => {
+    if (snapshot.exists()) {
+        window.inventario = snapshot.val() || [];
+        // Atualiza a tela de cartas se ela estiver aberta
+        if (document.getElementById("tela-album").style.display === "flex") renderizarListaAlbum();
+    } else {
+        window.inventario = [];
+    }
+});
+
+// 2.3 Puxando Amigos
+const amigosRef = ref(db, 'jogadores/' + uid + '/amigos');
+onValue(amigosRef, (snapshot) => {
+    if (snapshot.exists()) {
+        window.amigos = snapshot.val() || [];
+        // Atualiza a lista social se estiver aberta
+        if (document.getElementById("tela-social").style.display === "flex") renderizarAmigos();
+    } else {
+        window.amigos = [];
+    }
+});
+
+// ==========================================
+// 3. FUNÇÕES DE SALVAMENTO NA NUVEM
+// ==========================================
+window.salvarAlbumNaNuvem = function() {
+    set(ref(db, 'jogadores/' + uid + '/album'), window.inventario)
+        .catch(err => console.error("Erro ao salvar álbum na nuvem:", err));
+};
+
+window.salvarPerfilNaNuvem = function() {
+    set(ref(db, 'jogadores/' + uid), window.perfilJogador)
+        .catch(err => console.error("Erro ao salvar perfil na nuvem:", err));
+};
+
+window.salvarAmigosNaNuvem = function() {
+    set(ref(db, 'jogadores/' + uid + '/amigos'), window.amigos)
+        .catch(err => console.error("Erro ao salvar amigos na nuvem:", err));
+};
 
 // Gerador de números fixos baseado em uma semente (Para que todos vejam o mesmo monstro)
 function sementeRandom(s) {
@@ -140,7 +208,7 @@ document.getElementById("btn-acao-dir").onclick = function() {
             }
         };
         inventario.push(novaCaptura);
-        localStorage.setItem("chaoticAlbum", JSON.stringify(inventario));
+        salvarAlbumNaNuvem();
         mostrarMensagemScanner("CARTA ARMAZENADA NO ÁLBUM!");
         voltarAoRadar();
     } else if (tipoDeCartaAtual === "album") {
@@ -179,7 +247,7 @@ window.excluirCartaConfirmada = function() {
     } else {
         inventario = inventario.filter(c => c.id !== cartaVisualizadaId); mostrarMensagemScanner("CARTA EXCLUÍDA!");
     }
-    localStorage.setItem("chaoticAlbum", JSON.stringify(inventario)); 
+    salvarAlbumNaNuvem(); 
     document.getElementById("tela-detalhe-carta").style.display = "none";
     document.getElementById("painel-viagem").style.display = "none";
     abrirAlbum(); 
@@ -455,7 +523,7 @@ function escanearLocalAtual() {
         };
         inventario.push(novoLocal);
     }
-    localStorage.setItem("chaoticAlbum", JSON.stringify(inventario));
+    salvarAlbumNaNuvem();
     
     let mapaTela = document.getElementById("tela-mapa");
     mapaTela.style.boxShadow = "inset 0 0 50px #4CAF50";
@@ -574,7 +642,7 @@ window.toggleFavorito = function(id, event) {
     let carta = inventario.find(c => c.id === id);
     if(carta) {
         carta.favorito = !carta.favorito;
-        localStorage.setItem("chaoticAlbum", JSON.stringify(inventario));
+        salvarAlbumNaNuvem(); // Correção: Aqui ainda estava localStorage
         renderizarListaAlbum(); 
     }
 }
@@ -723,7 +791,7 @@ window.salvarEdicaoPerfil = function() {
     if(nAvatar !== "") perfilJogador.avatar = nAvatar;
     else if (perfilJogador.avatar === "") perfilJogador.avatar = "👤"; 
     
-    localStorage.setItem("chaoticPerfil", JSON.stringify(perfilJogador));
+    salvarPerfilNaNuvem(); // Correção: Agora salva os dados de perfil corretamente
     fecharModalPerfil();
     abrirPerfil(); 
 }
@@ -748,7 +816,7 @@ window.adicionarAmigo = function() {
     
     let novoAmigo = { id: id, nome: "Jogador " + id, avatar: ["👾","🤖","👹","🤠"][Math.floor(Math.random()*4)], jaTrocou: false };
     amigos.push(novoAmigo); 
-    localStorage.setItem("chaoticAmigos", JSON.stringify(amigos));
+    salvarAmigosNaNuvem();
     document.getElementById("input-add-amigo").value = "";
     mostrarMensagemScanner("SINAL DE AMIGO ENCONTRADO!"); 
     renderizarAmigos();
@@ -865,8 +933,8 @@ window.confirmarTroca = function() {
     }
     
     amigoAtualTroca.jaTrocou = true; 
-    localStorage.setItem("chaoticAmigos", JSON.stringify(amigos));
-    localStorage.setItem("chaoticAlbum", JSON.stringify(inventario));
+    salvarAmigosNaNuvem(); // Correção: Removido o localStorage daqui
+    salvarAlbumNaNuvem();  // Correção: Removido o localStorage daqui
     
     mostrarMensagemScanner("TROCA ÉPICA CONCLUÍDA!");
     fecharTroca();
@@ -939,6 +1007,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
