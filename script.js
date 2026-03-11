@@ -126,7 +126,7 @@ onValue(pedidosRef, (snapshot) => {
 // 2.5 ESCUTANDO CHAMADAS PARA O LOBBY DE TROCA
 // ==========================================
 let salaTrocaAtual = null;
-let souP1 = false; // Define quem criou a sala
+let souP1 = false; 
 let chamadaPendente = null;
 
 const conviteLobbyRef = ref(db, 'jogadores/' + uid + '/chamada_troca');
@@ -134,11 +134,19 @@ onValue(conviteLobbyRef, (snapshot) => {
     if (snapshot.exists()) {
         chamadaPendente = snapshot.val();
         
-        // Em vez de um pop-up feio, mostra a nossa tela hacker customizada!
-        document.getElementById("texto-chamada-troca").innerText = chamadaPendente.nome.toUpperCase() + "\nABRIU UM PORTAL DE TROCAS!";
-        document.getElementById("modal-chamada-troca").style.display = "flex";
+        // Verificação de segurança para garantir que os elementos existem
+        const modal = document.getElementById("modal-chamada-troca");
+        const texto = document.getElementById("texto-chamada-troca");
+
+        if (modal && texto && chamadaPendente.nome) {
+            texto.innerText = chamadaPendente.nome.toUpperCase() + "\nABRIU UM PORTAL DE TROCAS!";
+            modal.style.display = "flex";
+            
+            // Toca um som ou vibra se possível para alertar o jogador
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+        }
         
-        // Remove a notificação da nuvem para não apitar duas vezes
+        // Limpa a chamada da nuvem imediatamente para evitar loops
         set(ref(db, 'jogadores/' + uid + '/chamada_troca'), null);
     }
 });
@@ -1369,6 +1377,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
