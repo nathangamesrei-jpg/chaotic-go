@@ -849,12 +849,11 @@ function abrirSocial() {
 
 window.adicionarAmigo = function() {
     let busca = document.getElementById("input-add-amigo").value.trim();
-    if(busca.length < 3) { mostrarMensagemScanner("DIGITE O NOME DO JOGADOR!"); return; }
-    if(busca.toLowerCase() === perfilJogador.nome.toLowerCase()) { mostrarMensagemScanner("NÃO PODE ADICIONAR A SI MESMO!"); return; }
+    if(busca.length < 3) { mostrarMensagemScanner("DIGITE UM NOME OU ID VÁLIDO!"); return; }
 
     document.getElementById("input-add-amigo").value = "Buscando na Nuvem...";
 
-    // Vai na nuvem procurar quem tem esse nome exato
+    // Vai na nuvem procurar todos os jogadores
     get(ref(db, 'jogadores')).then((snapshot) => {
         document.getElementById("input-add-amigo").value = "";
         
@@ -862,33 +861,53 @@ window.adicionarAmigo = function() {
             let todosJogadores = snapshot.val();
             let jogadorEncontrado = null;
             let uidEncontrado = null;
+            
+            // Verifica se o jogador digitou um ID (começa com #)
+            let isBuscaPorID = busca.startsWith("#");
 
             // Varredura no banco de dados
             for (let idNuvem in todosJogadores) {
-                if (todosJogadores[idNuvem].nome.toLowerCase() === busca.toLowerCase()) {
-                    jogadorEncontrado = todosJogadores[idNuvem];
-                    uidEncontrado = idNuvem;
-                    break; // Achou! Para a busca.
+                let jog = todosJogadores[idNuvem];
+                
+                if (isBuscaPorID) {
+                    // Calcula o ID do jogador da nuvem para ver se bate com o que você digitou
+                    let hashId = 0;
+                    for(let i=0; i<jog.nome.length; i++) hashId += jog.nome.charCodeAt(i);
+                    let idVisual = "#" + (hashId * 7).toString().padStart(4, '0').substring(0,4);
+                    
+                    if (idVisual === busca) {
+                        jogadorEncontrado = jog;
+                        uidEncontrado = idNuvem;
+                        break; 
+                    }
+                } else {
+                    // Busca pelo nome exato
+                    if (jog.nome.toLowerCase() === busca.toLowerCase()) {
+                        jogadorEncontrado = jog;
+                        uidEncontrado = idNuvem;
+                        break; 
+                    }
                 }
             }
 
             if (jogadorEncontrado) {
-                // Verifica se já é amigo
+                if (uidEncontrado === uid) { mostrarMensagemScanner("NÃO PODE ADICIONAR A SI MESMO!"); return; }
+                
                 let jaAmigo = amigos.find(a => a.uid === uidEncontrado);
                 if (jaAmigo) { mostrarMensagemScanner("JÁ ESTÁ NA SUA LISTA!"); return; }
 
-                // Cria a "carta de solicitação" para enviar pra ele
+                // Cria a "carta de solicitação" para enviar
                 let meuPedido = {
                     uid: uid, 
                     nome: perfilJogador.nome,
                     avatar: perfilJogador.avatar
                 };
 
-                // Envia direto para a "caixa de entrada" do amigo na nuvem
+                // Envia direto para a "caixa de entrada" do amigo
                 set(ref(db, 'jogadores/' + uidEncontrado + '/pedidos/' + uid), meuPedido)
-                    .then(() => mostrarMensagemScanner("SOLICITAÇÃO ENVIADA PARA " + jogadorEncontrado.nome.toUpperCase() + "!"));
+                    .then(() => mostrarMensagemScanner("PEDIDO ENVIADO PARA " + jogadorEncontrado.nome.toUpperCase() + "!"));
             } else {
-                mostrarMensagemScanner("SINAL PERDIDO! NOME NÃO ENCONTRADO.");
+                mostrarMensagemScanner("SINAL PERDIDO! JOGADOR OU ID NÃO ENCONTRADO.");
             }
         }
     }).catch(error => {
@@ -922,7 +941,10 @@ function renderizarAmigos() {
                         <div class="amigo-id">Quer ser seu amigo!</div>
                     </div>
                 </div>
-                <button class="btn-trocar" style="background: #ffd700; color: #000; font-weight: bold; padding: 6px 12px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="aceitarAmigo('${idPedido}', '${remetente.nome}', '${remetente.avatar}')">ACEITAR</button>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn-trocar" style="background: #e53935; color: #fff; font-weight: bold; padding: 6px 12px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="recusarAmigo('${idPedido}')">RECUSAR</button>
+                    <button class="btn-trocar" style="background: #ffd700; color: #000; font-weight: bold; padding: 6px 12px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="aceitarAmigo('${idPedido}', '${remetente.nome}', '${remetente.avatar}')">ACEITAR</button>
+                </div>
             `;
             lista.appendChild(divPedido);
         }
@@ -959,6 +981,13 @@ function renderizarAmigos() {
     });
 }
 
+// Função para quando você clica em RECUSAR o convite
+window.recusarAmigo = function(uidAmigo) {
+    // Apenas apaga o pedido da sua "caixa de entrada" sem adicionar à lista
+    set(ref(db, 'jogadores/' + uid + '/pedidos/' + uidAmigo), null);
+    mostrarMensagemScanner("SINAL REJEITADO.");
+}
+
 // Função para quando você clica em ACEITAR o convite
 window.aceitarAmigo = function(uidAmigo, nomeAmigo, avatarAmigo) {
     // 1. Adiciona ele na sua lista
@@ -983,6 +1012,15 @@ window.excluirAmigo = function(index) {
     let amigoRemovido = amigos[index];
     amigos.splice(index, 1); // Remove da sua lista local
     salvarAmigosNaNuvem();   // Atualiza a nuvem
+    
+    // Remove você da lista do seu amigo também (Corte definitivo)
+    get(ref(db, 'jogadores/' + amigoRemovido.uid + '/amigos')).then((snap) => {
+        if (snap.exists()) {
+            let amigosDele = snap.val();
+            let novaListaDele = amigosDele.filter(a => a.uid !== uid);
+            set(ref(db, 'jogadores/' + amigoRemovido.uid + '/amigos'), novaListaDele);
+        }
+    });
     
     mostrarMensagemScanner("CONEXÃO COM " + amigoRemovido.nome.toUpperCase() + " CORTADA!");
     renderizarAmigos();
@@ -1158,6 +1196,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
