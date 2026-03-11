@@ -461,11 +461,11 @@ body {
 }
 
 /* Coloque aqui os números que ficam perfeitos no seu PC */
-#stat-coragem    { top: 64%; left: 13.1%; } 
-#stat-poder      { top: 70.2%; left: 13.1%; } 
-#stat-sabedoria  { top: 76.1%; left: 13.1%; } 
-#stat-velocidade { top: 82.7%; left: 13.1%; } 
-#stat-energia    { top: 87.5%; left: 69%; font-size: 20px; width: 60px; }
+#stat-coragem    { top: 64%; left: 15.1%; } 
+#stat-poder      { top: 70.2%; left: 14.1%; } 
+#stat-sabedoria  { top: 76.1%; left: 16.1%; } 
+#stat-velocidade { top: 82.7%; left: 17.1%; } 
+#stat-energia    { top: 87.5%; left: 70%; font-size: 20px; width: 60px; }
 
 
 /* =========================================================
@@ -474,15 +474,15 @@ body {
 @media (max-width: 768px) {
     .stat {
         /* Se precisar diminuir um pouco a fonte no celular, mude aqui: */
-        font-size: 10px; 
+        font-size: 20px; 
     }
 
     /* Coloque aqui os números que ficam perfeitos na tela do seu celular */
-    #stat-coragem    { top: 65%; left: 12%; } 
-    #stat-poder      { top: 71%; left: 12%; } 
-    #stat-sabedoria  { top: 77%; left: 12%; } 
-    #stat-velocidade { top: 83%; left: 12%; } 
-    #stat-energia    { top: 88%; left: 80%; font-size: 30px; }
+    #stat-coragem    { top: 65%; left: 10%; } 
+    #stat-poder      { top: 71%; left: 11%; } 
+    #stat-sabedoria  { top: 77%; left: 19%; } 
+    #stat-velocidade { top: 83%; left: 11.5%; } 
+    #stat-energia    { top: 88%; left: 70%; font-size: 30px; }
 }
 
 
@@ -746,4 +746,5 @@ body {
 .slot-troca {
     width: 65px; height: 90px; border-radius: 5px; display: flex; align-items: center; justify-content: center; background: #111; margin: 0 auto;
 }
+
 
