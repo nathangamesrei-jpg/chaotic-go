@@ -53,7 +53,7 @@ let minhaCartaOfertada = null;
 
 // 2.1 Puxando Perfil
 const perfilRef = ref(db, 'jogadores/' + uid);
-onValue(perfilRef, (snapshot) => {
+(perfilRef, (snapshot) => {
     if (snapshot.exists()) {
         window.perfilJogador = snapshot.val();
         // Atualiza a tela de perfil se ela estiver aberta
@@ -63,7 +63,7 @@ onValue(perfilRef, (snapshot) => {
 
 // 2.2 Puxando Álbum (Inventário)
 const albumRef = ref(db, 'jogadores/' + uid + '/album');
-onValue(albumRef, (snapshot) => {
+(albumRef, (snapshot) => {
     if (snapshot.exists()) {
         window.inventario = snapshot.val() || [];
         // Atualiza a tela de cartas se ela estiver aberta
@@ -82,6 +82,19 @@ onValue(amigosRef, (snapshot) => {
         if (document.getElementById("tela-social").style.display === "flex") renderizarAmigos();
     } else {
         window.amigos = [];
+    }
+});
+// 2.4 Puxando Pedidos de Amizade (Caixa de Entrada)
+window.pedidosAmizade = null;
+const pedidosRef = ref(db, 'jogadores/' + uid + '/pedidos');
+onValue(pedidosRef, (snapshot) => {
+    if (snapshot.exists()) {
+        window.pedidosAmizade = snapshot.val();
+        // Se a aba social estiver aberta, atualiza na hora pra mostrar o convite!
+        if (document.getElementById("tela-social").style.display === "flex") renderizarAmigos();
+    } else {
+        window.pedidosAmizade = null;
+        if (document.getElementById("tela-social").style.display === "flex") renderizarAmigos();
     }
 });
 
@@ -810,37 +823,150 @@ function abrirSocial() {
 }
 
 window.adicionarAmigo = function() {
-    let id = document.getElementById("input-add-amigo").value.trim();
-    if(!id.startsWith("#") || id.length < 5) { mostrarMensagemScanner("ID INVÁLIDO!"); return; }
-    if(amigos.find(a => a.id === id)) { mostrarMensagemScanner("JÁ ESTÁ NA LISTA!"); return; }
-    
-    let novoAmigo = { id: id, nome: "Jogador " + id, avatar: ["👾","🤖","👹","🤠"][Math.floor(Math.random()*4)], jaTrocou: false };
-    amigos.push(novoAmigo); 
-    salvarAmigosNaNuvem();
-    document.getElementById("input-add-amigo").value = "";
-    mostrarMensagemScanner("SINAL DE AMIGO ENCONTRADO!"); 
-    renderizarAmigos();
+    let busca = document.getElementById("input-add-amigo").value.trim();
+    if(busca.length < 3) { mostrarMensagemScanner("DIGITE O NOME DO JOGADOR!"); return; }
+    if(busca.toLowerCase() === perfilJogador.nome.toLowerCase()) { mostrarMensagemScanner("NÃO PODE ADICIONAR A SI MESMO!"); return; }
+
+    document.getElementById("input-add-amigo").value = "Buscando na Nuvem...";
+
+    // Vai na nuvem procurar quem tem esse nome exato
+    get(ref(db, 'jogadores')).then((snapshot) => {
+        document.getElementById("input-add-amigo").value = "";
+        
+        if (snapshot.exists()) {
+            let todosJogadores = snapshot.val();
+            let jogadorEncontrado = null;
+            let uidEncontrado = null;
+
+            // Varredura no banco de dados
+            for (let idNuvem in todosJogadores) {
+                if (todosJogadores[idNuvem].nome.toLowerCase() === busca.toLowerCase()) {
+                    jogadorEncontrado = todosJogadores[idNuvem];
+                    uidEncontrado = idNuvem;
+                    break; // Achou! Para a busca.
+                }
+            }
+
+            if (jogadorEncontrado) {
+                // Verifica se já é amigo
+                let jaAmigo = amigos.find(a => a.uid === uidEncontrado);
+                if (jaAmigo) { mostrarMensagemScanner("JÁ ESTÁ NA SUA LISTA!"); return; }
+
+                // Cria a "carta de solicitação" para enviar pra ele
+                let meuPedido = {
+                    uid: uid, 
+                    nome: perfilJogador.nome,
+                    avatar: perfilJogador.avatar
+                };
+
+                // Envia direto para a "caixa de entrada" do amigo na nuvem
+                set(ref(db, 'jogadores/' + uidEncontrado + '/pedidos/' + uid), meuPedido)
+                    .then(() => mostrarMensagemScanner("SOLICITAÇÃO ENVIADA PARA " + jogadorEncontrado.nome.toUpperCase() + "!"));
+            } else {
+                mostrarMensagemScanner("SINAL PERDIDO! NOME NÃO ENCONTRADO.");
+            }
+        }
+    }).catch(error => {
+        document.getElementById("input-add-amigo").value = "";
+        mostrarMensagemScanner("ERRO DE CONEXÃO NO RADAR!");
+    });
 }
 
 function renderizarAmigos() {
-    let lista = document.getElementById("lista-amigos"); lista.innerHTML = "";
-    if(amigos.length === 0) { lista.innerHTML = "<p style='color:#666; font-size:10px; margin-top: 20px;'>Nenhum amigo no Radar...</p>"; return; }
+    let lista = document.getElementById("lista-amigos"); 
+    lista.innerHTML = "";
+
+    // 1. PRIMEIRO: Renderiza os pedidos de amizade pendentes (se alguém te adicionou)
+    if (window.pedidosAmizade) {
+        for (let idPedido in window.pedidosAmizade) {
+            let remetente = window.pedidosAmizade[idPedido];
+            let divPedido = document.createElement("div"); 
+            divPedido.className = "amigo-item";
+            divPedido.style.border = "2px dashed #ffd700"; // Borda dourada para destacar
+            
+            // O Avatar real (se for imagem URL ou emoji)
+            let avatarHTML = remetente.avatar.startsWith("http") || remetente.avatar.startsWith("data:") 
+                ? `<div class="amigo-avatar" style="background-image: url('${remetente.avatar}'); background-size: cover; background-position: center; color: transparent;">.</div>`
+                : `<div class="amigo-avatar">${remetente.avatar}</div>`;
+
+            divPedido.innerHTML = `
+                <div class="amigo-info">
+                    ${avatarHTML}
+                    <div>
+                        <div class="amigo-nome" style="color: #ffd700;">${remetente.nome}</div>
+                        <div class="amigo-id">Quer ser seu amigo!</div>
+                    </div>
+                </div>
+                <button class="btn-trocar" style="background: #ffd700; color: #000; font-weight: bold; padding: 6px 12px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="aceitarAmigo('${idPedido}', '${remetente.nome}', '${remetente.avatar}')">ACEITAR</button>
+            `;
+            lista.appendChild(divPedido);
+        }
+    }
+
+    // 2. DEPOIS: Renderiza os amigos que já estão na sua lista
+    if(amigos.length === 0 && !window.pedidosAmizade) { 
+        lista.innerHTML = "<p style='color:#666; font-size:10px; margin-top: 20px;'>Nenhum sinal no Radar...</p>"; 
+        return; 
+    }
     
     amigos.forEach((amigo, i) => {
-        let div = document.createElement("div"); div.className = "amigo-item";
-        let btnDisabled = amigo.jaTrocou ? "disabled" : "";
-        let btnStyle = amigo.jaTrocou ? "background: #555; color: #888; cursor: not-allowed;" : "background: #4CAF50; color: #000; cursor: pointer;";
-        let btnText = amigo.jaTrocou ? "CONCLUÍDO" : "TROCAR";
+        let div = document.createElement("div"); 
+        div.className = "amigo-item";
+        
+        let avatarHTML = amigo.avatar.startsWith("http") || amigo.avatar.startsWith("data:") 
+            ? `<div class="amigo-avatar" style="background-image: url('${amigo.avatar}'); background-size: cover; background-position: center; color: transparent;">.</div>`
+            : `<div class="amigo-avatar">${amigo.avatar}</div>`;
 
         div.innerHTML = `
-            <div class="amigo-info">
-                <div class="amigo-avatar">${amigo.avatar}</div>
-                <div><div class="amigo-nome">${amigo.nome}</div><div class="amigo-id">${amigo.id}</div></div>
+            <div class="amigo-info" style="cursor: pointer;" onclick="mostrarPerfilDoAmigo(${i})">
+                ${avatarHTML}
+                <div>
+                    <div class="amigo-nome">${amigo.nome}</div>
+                    <div class="amigo-id">Status: Online 🟢</div>
+                </div>
             </div>
-            <button class="btn-trocar" style="border: none; padding: 6px 12px; border-radius: 5px; font-weight: bold; font-size: 10px; ${btnStyle}" onclick="iniciarTroca(${i})" ${btnDisabled}>${btnText}</button>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn-trocar" style="background: #e53935; color: #fff; font-weight: bold; padding: 6px 8px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="excluirAmigo(${i})">X</button>
+                <button class="btn-trocar" style="background: #4CAF50; color: #000; font-weight: bold; padding: 6px 12px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="iniciarTroca(${i})">TROCAR</button>
+            </div>
         `;
         lista.appendChild(div);
     });
+}
+
+// Função para quando você clica em ACEITAR o convite
+window.aceitarAmigo = function(uidAmigo, nomeAmigo, avatarAmigo) {
+    // 1. Adiciona ele na sua lista
+    amigos.push({ uid: uidAmigo, nome: nomeAmigo, avatar: avatarAmigo });
+    salvarAmigosNaNuvem();
+
+    // 2. Apaga o pedido da sua "caixa de entrada"
+    set(ref(db, 'jogadores/' + uid + '/pedidos/' + uidAmigo), null);
+
+    // 3. (Opcional) Adiciona você na lista dele automaticamente!
+    get(ref(db, 'jogadores/' + uidAmigo + '/amigos')).then((snap) => {
+        let amigosDele = snap.exists() ? snap.val() : [];
+        amigosDele.push({ uid: uid, nome: perfilJogador.nome, avatar: perfilJogador.avatar });
+        set(ref(db, 'jogadores/' + uidAmigo + '/amigos'), amigosDele);
+    });
+
+    mostrarMensagemScanner(nomeAmigo.toUpperCase() + " AGORA É SEU ALIADO!");
+}
+
+// Função para EXCLUIR o amigo da lista
+window.excluirAmigo = function(index) {
+    let amigoRemovido = amigos[index];
+    amigos.splice(index, 1); // Remove da sua lista local
+    salvarAmigosNaNuvem();   // Atualiza a nuvem
+    
+    mostrarMensagemScanner("CONEXÃO COM " + amigoRemovido.nome.toUpperCase() + " CORTADA!");
+    renderizarAmigos();
+}
+
+// Placeholder: Função para ver o perfil do amigo (Faremos na próxima etapa!)
+window.mostrarPerfilDoAmigo = function(index) {
+    mostrarMensagemScanner("Buscando status de " + amigos[index].nome + " na nuvem...");
+    // Na próxima fase vamos abrir uma janelinha com os status reais dele!
 }
 
 window.iniciarTroca = function(index) {
@@ -1007,6 +1133,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
