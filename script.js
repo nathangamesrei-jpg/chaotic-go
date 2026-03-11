@@ -1159,8 +1159,6 @@ window.iniciarTroca = function(index) {
 }
 
 function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
-    // REMOVI O abrirSocial() DAQUI DE DENTRO!
-    
     salaTrocaAtual = salaId;
     souP1 = isP1;
     minhaCartaOfertada = null;
@@ -1196,7 +1194,6 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
             return;
         }
 
-        // CORREÇÃO: Avisos blindados
         if (sala.status === "ocupado" && isP1) {
             mostrarMensagemScanner("O JOGADOR PEDIU PARA ESPERAR!");
             fecharTroca();
@@ -1212,14 +1209,24 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
         let dadosAmigo = isP1 ? sala.p2 : sala.p1;
 
         let slotAmigo = document.getElementById("slot-carta-amigo");
+        slotAmigo.style.position = "relative";
+        slotAmigo.onclick = null; // Reseta o clique caso a carta seja retirada
+        
         if (dadosAmigo.carta) {
-            slotAmigo.innerHTML = "";
+            cartaSimuladaAmigo = dadosAmigo.carta;
+            // Mostra a lupa e permite clicar na carta inteira para inspecionar!
+            slotAmigo.innerHTML = `<div style="position:absolute; top: -8px; right: -8px; background: #000; border: 1px solid #4CAF50; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; z-index: 10;">🔍</div>`;
             slotAmigo.style.backgroundImage = `url('${dadosAmigo.carta.img}')`;
             slotAmigo.style.backgroundSize = "cover";
-            cartaSimuladaAmigo = dadosAmigo.carta;
+            slotAmigo.style.cursor = "pointer";
+            
+            // Ativa o botão invisível de inspeção
+            slotAmigo.onclick = () => inspecionarCartaTroca(cartaSimuladaAmigo);
+            
         } else {
             slotAmigo.innerHTML = "?";
             slotAmigo.style.backgroundImage = "none";
+            slotAmigo.style.cursor = "default";
             cartaSimuladaAmigo = null;
         }
 
@@ -1228,6 +1235,23 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
         }
     });
 }
+// Função para Inspecionar Cartas dentro do Lobby de Troca
+window.inspecionarCartaTroca = function(carta) {
+    if(!carta) return;
+    abrirDetalheCarta(carta.nome, carta.tribo, carta.img, "inspecao_troca");
+    
+    if (carta.tipoCarta === "Local") {
+        document.getElementById("camada-stats").style.display = "none";
+    } else {
+        document.getElementById("camada-stats").style.display = "block";
+        document.getElementById("stat-coragem").innerText = carta.stats.c;
+        document.getElementById("stat-poder").innerText = carta.stats.p;
+        document.getElementById("stat-sabedoria").innerText = carta.stats.s;
+        document.getElementById("stat-velocidade").innerText = carta.stats.v;
+        document.getElementById("stat-energia").innerText = carta.stats.e;
+    }
+}
+
 
 // Quando você clica no [+] para escolher a sua carta
 window.abrirSelecaoTroca = function() {
@@ -1242,7 +1266,24 @@ window.abrirSelecaoTroca = function() {
         let div = document.createElement("div");
         div.style = "background: #111; border: 1px solid #ff5555; padding: 5px; display: flex; align-items: center; gap: 10px; cursor: pointer;";
         div.onclick = () => selecionarMinhaCartaTroca(item.id);
-        div.innerHTML = `<img src="${item.img}" style="width: 40px; border-radius: 3px;"><span style="color: white; font-size: 11px;">${item.nome} (x${item.quantidade || 1})</span>`;
+        
+        let qtd = item.quantidade || 1;
+        let detalhesCarta = "";
+        
+        // Puxa os stats para mostrar na tela de escolha!
+        if (item.tipoCarta === "Local") {
+            detalhesCarta = `<div style="font-size: 9px; color: #4CAF50; margin-top: 2px;">TIPO: LOCAL | CÓPIAS: ${qtd}</div>`;
+        } else {
+            detalhesCarta = `<div style="font-size: 8px; color: #4CAF50; line-height: 1.2; margin-top: 2px;">E:${item.stats.e} | C:${item.stats.c} | P:${item.stats.p} | S:${item.stats.s} | V:${item.stats.v}</div>`;
+        }
+
+        div.innerHTML = `
+            <img src="${item.img}" style="width: 40px; border-radius: 3px;">
+            <div style="text-align: left; flex: 1;">
+                <span style="color: white; font-size: 11px; font-weight: bold;">${item.nome}</span>
+                ${detalhesCarta}
+            </div>
+        `;
         lista.appendChild(div);
     });
 }
@@ -1251,13 +1292,15 @@ window.abrirSelecaoTroca = function() {
 window.selecionarMinhaCartaTroca = function(idCarta) {
     minhaCartaOfertada = inventario.find(c => c.id === idCarta);
     
-    // Mostra na sua tela
     let slot = document.getElementById("slot-minha-carta");
-    slot.innerHTML = "";
+    slot.style.position = "relative";
+    
+    // Adiciona uma Lupa no canto. Clicar nela inspeciona a carta!
+    slot.innerHTML = `<div onclick="event.stopPropagation(); inspecionarCartaTroca(minhaCartaOfertada)" style="position:absolute; top: -8px; right: -8px; background: #000; border: 1px solid #ff5555; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; z-index: 10;">🔍</div>`;
+    
     slot.style.backgroundImage = `url('${minhaCartaOfertada.img}')`;
     slot.style.backgroundSize = "cover";
     
-    // Manda pra Nuvem para o amigo ver
     let jogadorKey = souP1 ? 'p1' : 'p2';
     update(ref(db, 'salas_troca/' + salaTrocaAtual + '/' + jogadorKey), { carta: minhaCartaOfertada });
     
@@ -1402,6 +1445,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
