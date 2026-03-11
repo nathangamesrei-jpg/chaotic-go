@@ -495,6 +495,142 @@ function criarMarcadorMonstro(latM, lonM, sorteado, ehPassivo = false) {
     
     marcadoresMonstros.push(novoMarcador);
 }
+// ==========================================
+// SISTEMA DE LOOT: BAÚS E MUGICS
+// ==========================================
+
+function criarMarcadorItem(latM, lonM, tipoNode) {
+    // SVGs feitos em código para ficarem leves no mapa!
+    const svgBau = `<svg viewBox="0 0 100 100" style="width: 100%; height: 100%; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.8));"><rect x="15" y="40" width="70" height="45" fill="#8B4513" stroke="#ffd700" stroke-width="4"/><path d="M 15 40 Q 50 10 85 40" fill="#8B4513" stroke="#ffd700" stroke-width="4"/><rect x="42" y="35" width="16" height="16" fill="#ccc" stroke="#333" stroke-width="2"/><circle cx="50" cy="43" r="3" fill="#333"/></svg>`;
+    const svgMugic = `<svg viewBox="0 0 100 100" style="width: 100%; height: 100%; filter: drop-shadow(0px 0px 8px #00ffff);"><circle cx="50" cy="50" r="40" fill="#111" stroke="#00ffff" stroke-width="4"/><text x="50%" y="65%" font-size="50" fill="#00ffff" font-family="sans-serif" text-anchor="middle">🎵</text></svg>`;
+
+    let divIcon = L.divIcon({
+        html: tipoNode === 'bau' ? svgBau : svgMugic,
+        className: '', 
+        iconSize: [35, 35],
+        iconAnchor: [17, 17]
+    });
+
+    let novoMarcador = L.marker([latM, lonM], { icon: divIcon }).addTo(mapaScanner);
+    
+    novoMarcador.on('click', () => {
+        // Trava de Distância (Você tem que estar a menos de 100m)
+        if (marcadorJogador) {
+            let pos = marcadorJogador.getLatLng();
+            let dist = calcularDistancia(pos.lat, pos.lng, latM, lonM);
+            if (dist > 100) {
+                mostrarMensagemScanner(`FORA DE ALCANCE! Aproxime-se mais ${Math.ceil(dist - 100)}m.`);
+                return;
+            }
+        }
+
+        // Abre o Node!
+        if (tipoNode === 'bau') {
+            abrirBauDeLoot();
+            mapaScanner.removeLayer(novoMarcador);
+        } else if (tipoNode === 'mugic') {
+            // Em breve: abriremos o Mini-game de Música aqui!
+            // Por enquanto, já dá a magia direto.
+            abrirLootMugic();
+            mapaScanner.removeLayer(novoMarcador);
+        }
+    });
+
+    marcadoresMonstros.push(novoMarcador); // Usa a mesma lista para ser apagado quando andar
+}
+
+// O MOTOR DE DROP DO BAÚ
+// O MOTOR DE DROP INTELIGENTE DO BAÚ
+function abrirBauDeLoot() {
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Tremidinha
+    
+    // Sorteia de 1 a 6 itens por baú
+    let qtdItens = Math.floor(Math.random() * 6) + 1; 
+    let lootGanho = [];
+
+    // Roleta principal de itens
+    for (let i = 0; i < qtdItens; i++) {
+        
+        // 1. Sorteia a CATEGORIA (50% Local, 30% Ataque, 20% Equipamento)
+        let sorteioCategoria = Math.random();
+        let categoriaAlvo = [];
+        
+        if (sorteioCategoria < 0.50) {
+            categoriaAlvo = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB : [];
+        } else if (sorteioCategoria < 0.80) {
+            categoriaAlvo = typeof ATAQUES !== 'undefined' ? ATAQUES : [];
+        } else {
+            categoriaAlvo = typeof EQUIPAMENTOS !== 'undefined' ? EQUIPAMENTOS : [];
+        }
+        
+        // Se alguma lista ainda não foi criada, joga Locais como backup
+        if (categoriaAlvo.length === 0) categoriaAlvo = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB : [];
+        if (categoriaAlvo.length === 0) continue; // Pula se tudo der errado
+
+        // 2. Sorteia o ITEM dentro da categoria usando a Raridade Própria dele!
+        let sorteioRaridade = Math.random();
+        let itensPossiveis = categoriaAlvo.filter(item => item.raridade >= sorteioRaridade);
+        
+        // Se a roleta for muito alta, te dá o item [0] (o mais comum da lista) pra você não sair de mãos vazias
+        let itemSorteado = itensPossiveis.length > 0 
+            ? itensPossiveis[Math.floor(Math.random() * itensPossiveis.length)] 
+            : categoriaAlvo[0]; 
+            
+        lootGanho.push(itemSorteado);
+        
+        // 3. O Empilhador Perfeito (Junta +1 no inventário)
+        let itemExistente = window.inventario.find(c => c.nome === itemSorteado.nome && c.tipoCarta === itemSorteado.tipoCarta);
+        if (itemExistente) {
+            itemExistente.quantidade = (itemExistente.quantidade || 1) + 1;
+        } else {
+            let novo = {...itemSorteado}; novo.id = Date.now() + i; novo.quantidade = 1;
+            window.inventario.push(novo);
+        }
+    }
+    
+    // Mostra na tela o que você catou
+    if (lootGanho.length > 0) {
+        salvarAlbumNaNuvem();
+        
+        // Forma elegante de mostrar itens com quantidades na mensagem de alerta
+        let resumoLoot = {};
+        lootGanho.forEach(item => { resumoLoot[item.nome] = (resumoLoot[item.nome] || 0) + 1; });
+        
+        let textoMensagem = [];
+        for(let n in resumoLoot) { textoMensagem.push(`${n} (x${resumoLoot[n]})`); }
+        
+        mostrarMensagemScanner(`🎁 BAÚ ABERTO! Você encontrou:\n${textoMensagem.join(", ")}`);
+    } else {
+        mostrarMensagemScanner("O Baú estava vazio...");
+    }
+}
+
+// O MOTOR DE DROP DO MUGIC
+function abrirLootMugic() {
+    if (typeof MAGIAS === 'undefined' || MAGIAS.length === 0) return;
+    
+    if (navigator.vibrate) navigator.vibrate(200);
+    
+    // 1. Usa a raridade própria de cada magia no cartas.js
+    let sorteioRaridade = Math.random();
+    let magiasPossiveis = MAGIAS.filter(item => item.raridade >= sorteioRaridade);
+    
+    let magiaSorteada = magiasPossiveis.length > 0 
+        ? magiasPossiveis[Math.floor(Math.random() * magiasPossiveis.length)] 
+        : MAGIAS[0];
+    
+    // 2. Empilha a Magia
+    let itemExistente = window.inventario.find(c => c.nome === magiaSorteada.nome && c.tipoCarta === "Magia");
+    if (itemExistente) {
+        itemExistente.quantidade = (itemExistente.quantidade || 1) + 1;
+    } else { 
+        let novo = {...magiaSorteada}; novo.id = Date.now(); novo.quantidade = 1; window.inventario.push(novo); 
+    }
+    
+    salvarAlbumNaNuvem();
+    mostrarMensagemScanner(`🎵 CÓDIGO MUSICAL DECODIFICADO:\n${magiaSorteada.nome}!`);
+}
+
 
 function spawnMonstrosNaArea(lat, lon, forcarPassivo = false) {
     if (typeof MONSTROS === 'undefined' || MONSTROS.length === 0) return;
@@ -518,21 +654,28 @@ function spawnMonstrosNaArea(lat, lon, forcarPassivo = false) {
         marcadoresMonstros.forEach(m => mapaScanner.removeLayer(m));
         marcadoresMonstros = [];
 
-        // Agora geramos 6 criaturas BEM espalhadas
+        // Agora geramos 6 pontos espalhados no mapa (Monstros, Baús e Mugics)
         for (let i = 0; i < 6; i++) {
-            let sementeUnica = sementeBase + (i * 150); // Multiplicador para não repetir
+            let sementeUnica = sementeBase + (i * 150); 
             
-            // Sorteia qual monstro vai aparecer (Agora o Promos aparece!)
-            let indexMonstro = Math.floor(sementeRandom(sementeUnica) * listaFiltrada.length);
-            const sorteado = listaFiltrada[indexMonstro];
-            
-            // Espalha as coordenadas (raio de aprox. 1.5km a 2km)
             let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.02;
             let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.02;
             
-            criarMarcadorMonstro(lat + offLat, lon + offLon, sorteado, false);
+            let roletaTipo = sementeRandom(sementeUnica + 400); // Rola de 0.0 a 1.0
+            
+            if (roletaTipo < 0.2) {
+                // 20% de chance de ser um Baú
+                criarMarcadorItem(lat + offLat, lon + offLon, 'bau');
+            } else if (roletaTipo < 0.3) {
+                // 10% de chance de ser um Símbolo Mugic
+                criarMarcadorItem(lat + offLat, lon + offLon, 'mugic');
+            } else {
+                // 70% de chance de ser Criatura (O código original do monstro)
+                let indexMonstro = Math.floor(sementeRandom(sementeUnica) * listaFiltrada.length);
+                const sorteado = listaFiltrada[indexMonstro];
+                criarMarcadorMonstro(lat + offLat, lon + offLon, sorteado, false);
+            }
         }
-    }
 
     // 2. SPAWN PASSIVO (Estilo "Caminhada" - Só para você)
     if (forcarPassivo) {
@@ -1580,6 +1723,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
