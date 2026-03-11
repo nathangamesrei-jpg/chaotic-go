@@ -551,6 +551,29 @@ function spawnMonstrosNaArea(lat, lon, forcarPassivo = false) {
     }
 }
 
+// ==========================================
+// 4. LÓGICA DO RADAR, CÂMERA LIVRE E GIROSCÓPIO
+// ==========================================
+let seguirJogador = true; // Controla se o mapa segue você ou não
+
+// Função para ler a Bússola do celular e girar a Seta
+function lidarComGiroscopio(event) {
+    let angulo = 0;
+    // iOS usa webkitCompassHeading, Android usa alpha
+    if (event.webkitCompassHeading) {
+        angulo = event.webkitCompassHeading;
+    } else if (event.alpha !== null) {
+        // O Android inverte os graus, precisamos calcular o oposto
+        angulo = Math.abs(event.alpha - 360); 
+    }
+
+    // Acha a Seta no mapa e aplica o giro em tempo real!
+    let seta = document.getElementById("icone-seta-jogador");
+    if (seta) {
+        seta.style.transform = `rotate(${angulo}deg)`;
+    }
+}
+
 window.iniciarGPS = function() {
     document.getElementById("tela-detalhe-carta").style.display = "none";
     document.getElementById("painel-viagem").style.display = "none";
@@ -561,6 +584,20 @@ window.iniciarGPS = function() {
     document.getElementById("meu-mapa").style.display = "none";
 
     let tempoUltimoSpawn = Date.now();
+    seguirJogador = true; // Ao abrir o mapa, ele foca em você
+
+    // Pede permissão para usar o Giroscópio (Obrigatório para segurança dos iPhones novos)
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(permissionState => {
+            if (permissionState === 'granted') {
+                window.addEventListener('deviceorientation', lidarComGiroscopio);
+            }
+        }).catch(console.error);
+    } else {
+        // Ativação para Android e aparelhos comuns
+        window.addEventListener('deviceorientationabsolute', lidarComGiroscopio);
+        window.addEventListener('deviceorientation', lidarComGiroscopio);
+    }
 
     watchID = navigator.geolocation.watchPosition((pos) => {
         let lat = pos.coords.latitude; 
@@ -571,12 +608,44 @@ window.iniciarGPS = function() {
         document.getElementById("btn-sair-radar").style.display = "block";
 
         if (!mapaScanner) {
-            mapaScanner = L.map('meu-mapa', { zoomControl: false }).setView([lat, lon], 16);
+            // Inicia o mapa
+            mapaScanner = L.map('meu-mapa', { zoomControl: false }).setView([lat, lon], 17);
             L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapaScanner);
             
+            // 🛑 SISTEMA DE CÂMERA LIVRE: Se arrastar o mapa, solta a trava!
+            mapaScanner.on('dragstart', () => {
+                seguirJogador = false;
+                let btnCentro = document.getElementById("btn-recentralizar");
+                if(btnCentro) btnCentro.style.display = "flex"; // Mostra o botão de voltar
+            });
+
+            // Cria o botão de Recentralizar (Fica escondido até você puxar o mapa)
+            let btnCentro = document.createElement("button");
+            btnCentro.id = "btn-recentralizar";
+            btnCentro.innerHTML = "📍";
+            btnCentro.style = "display: none; position: absolute; bottom: 20px; right: 20px; z-index: 1000; background: #111; color: #4CAF50; border: 2px solid #4CAF50; border-radius: 50%; width: 45px; height: 45px; font-size: 20px; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 15px rgba(0,0,0,0.8);";
+            btnCentro.onclick = () => {
+                seguirJogador = true;
+                if(marcadorJogador) mapaScanner.flyTo(marcadorJogador.getLatLng(), 17);
+                btnCentro.style.display = "none";
+            };
+            document.getElementById("tela-mapa").appendChild(btnCentro);
+            
+            // Círculo Azul de Alcance
             let corRadar = triboLocalParaViagem === "Azul" ? "#00ccff" : "#ff3300"; 
             circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 100, fillOpacity: 0.1 }).addTo(mapaScanner);
-            marcadorJogador = L.circleMarker([lat, lon], { radius: 8, fillColor: corRadar, color: "#fff", fillOpacity: 1 }).addTo(mapaScanner);
+            
+            // 🧭 NOVA SETA 3D VETORIAL
+            const svgSeta = `<svg viewBox="0 0 100 100" id="icone-seta-jogador" style="width: 100%; height: 100%; transform: rotate(0deg); transform-origin: center; transition: transform 0.1s ease-out;"><polygon points="50,5 90,90 50,70 10,90" fill="#ff3300" stroke="#fff" stroke-width="3" filter="drop-shadow(0px 4px 4px rgba(0,0,0,0.5))"/></svg>`;
+            
+            let divIconSeta = L.divIcon({
+                html: svgSeta,
+                className: '', // Vazio para não bugar o fundo
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            marcadorJogador = L.marker([lat, lon], { icon: divIconSeta }).addTo(mapaScanner);
             
             spawnMonstrosNaArea(lat, lon, false);
             ultimaLatSpawn = lat;
@@ -585,12 +654,15 @@ window.iniciarGPS = function() {
         } else {
             marcadorJogador.setLatLng([lat, lon]);
             circuloRadar.setLatLng([lat, lon]);
-            mapaScanner.panTo([lat, lon]);
+            
+            // Só move a câmera para você se a Trava não foi quebrada arrastando
+            if (seguirJogador) {
+                mapaScanner.panTo([lat, lon]);
+            }
             
             let distanciaAndada = calcularDistancia(ultimaLatSpawn, ultimaLonSpawn, lat, lon);
             let tempoPassado = Date.now() - tempoUltimoSpawn;
 
-            // Gera spawn passivo a cada 100m andados OU 3 minutos parado
             if (distanciaAndada > 50 || tempoPassado > 60000) {
                 spawnMonstrosNaArea(lat, lon, true); 
                 ultimaLatSpawn = lat;
@@ -1508,6 +1580,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
