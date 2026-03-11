@@ -161,7 +161,13 @@ window.responderChamadaTroca = function(resposta) {
     }
 
     if (resposta === 'aceitar') {
-        entrarNaSalaDeTroca(chamadaPendente.salaId, false, chamadaPendente.de, chamadaPendente.nome);
+        // MUDA PARA A TELA SOCIAL PRIMEIRO
+        abrirSocial(); 
+        
+        // DEPOIS DE ABRIR A TELA, CHAMA A SALA COM UM PEQUENO ATRASO PARA GARANTIR O RENDER
+        setTimeout(() => {
+            entrarNaSalaDeTroca(chamadaPendente.salaId, false, chamadaPendente.de, chamadaPendente.nome);
+        }, 100); 
         
     } else if (resposta === 'esperar') {
         update(ref(db, 'salas_troca/' + chamadaPendente.salaId), { status: "ocupado" });
@@ -174,7 +180,6 @@ window.responderChamadaTroca = function(resposta) {
     
     chamadaPendente = null;
 }
-
 // ==========================================
 // 3. FUNÇÕES DE SALVAMENTO NA NUVEM
 // ==========================================
@@ -1147,7 +1152,7 @@ window.iniciarTroca = function(index) {
 }
 
 function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
-    abrirSocial(); // <-- CORREÇÃO: Puxa o jogador para a tela certa na marra!
+    // REMOVI O abrirSocial() DAQUI DE DENTRO!
     
     salaTrocaAtual = salaId;
     souP1 = isP1;
@@ -1390,6 +1395,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
