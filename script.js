@@ -721,9 +721,14 @@ function renderizarListaAlbum() {
         let qtd = item.quantidade || 1;
         let detalhesCarta = "";
         
-        if (item.tipoCarta === "Local") {
-            detalhesCarta = `<div style="font-size: 10px; color: #4CAF50; margin-top: 4px;">TIPO: LOCAL<br><span style="font-weight: bold; color: white;">CÓPIAS NO DECK: ${qtd}</span></div>`;
+        // A NOVA REGRA VISUAL: Ele sabe quem tem Status e quem tem Quantidade!
+        let tipoParaEmpilhar = ["Local", "Magia", "Ataque", "Equipamento"];
+        
+        if (tipoParaEmpilhar.includes(item.tipoCarta)) {
+            // Cartas empilháveis mostram a Quantidade
+            detalhesCarta = `<div style="font-size: 10px; color: #4CAF50; margin-top: 4px;">TIPO: ${item.tipoCarta.toUpperCase()}<br><span style="font-weight: bold; color: white;">CÓPIAS NO DECK: ${qtd}</span></div>`;
         } else {
+            // Criaturas mostram os Status únicos de DNA
             detalhesCarta = `<div style="font-size: 8.5px; color: #4CAF50; line-height: 1.3;">Energia: ${item.stats.e} | Coragem: ${item.stats.c}<br>Poder: ${item.stats.p} | Sabedoria: ${item.stats.s}<br>Velocidade: ${item.stats.v}</div>`;
         }
 
@@ -1158,11 +1163,14 @@ window.iniciarTroca = function(index) {
     entrarNaSalaDeTroca(salaId, true, amigoAtualTroca.uid, amigoAtualTroca.nome);
 }
 
+window.trocaEmAndamento = false; // O Cadeado Global
+
 function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
     salaTrocaAtual = salaId;
     souP1 = isP1;
     minhaCartaOfertada = null;
     cartaSimuladaAmigo = null;
+    window.trocaEmAndamento = false; // Destranca o cadeado ao entrar
 
     document.getElementById("nome-troca-amigo").innerText = "Lobby com " + nomeAmigo;
     document.getElementById("modal-troca").style.display = "flex";
@@ -1210,17 +1218,14 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
 
         let slotAmigo = document.getElementById("slot-carta-amigo");
         slotAmigo.style.position = "relative";
-        slotAmigo.onclick = null; // Reseta o clique caso a carta seja retirada
+        slotAmigo.onclick = null; 
         
         if (dadosAmigo.carta) {
             cartaSimuladaAmigo = dadosAmigo.carta;
-            // Mostra a lupa e permite clicar na carta inteira para inspecionar!
             slotAmigo.innerHTML = `<div style="position:absolute; top: -8px; right: -8px; background: #000; border: 1px solid #4CAF50; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; z-index: 10;">🔍</div>`;
             slotAmigo.style.backgroundImage = `url('${dadosAmigo.carta.img}')`;
             slotAmigo.style.backgroundSize = "cover";
             slotAmigo.style.cursor = "pointer";
-            
-            // Ativa o botão invisível de inspeção
             slotAmigo.onclick = () => inspecionarCartaTroca(cartaSimuladaAmigo);
             
         } else {
@@ -1230,7 +1235,9 @@ function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
             cartaSimuladaAmigo = null;
         }
 
-        if (sala.p1.pronto && sala.p2.pronto && isP1 && sala.status === "aberta") {
+        // CADEADO ATIVADO: Só roda a matemática UMA VEZ!
+        if (sala.p1.pronto && sala.p2.pronto && isP1 && sala.status === "aberta" && !window.trocaEmAndamento) {
+            window.trocaEmAndamento = true; // Tranca a porta!
             executarTrocaFinal(sala);
         }
     });
@@ -1326,56 +1333,75 @@ window.confirmarTroca = function() {
     btnConf.style.background = "#ffd700";
 }
 
-// O Servidor faz a troca física das cartas (Só o P1 roda isso para evitar duplicar as cartas)
 function executarTrocaFinal(sala) {
     update(ref(db, 'salas_troca/' + salaTrocaAtual), { status: "processando" });
 
-    // Puxa o álbum do Amigo
+    // A REGRA DE OURO: Quais cartas podem ser empilhadas? (Tudo, menos Criatura!)
+    const podeEmpilhar = (tipo) => ["Local", "Magia", "Ataque", "Equipamento"].includes(tipo);
+
+    // Puxa o álbum do Amigo (P2)
     get(ref(db, 'jogadores/' + sala.p2.uid + '/album')).then(snap2 => {
         let albumAmigo = snap2.exists() ? snap2.val() : [];
-        
-        // Remove a carta do amigo do álbum dele
+
+        // 1. REMOVE A CARTA DO AMIGO (P2) DA NUVEM DELE
         let c2Index = albumAmigo.findIndex(c => c.id === sala.p2.carta.id);
         if(c2Index > -1) {
-            if(albumAmigo[c2Index].quantidade > 1) albumAmigo[c2Index].quantidade--;
-            else albumAmigo.splice(c2Index, 1);
+            if(albumAmigo[c2Index].quantidade > 1) { albumAmigo[c2Index].quantidade--; }
+            else { albumAmigo.splice(c2Index, 1); }
         }
-        
-        // Dá a SUA carta pro amigo
-        let cartaDeP1 = {...sala.p1.carta};
-        cartaDeP1.id = Date.now() + 1; // ID novo
-        cartaDeP1.quantidade = 1;
-        albumAmigo.push(cartaDeP1);
-        
-        // Remove a SUA carta do SEU álbum
-        let c1Index = inventario.findIndex(c => c.id === sala.p1.carta.id);
+
+        // 2. REMOVE A SUA CARTA (P1) DA SUA NUVEM
+        let meuAlbum = [...window.inventario]; 
+        let c1Index = meuAlbum.findIndex(c => c.id === sala.p1.carta.id);
         if(c1Index > -1) {
-            if(inventario[c1Index].quantidade > 1) inventario[c1Index].quantidade--;
-            else inventario.splice(c1Index, 1);
+            if(meuAlbum[c1Index].quantidade > 1) { meuAlbum[c1Index].quantidade--; }
+            else { meuAlbum.splice(c1Index, 1); }
         }
-        
-        // Dá a carta do AMIGO pra VOCÊ
-        let cartaDeP2 = {...sala.p2.carta};
-        cartaDeP2.id = Date.now();
-        cartaDeP2.quantidade = 1;
-        inventario.push(cartaDeP2);
-        
-        // Salva tudo na nuvem!
-        set(ref(db, 'jogadores/' + sala.p2.uid + '/album'), albumAmigo);
-        salvarAlbumNaNuvem();
-        
-        // Avisa a sala que acabou e destrói ela
+
+        // 3. DÁ A SUA CARTA PARA O AMIGO (P2)
+        if (podeEmpilhar(sala.p1.carta.tipoCarta)) {
+            // Procura se o amigo já tem essa carta específica
+            let cartaExistente = albumAmigo.find(c => c.nome === sala.p1.carta.nome && c.tipoCarta === sala.p1.carta.tipoCarta);
+            if (cartaExistente) { cartaExistente.quantidade = (cartaExistente.quantidade || 1) + 1; }
+            else {
+                let nova = {...sala.p1.carta}; nova.id = Date.now() + 10; nova.quantidade = 1; albumAmigo.push(nova);
+            }
+        } else {
+            // É criatura, então cria uma única com DNA/Stats próprios
+            let nova = {...sala.p1.carta}; nova.id = Date.now() + 10; nova.quantidade = 1; albumAmigo.push(nova);
+        }
+
+        // 4. DÁ A CARTA DO AMIGO PARA VOCÊ (P1)
+        if (podeEmpilhar(sala.p2.carta.tipoCarta)) {
+            // Procura se você já tem essa carta específica
+            let cartaExistente = meuAlbum.find(c => c.nome === sala.p2.carta.nome && c.tipoCarta === sala.p2.carta.tipoCarta);
+            if (cartaExistente) { cartaExistente.quantidade = (cartaExistente.quantidade || 1) + 1; }
+            else {
+                let nova = {...sala.p2.carta}; nova.id = Date.now() + 20; nova.quantidade = 1; meuAlbum.push(nova);
+            }
+        } else {
+            // É criatura, então cria uma única com DNA/Stats próprios
+            let nova = {...sala.p2.carta}; nova.id = Date.now() + 20; nova.quantidade = 1; meuAlbum.push(nova);
+        }
+
+        // SALVA AS DUAS CONTAS NA NUVEM!
+        set(ref(db, 'jogadores/' + sala.p2.uid + '/album'), albumAmigo); 
+        window.inventario = meuAlbum; 
+        salvarAlbumNaNuvem(); 
+
+        // ENCERRA E DESTRÓI A SALA
         update(ref(db, 'salas_troca/' + salaTrocaAtual), { status: "concluida" });
-        setTimeout(() => remove(ref(db, 'salas_troca/' + salaTrocaAtual)), 2000);
+        setTimeout(() => {
+            remove(ref(db, 'salas_troca/' + salaTrocaAtual));
+            window.trocaEmAndamento = false; // Destranca a porta pro futuro
+        }, 2000);
     });
 }
 
 window.fecharTroca = function() { 
-    // CORREÇÃO: Apenas quem iniciou a chamada (P1) tem o poder de deletar a sala da nuvem
-    if(salaTrocaAtual && souP1) {
-        remove(ref(db, 'salas_troca/' + salaTrocaAtual));
-    }
+    if(salaTrocaAtual && souP1) { remove(ref(db, 'salas_troca/' + salaTrocaAtual)); }
     salaTrocaAtual = null;
+    window.trocaEmAndamento = false; // Garante o reset do cadeado
     document.getElementById("modal-troca").style.display = "none"; 
 }
 
@@ -1445,6 +1471,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
