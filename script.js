@@ -69,13 +69,32 @@ onValue(perfilRef, (snapshot) => {
 
 // 2.2 Puxando Álbum (Inventário)
 const albumRef = ref(db, 'jogadores/' + uid + '/album');
-(albumRef, (snapshot) => {
+onValue(albumRef, (snapshot) => {
     if (snapshot.exists()) {
-        window.inventario = snapshot.val() || [];
-        // Atualiza a tela de cartas se ela estiver aberta
-        if (document.getElementById("tela-album").style.display === "flex") renderizarListaAlbum();
+        let dadosNuvem = snapshot.val();
+        
+        // CÓDIGO DE PROTEÇÃO: Força o Firebase a devolver uma Lista (Array) limpa!
+        window.inventario = Array.isArray(dadosNuvem) ? dadosNuvem : Object.values(dadosNuvem);
+        window.inventario = window.inventario.filter(item => item !== null && item !== undefined);
+        
     } else {
-        window.inventario = [];
+        // PLANO B DO ÁLBUM: Conta nova? Recebe a Cidade de Kiru de brinde!
+        window.inventario = [{
+            id: Date.now(), 
+            nome: "Cidade de Kiru", 
+            tribo: "Azul", 
+            tipoCarta: "Local", 
+            img: "cartas/locais/locais azul/cidade de kiru.jpg", 
+            favorito: false, 
+            quantidade: 1,
+            stats: { c: "-", p: "-", s: "-", v: "-", e: "-" }
+        }];
+        salvarAlbumNaNuvem(); // Grava o brinde no Firebase na mesma hora!
+    }
+
+    // Atualiza a tela de cartas se ela estiver aberta
+    if (document.getElementById("tela-album").style.display === "flex") {
+        renderizarListaAlbum();
     }
 });
 
@@ -1139,6 +1158,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
