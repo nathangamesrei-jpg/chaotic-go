@@ -893,8 +893,19 @@ if(btnVoltarPerfil) { btnVoltarPerfil.onclick = () => location.reload(); }
 // 8. REDE SOCIAL E TROCAS (EASTER EGG JOHNES)
 // ==========================================
 function abrirSocial() {
+    // 1. MODO LIMPEZA TOTAL: Desliga TODAS as outras telas antes de abrir a Social
     document.getElementById("tela-menu").style.display = "none";
+    document.getElementById("tela-mapa").style.display = "none";
+    document.getElementById("tela-locais").style.display = "none";
+    document.getElementById("tela-album").style.display = "none";
+    document.getElementById("tela-perfil").style.display = "none";
+    document.getElementById("tela-minigame").style.display = "none";
+    document.getElementById("painel-viagem").style.display = "none";
+
+    // 2. LIGA SÓ A TELA SOCIAL
     document.getElementById("tela-social").style.display = "flex";
+    document.getElementById("painel-botoes-fisicos").style.display = "flex";
+    
     modoMenu = false;
     renderizarAmigos();
 }
@@ -1379,6 +1390,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
