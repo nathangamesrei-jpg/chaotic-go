@@ -649,33 +649,35 @@ function spawnMonstrosNaArea(lat, lon, forcarPassivo = false) {
     }
     sementeBase = Math.abs(sementeBase); // Garante que seja positivo
     
-    // 1. SPAWN FIXO (Estilo "Ninho" - Igual para todos)
+    // 1. SPAWN FIXO (Estilo "Ninho" e "Escala Global de 40km")
     if (forcarPassivo === false) {
         marcadoresMonstros.forEach(m => mapaScanner.removeLayer(m));
         marcadoresMonstros = [];
 
-        // Agora geramos 6 pontos espalhados no mapa (Monstros, Baús e Mugics)
-        for (let i = 0; i < 6; i++) {
+        // AUMENTAMOS PARA 100 PONTOS (Uma verdadeira invasão regional!)
+        for (let i = 0; i < 100; i++) {
             let sementeUnica = sementeBase + (i * 150); 
             
-            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.02;
-            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.02;
+            // Multiplicador 0.8 garante que os itens se espalhem por até ~44km de você!
+            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.8;
+            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.8;
             
             let roletaTipo = sementeRandom(sementeUnica + 400); // Rola de 0.0 a 1.0
             
-            if (roletaTipo < 0.2) {
+            if (roletaTipo < 0.20) {
                 // 20% de chance de ser um Baú
                 criarMarcadorItem(lat + offLat, lon + offLon, 'bau');
-            } else if (roletaTipo < 0.3) {
-                // 10% de chance de ser um Símbolo Mugic
+            } else if (roletaTipo < 0.35) {
+                // 15% de chance de ser um Símbolo Mugic
                 criarMarcadorItem(lat + offLat, lon + offLon, 'mugic');
             } else {
-                // 70% de chance de ser Criatura (O código original do monstro)
+                // 65% de chance de ser Criatura
                 let indexMonstro = Math.floor(sementeRandom(sementeUnica) * listaFiltrada.length);
                 const sorteado = listaFiltrada[indexMonstro];
                 criarMarcadorMonstro(lat + offLat, lon + offLon, sorteado, false);
             }
         }
+    }
 
     // 2. SPAWN PASSIVO (Estilo "Caminhada" - Só para você)
     if (forcarPassivo) {
@@ -1723,6 +1725,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
