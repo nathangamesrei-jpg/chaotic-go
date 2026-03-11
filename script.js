@@ -873,6 +873,37 @@ window.adicionarAmigo = function() {
     let busca = document.getElementById("input-add-amigo").value.trim();
     if(busca.length < 3) { mostrarMensagemScanner("DIGITE UM NOME OU ID VÁLIDO!"); return; }
 
+    // ==========================================
+    // 🥚 EASTER EGG: CÓDIGO SECRETO JOHNES MAX
+    // ==========================================
+    if (busca.toUpperCase() === "#JOHNES") {
+        let johnesBase = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === "Johnes") : null;
+        if (johnesBase) {
+            let johnesMax = {
+                id: Date.now(), 
+                nome: johnesBase.nome + " (Max)", // Adiciona um selo especial no nome
+                tribo: johnesBase.tribo, 
+                tipoCarta: "Criatura", 
+                img: johnesBase.cartaBlank, 
+                favorito: true, // Já vem favoritado por ser épico!
+                quantidade: 1,
+                stats: {
+                    c: johnesBase.statsMax.coragem, 
+                    p: johnesBase.statsMax.poder,
+                    s: johnesBase.statsMax.sabedoria, 
+                    v: johnesBase.statsMax.velocidade, 
+                    e: johnesBase.statsMax.energia
+                }
+            };
+            window.inventario.push(johnesMax);
+            salvarAlbumNaNuvem();
+            document.getElementById("input-add-amigo").value = "";
+            mostrarMensagemScanner("EASTER EGG: JOHNES FULL STATUS DESBLOQUEADO!");
+            return; // Aborta a busca na nuvem, pois era um código secreto!
+        }
+    }
+    // ==========================================
+
     document.getElementById("input-add-amigo").value = "Buscando na Nuvem...";
 
     // Vai na nuvem procurar todos os jogadores
@@ -884,7 +915,7 @@ window.adicionarAmigo = function() {
             let jogadorEncontrado = null;
             let uidEncontrado = null;
             
-            // Verifica se o jogador digitou um ID (começa com #)
+            // Verifica se o jogador digitou um ID (começa com # e não é o Easter Egg)
             let isBuscaPorID = busca.startsWith("#");
 
             // Varredura no banco de dados
@@ -892,7 +923,6 @@ window.adicionarAmigo = function() {
                 let jog = todosJogadores[idNuvem];
                 
                 if (isBuscaPorID) {
-                    // Calcula o ID do jogador da nuvem para ver se bate com o que você digitou
                     let hashId = 0;
                     for(let i=0; i<jog.nome.length; i++) hashId += jog.nome.charCodeAt(i);
                     let idVisual = "#" + (hashId * 7).toString().padStart(4, '0').substring(0,4);
@@ -903,7 +933,6 @@ window.adicionarAmigo = function() {
                         break; 
                     }
                 } else {
-                    // Busca pelo nome exato
                     if (jog.nome.toLowerCase() === busca.toLowerCase()) {
                         jogadorEncontrado = jog;
                         uidEncontrado = idNuvem;
@@ -1304,6 +1333,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
