@@ -495,24 +495,39 @@ function criarMarcadorMonstro(latM, lonM, sorteado, ehPassivo = false) {
     
     marcadoresMonstros.push(novoMarcador);
 }
+
 // ==========================================
-// SISTEMA DE LOOT: BAÚS E MUGICS
+// SISTEMA DE LOOT: BAÚS E MUGICS (VISUAIS UPGRADED)
 // ==========================================
 
-function criarMarcadorItem(latM, lonM, tipoNode) {
-    // SVGs feitos em código para ficarem leves no mapa!
-    const svgBau = `<svg viewBox="0 0 100 100" style="width: 100%; height: 100%; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.8));"><rect x="15" y="40" width="70" height="45" fill="#8B4513" stroke="#ffd700" stroke-width="4"/><path d="M 15 40 Q 50 10 85 40" fill="#8B4513" stroke="#ffd700" stroke-width="4"/><rect x="42" y="35" width="16" height="16" fill="#ccc" stroke="#333" stroke-width="2"/><circle cx="50" cy="43" r="3" fill="#333"/></svg>`;
-    const svgMugic = `<svg viewBox="0 0 100 100" style="width: 100%; height: 100%; filter: drop-shadow(0px 0px 8px #00ffff);"><circle cx="50" cy="50" r="40" fill="#111" stroke="#00ffff" stroke-width="4"/><text x="50%" y="65%" font-size="50" fill="#00ffff" font-family="sans-serif" text-anchor="middle">🎵</text></svg>`;
+// URLs de imagens de alta qualidade hospedadas externamente (CDNs)
+const IMG_BAU_TEXTURIZADO = "https://cdn.pixabay.com/photo/2021/11/03/17/23/treasure-chest-6766324_1280.png";
+const IMG_MUGIC_TEXTURIZADO = "https://cdn.pixabay.com/photo/2016/09/27/19/20/note-1698226_1280.png";
 
-    let divIcon = L.divIcon({
-        html: tipoNode === 'bau' ? svgBau : svgMugic,
-        className: '', 
-        iconSize: [35, 35],
-        iconAnchor: [17, 17]
+window.criarMarcadorItem = function(latM, lonM, tipoNode) {
+    // Usamos L.icon com as imagens externas para alta qualidade visual
+    let iconeItem = L.icon({
+        iconUrl: tipoNode === 'bau' ? IMG_BAU_TEXTURIZADO : IMG_MUGIC_TEXTURIZADO,
+        iconSize: [45, 45], 
+        iconAnchor: [22, 22],
+        popupAnchor: [1, -34],
+        className: tipoNode === 'bau' ? 'icone-bau-glow' : 'icone-mugic-glow'
     });
 
-    let novoMarcador = L.marker([latM, lonM], { icon: divIcon }).addTo(mapaScanner);
+    let novoMarcador = L.marker([latM, lonM], { icon: iconeItem }).addTo(mapaScanner);
     
+    // Adicionamos animação de pulso e contorno via CSS
+    if (!document.getElementById('css-icones-loot')) {
+        let style = document.createElement('style');
+        style.id = 'css-icones-loot';
+        style.innerHTML = `
+            .icone-bau-glow { filter: drop-shadow(0 0 5px #ff5555) drop-shadow(0 0 10px #ff5555); transition: 0.2s; }
+            .icone-mugic-glow { filter: drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 10px #00ffff); transition: 0.2s; }
+            .icone-bau-glow:hover, .icone-mugic-glow:hover { transform: scale(1.15) rotate(5deg); }
+        `;
+        document.head.appendChild(style);
+    }
+
     novoMarcador.on('click', () => {
         // Trava de Distância (Você tem que estar a menos de 100m)
         if (marcadorJogador) {
@@ -539,7 +554,6 @@ function criarMarcadorItem(latM, lonM, tipoNode) {
     marcadoresMonstros.push(novoMarcador); // Usa a mesma lista para ser apagado quando andar
 }
 
-// O MOTOR DE DROP DO BAÚ
 // O MOTOR DE DROP INTELIGENTE DO BAÚ
 function abrirBauDeLoot() {
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Tremidinha
@@ -631,8 +645,7 @@ function abrirLootMugic() {
     mostrarMensagemScanner(`🎵 CÓDIGO MUSICAL DECODIFICADO:\n${magiaSorteada.nome}!`);
 }
 
-
-function spawnMonstrosNaArea(lat, lon, forcarPassivo = false) {
+window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
     if (typeof MONSTROS === 'undefined' || MONSTROS.length === 0) return;
 
     // Filtra pela tribo do Local
@@ -649,35 +662,182 @@ function spawnMonstrosNaArea(lat, lon, forcarPassivo = false) {
     }
     sementeBase = Math.abs(sementeBase); // Garante que seja positivo
     
-    // 1. SPAWN FIXO (Estilo "Ninho" e "Escala Global de 40km")
+    // 1. SPAWN FIXO (Estilo "Ninho" e "Escala Regional Balanceada")
     if (forcarPassivo === false) {
         marcadoresMonstros.forEach(m => mapaScanner.removeLayer(m));
         marcadoresMonstros = [];
 
-        // AUMENTAMOS PARA 100 PONTOS (Uma verdadeira invasão regional!)
-        for (let i = 0; i < 100; i++) {
+        // RECALIBRADO: 50 itens num raio de aproximadamente 5km (multiplier 0.05).
+        for (let i = 0; i < 50; i++) {
             let sementeUnica = sementeBase + (i * 150); 
             
-            // Multiplicador 0.8 garante que os itens se espalhem por até ~44km de você!
-            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.8;
-            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.8;
+            // Multiplicador 0.05 garante espalhamento de ±2.5km
+            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.05;
+            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.05;
             
             let roletaTipo = sementeRandom(sementeUnica + 400); // Rola de 0.0 a 1.0
             
-            if (roletaTipo < 0.20) {
+            if (roletaTipo < 0.2) {
                 // 20% de chance de ser um Baú
                 criarMarcadorItem(lat + offLat, lon + offLon, 'bau');
-            } else if (roletaTipo < 0.35) {
-                // 15% de chance de ser um Símbolo Mugic
+            } else if (roletaTipo < 0.3) {
+                // 10% de chance de ser um Símbolo Mugic
                 criarMarcadorItem(lat + offLat, lon + offLon, 'mugic');
             } else {
-                // 65% de chance de ser Criatura
+                // 70% de chance de ser Criatura (O código original do monstro)
                 let indexMonstro = Math.floor(sementeRandom(sementeUnica) * listaFiltrada.length);
                 const sorteado = listaFiltrada[indexMonstro];
                 criarMarcadorMonstro(lat + offLat, lon + offLon, sorteado, false);
             }
         }
     }
+
+    // 2. SPAWN PASSIVO (Estilo "Caminhada" - Só para você)
+    if (forcarPassivo) {
+        let sorteioRaridade = Math.random();
+        let listaRaridade = listaFiltrada.filter(m => m.raridade >= sorteioRaridade);
+        const sorteadoPassivo = listaRaridade.length > 0 ? listaRaridade[Math.floor(Math.random() * listaRaridade.length)] : listaFiltrada[0];
+
+        // Aparece colado em você (aprox. 30 metros)
+        let offLat = (Math.random() - 0.5) * 0.0003;
+        let offLon = (Math.random() - 0.5) * 0.0003;
+        
+        criarMarcadorMonstro(lat + offLat, lon + offLon, sorteadoPassivo, true);
+        
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        mostrarMensagemScanner("⚠️ UMA CRIATURA SELVAGEM APARECEU!");
+    }
+}
+
+// ==========================================
+// 4. LÓGICA DO RADAR, CÂMERA LIVRE E GIROSCÓPIO
+// ==========================================
+let seguirJogador = true; // Controla se o mapa segue você ou não
+
+// Função para ler a Bússola do celular e girar a Seta
+function lidarComGiroscopio(event) {
+    let angulo = 0;
+    // iOS usa webkitCompassHeading, Android usa alpha
+    if (event.webkitCompassHeading) {
+        angulo = event.webkitCompassHeading;
+    } else if (event.alpha !== null) {
+        // O Android inverte os graus, precisamos calcular o oposto
+        angulo = Math.abs(event.alpha - 360); 
+    }
+
+    // Acha a Seta no mapa e aplica o giro em tempo real!
+    let seta = document.getElementById("icone-seta-jogador");
+    if (seta) {
+        seta.style.transform = `rotate(${angulo}deg)`;
+    }
+}
+
+window.iniciarGPS = function() {
+    document.getElementById("tela-detalhe-carta").style.display = "none";
+    document.getElementById("painel-viagem").style.display = "none";
+    document.getElementById("tela-mapa").style.display = "flex";
+    document.getElementById("painel-botoes-fisicos").style.display = "flex";
+
+    document.getElementById("texto-carregando").style.display = "block";
+    document.getElementById("meu-mapa").style.display = "none";
+
+    let tempoUltimoSpawn = Date.now();
+    seguirJogador = true; // Ao abrir o mapa, ele foca em você
+
+    // Pede permissão para usar o Giroscópio (Obrigatório para segurança dos iPhones novos)
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        DeviceOrientationEvent.requestPermission().then(permissionState => {
+            if (permissionState === 'granted') {
+                window.addEventListener('deviceorientation', lidarComGiroscopio);
+            }
+        }).catch(console.error);
+    } else {
+        // Ativação para Android e aparelhos comuns
+        window.addEventListener('deviceorientationabsolute', lidarComGiroscopio);
+        window.addEventListener('deviceorientation', lidarComGiroscopio);
+    }
+
+    watchID = navigator.geolocation.watchPosition((pos) => {
+        let lat = pos.coords.latitude; 
+        let lon = pos.coords.longitude;
+
+        document.getElementById("texto-carregando").style.display = "none";
+        document.getElementById("meu-mapa").style.display = "block";
+        document.getElementById("btn-sair-radar").style.display = "block";
+
+        if (!mapaScanner) {
+            // Inicia o mapa
+            mapaScanner = L.map('meu-mapa', { zoomControl: false }).setView([lat, lon], 17);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(mapaScanner);
+            
+            // 🛑 SISTEMA DE CÂMERA LIVRE: Se arrastar o mapa, solta a trava!
+            mapaScanner.on('dragstart', () => {
+                seguirJogador = false;
+                let btnCentro = document.getElementById("btn-recentralizar");
+                if(btnCentro) btnCentro.style.display = "flex"; // Mostra o botão de voltar
+            });
+
+            // Cria o botão de Recentralizar (Fica escondido até você puxar o mapa)
+            let btnCentro = document.createElement("button");
+            btnCentro.id = "btn-recentralizar";
+            btnCentro.innerHTML = "📍";
+            btnCentro.style = "display: none; position: absolute; bottom: 20px; right: 20px; z-index: 1000; background: #111; color: #4CAF50; border: 2px solid #4CAF50; border-radius: 50%; width: 45px; height: 45px; font-size: 20px; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 0 15px rgba(0,0,0,0.8);";
+            btnCentro.onclick = () => {
+                seguirJogador = true;
+                if(marcadorJogador) mapaScanner.flyTo(marcadorJogador.getLatLng(), 17);
+                btnCentro.style.display = "none";
+            };
+            document.getElementById("tela-mapa").appendChild(btnCentro);
+            
+            // Círculo Azul de Alcance
+            let corRadar = triboLocalParaViagem === "Azul" ? "#00ccff" : "#ff3300"; 
+            circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 100, fillOpacity: 0.1 }).addTo(mapaScanner);
+            
+            // 🧭 NOVA SETA 3D VETORIAL
+            const svgSeta = `<svg viewBox="0 0 100 100" id="icone-seta-jogador" style="width: 100%; height: 100%; transform: rotate(0deg); transform-origin: center; transition: transform 0.1s ease-out;"><polygon points="50,5 90,90 50,70 10,90" fill="#ff3300" stroke="#fff" stroke-width="3" filter="drop-shadow(0px 4px 4px rgba(0,0,0,0.5))"/></svg>`;
+            
+            let divIconSeta = L.divIcon({
+                html: svgSeta,
+                className: '', // Vazio para não bugar o fundo
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+
+            marcadorJogador = L.marker([lat, lon], { icon: divIconSeta }).addTo(mapaScanner);
+            
+            spawnMonstrosNaArea(lat, lon, false);
+            ultimaLatSpawn = lat;
+            ultimaLonSpawn = lon;
+
+        } else {
+            marcadorJogador.setLatLng([lat, lon]);
+            circuloRadar.setLatLng([lat, lon]);
+            
+            // Só move a câmera para você se a Trava não foi quebrada arrastando
+            if (seguirJogador) {
+                mapaScanner.panTo([lat, lon]);
+            }
+            
+            let distanciaAndada = calcularDistancia(ultimaLatSpawn, ultimaLonSpawn, lat, lon);
+            let tempoPassado = Date.now() - tempoUltimoSpawn;
+
+            // Gera spawn passivo a cada 50m andados OU 1 minuto parado
+            if (distanciaAndada > 50 || tempoPassado > 60000) {
+                spawnMonstrosNaArea(lat, lon, true); 
+                ultimaLatSpawn = lat;
+                ultimaLonSpawn = lon;
+                tempoUltimoSpawn = Date.now();
+            }
+        }
+    }, (err) => {
+        console.error("Erro no GPS: ", err);
+        mostrarMensagemScanner("SINAL DE GPS FRACO!");
+    }, {
+        enableHighAccuracy: true, 
+        maximumAge: 10000, 
+        timeout: 10000 
+    });
+};
 
     // 2. SPAWN PASSIVO (Estilo "Caminhada" - Só para você)
     if (forcarPassivo) {
@@ -1725,6 +1885,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
