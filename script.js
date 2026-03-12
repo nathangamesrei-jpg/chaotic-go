@@ -1815,26 +1815,30 @@ window.renderizarCarrosselLocais = function() {
     let locaisUnicos = {};
     window.inventario.forEach(item => {
         if (item.tipoCarta === "Local") {
-            locaisUnicos[item.nome] = item; // Impede que apareça duas "Cidade de Kiru" repetidas
+            locaisUnicos[item.nome] = item; // Impede que apareça repetido
         }
     });
     locaisDesbloqueados = Object.values(locaisUnicos);
 
     if (locaisDesbloqueados.length === 0) return; // Segurança
 
-    // 2. Faz o carrossel dar a volta (se passar da última, volta pra primeira)
+    // 2. Faz o carrossel dar a volta
     if (indiceLocalAtual >= locaisDesbloqueados.length) indiceLocalAtual = 0;
     if (indiceLocalAtual < 0) indiceLocalAtual = locaisDesbloqueados.length - 1;
 
     let localAtual = locaisDesbloqueados[indiceLocalAtual];
 
-    // 3. Atualiza a imagem e o nome na tela!
+    // 3. Atualiza a tela (NOME EM CIMA DA CARTA, empilhados em coluna)
     let container = document.querySelector(".carrossel-cartas");
     container.innerHTML = `
-        <div class="carta-local-real" onclick="abrirDetalheCarta('${localAtual.nome}', '${localAtual.tribo}', '${localAtual.img}', 'local')">
-            <img src="${localAtual.img}" alt="Carta ${localAtual.nome}">
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <p style="color: #4CAF50; font-weight: bold; margin-bottom: 15px; font-size: 15px; text-shadow: 0 0 5px #000; text-align: center; font-family: monospace; letter-spacing: 1px;">
+                ${localAtual.nome.toUpperCase()}
+            </p>
+            <div class="carta-local-real" onclick="abrirDetalheCarta('${localAtual.nome}', '${localAtual.tribo}', '${localAtual.img}', 'local')">
+                <img src="${localAtual.img}" alt="Carta ${localAtual.nome}">
+            </div>
         </div>
-        <p style="color: #4CAF50; font-weight: bold; margin-top: 15px; font-size: 14px; text-shadow: 0 0 5px #000; text-align: center;">${localAtual.nome.toUpperCase()}</p>
     `;
 }
 
@@ -1940,6 +1944,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
