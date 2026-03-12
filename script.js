@@ -854,7 +854,7 @@ window.iniciarGPS = function() {
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
         mostrarMensagemScanner("⚠️ UMA CRIATURA SELVAGEM APARECEU!");
     }
-}
+
 
 // ==========================================
 // 4. LÓGICA DO RADAR, CÂMERA LIVRE E GIROSCÓPIO
@@ -1885,6 +1885,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
