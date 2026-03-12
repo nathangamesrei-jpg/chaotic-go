@@ -787,8 +787,11 @@ function abrirLootMugic() {
     };
 }
 
+window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
+    // Trava de segurança inicial
+    if (typeof MONSTROS === 'undefined' || MONSTROS.length === 0) return;
 
-// 1. Acha as regras oficiais deste Local no banco de dados
+    // 1. Acha as regras oficiais deste Local no banco de dados
     let regrasLocal = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB.find(l => l.nome === localParaViagem) : null;
     let triboRegra = regrasLocal ? regrasLocal.triboNativa : "Qualquer";
     let elementoRegra = regrasLocal ? (regrasLocal.elementoNativo || null) : null;
@@ -842,7 +845,6 @@ function abrirLootMugic() {
         }
     }
 
-    
     // 2. SPAWN PASSIVO (Estilo "Caminhada" - Só para você)
     if (forcarPassivo) {
         let sorteioRaridade = Math.random();
@@ -858,7 +860,6 @@ function abrirLootMugic() {
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
         mostrarMensagemScanner("⚠️ UMA CRIATURA SELVAGEM APARECEU!");
     }
-
 }
 // ==========================================
 // 4. LÓGICA DO RADAR, CÂMERA LIVRE E GIROSCÓPIO
@@ -1944,6 +1945,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
