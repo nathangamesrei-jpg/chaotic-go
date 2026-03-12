@@ -481,8 +481,8 @@ function criarMarcadorMonstro(latM, lonM, sorteado, ehPassivo = false) {
             let distancia = calcularDistancia(posJogador.lat, posJogador.lng, latM, lonM);
             
             // 100 é o raio do seu círculo azul. Se estiver maior, bloqueia!
-            if (distancia > 100) {
-                mostrarMensagemScanner(`FORA DE ALCANCE! Ande mais ${Math.ceil(distancia - 100)}m para escanear.`);
+            if (distancia > 10000) {
+                mostrarMensagemScanner(`FORA DE ALCANCE! Ande mais ${Math.ceil(distancia - 10000)}m para escanear.`);
                 return; // Aborta a função e impede o minigame de abrir
             }
         }
@@ -1739,4 +1739,5 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
