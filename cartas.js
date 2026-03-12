@@ -52,15 +52,31 @@ const MAGIAS = [
 // ==========================================
 const LOCAIS_DB = [
     {
-        id: 501, nome: "Cidade de Kiru", iniciativa: "Sabedoria", triboNativa: "Azul", img: "cartas/locais/locais azul/cidade de kiru.jpg", tipoCarta: "Local", raridade: 0.8
+        id: 501, 
+        nome: "Cidade de Kiru", 
+        iniciativa: "Sabedoria", 
+        triboNativa: "Azul", // Regra 1: Só Tribo Azul
+        elementoNativo: null, // Regra 2: Qualquer Elemento (null)
+        img: "cartas/locais/locais azul/cidade de kiru.jpg", 
+        tipoCarta: "Local", 
+        raridade: 0.8
     },
     {
-        id: 502, nome: "O Túnel da Tempestade", iniciativa: "Poder", triboNativa: "Qualquer", img: "cartas/locais/tunel_tempestade.jpg", tipoCarta: "Local", raridade: 0.5
+        id: 502, 
+        nome: "O Túnel da Tempestade", 
+        iniciativa: "Poder", 
+        triboNativa: "Qualquer", // Regra 1: Qualquer Tribo
+        elementoNativo: "Ar",    // Regra 2: SÓ monstros com o elemento "Ar"
+        img: "cartas/locais/tunel_tempestade.jpg", 
+        tipoCarta: "Local", 
+        raridade: 0.5
     }
 ];
+
 
 const CENARIOS = {
     "Cidade de Kiru": "cartas/locais/locais azul/kiru-bg.png",
     "O Túnel da Tempestade": "cartas/locais/tempestade-bg.jpg"
 };
+
 
