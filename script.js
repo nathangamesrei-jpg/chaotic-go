@@ -709,7 +709,7 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
         mostrarMensagemScanner("⚠️ UMA CRIATURA SELVAGEM APARECEU!");
     }
 
-
+}
 // ==========================================
 // 4. LÓGICA DO RADAR, CÂMERA LIVRE E GIROSCÓPIO
 // ==========================================
@@ -1739,31 +1739,3 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
