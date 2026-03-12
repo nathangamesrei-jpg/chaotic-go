@@ -1823,18 +1823,94 @@ let btnVoltarSocial = document.getElementById("btn-voltar-social");
 if(btnVoltarSocial) { btnVoltarSocial.onclick = () => location.reload(); }
 
 // ==========================================
-// 9. BOTÕES FÍSICOS E INICIALIZAÇÃO
+// 9. CARROSSEL DINÂMICO E BOTÕES FÍSICOS
 // ==========================================
+let locaisDesbloqueados = [];
+let indiceLocalAtual = 0;
+
+// O Motor que constrói a tela de seleção de lugares
+window.renderizarCarrosselLocais = function() {
+    // 1. Vasculha o seu álbum e separa apenas as cartas do tipo "Local"
+    let locaisUnicos = {};
+    window.inventario.forEach(item => {
+        if (item.tipoCarta === "Local") {
+            locaisUnicos[item.nome] = item; // Impede que apareça duas "Cidade de Kiru" repetidas
+        }
+    });
+    locaisDesbloqueados = Object.values(locaisUnicos);
+
+    if (locaisDesbloqueados.length === 0) return; // Segurança
+
+    // 2. Faz o carrossel dar a volta (se passar da última, volta pra primeira)
+    if (indiceLocalAtual >= locaisDesbloqueados.length) indiceLocalAtual = 0;
+    if (indiceLocalAtual < 0) indiceLocalAtual = locaisDesbloqueados.length - 1;
+
+    let localAtual = locaisDesbloqueados[indiceLocalAtual];
+
+    // 3. Atualiza a imagem e o nome na tela!
+    let container = document.querySelector(".carrossel-cartas");
+    container.innerHTML = `
+        <div class="carta-local-real" onclick="abrirDetalheCarta('${localAtual.nome}', '${localAtual.tribo}', '${localAtual.img}', 'local')">
+            <img src="${localAtual.img}" alt="Carta ${localAtual.nome}">
+        </div>
+        <p style="color: #4CAF50; font-weight: bold; margin-top: 15px; font-size: 14px; text-shadow: 0 0 5px #000; text-align: center;">${localAtual.nome.toUpperCase()}</p>
+    `;
+}
+
+// Configura as setinhas verdes da tela de Locais
 document.addEventListener("DOMContentLoaded", () => {
     let sEsq = document.getElementById("seta-esq-local");
-    if(sEsq) sEsq.onclick = () => mostrarMensagemScanner("Nenhum outro local desbloqueado!");
+    if(sEsq) {
+        sEsq.onclick = () => {
+            if (locaisDesbloqueados.length <= 1) { mostrarMensagemScanner("Nenhum outro local desbloqueado!"); return; }
+            if (navigator.vibrate) navigator.vibrate(50);
+            indiceLocalAtual--;
+            renderizarCarrosselLocais();
+        };
+    }
     
     let sDir = document.getElementById("seta-dir-local");
-    if(sDir) sDir.onclick = () => mostrarMensagemScanner("Nenhum outro local desbloqueado!");
+    if(sDir) {
+        sDir.onclick = () => {
+            if (locaisDesbloqueados.length <= 1) { mostrarMensagemScanner("Nenhum outro local desbloqueado!"); return; }
+            if (navigator.vibrate) navigator.vibrate(50);
+            indiceLocalAtual++;
+            renderizarCarrosselLocais();
+        };
+    }
     
     let vMenu = document.getElementById("btn-voltar-menu");
     if(vMenu) vMenu.onclick = () => location.reload();
 });
+
+let apps = document.querySelectorAll(".app-icone");
+apps.forEach((app, index) => {
+    app.onclick = function() {
+        if (modoMenu) {
+            indexSelecionado = index;
+            atualizarSelecao();
+            if (index === 0) {
+                document.getElementById("tela-menu").style.display = "none";
+                document.getElementById("tela-locais").style.display = "flex";
+                modoMenu = false;
+                renderizarCarrosselLocais(); // <-- MAGIA AQUI: Carrega o carrossel ao abrir!
+            } else if (index === 1) {
+                abrirAlbum();
+            } else if (index === 3) {
+                abrirSocial();
+            } else if (index === 4) {
+                abrirPerfil();
+            } else {
+                mostrarMensagemScanner("Módulo em desenvolvimento...");
+            }
+        }
+    };
+});
+
+function atualizarSelecao() {
+    apps.forEach(app => app.classList.remove("app-selecionado"));
+    if(apps[indexSelecionado]) apps[indexSelecionado].classList.add("app-selecionado");
+}
 
 document.getElementById("btn-escanear").onclick = function() {
     if (modoMenu) {
@@ -1842,6 +1918,7 @@ document.getElementById("btn-escanear").onclick = function() {
             document.getElementById("tela-menu").style.display = "none";
             document.getElementById("tela-locais").style.display = "flex";
             modoMenu = false;
+            renderizarCarrosselLocais(); // <-- MAGIA AQUI TAMBÉM
         } else if (indexSelecionado === 1) {
             abrirAlbum();
         } else if (indexSelecionado === 3) {
@@ -1882,6 +1959,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
