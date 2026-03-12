@@ -554,97 +554,217 @@ window.criarMarcadorItem = function(latM, lonM, tipoNode) {
     marcadoresMonstros.push(novoMarcador); // Usa a mesma lista para ser apagado quando andar
 }
 
-// O MOTOR DE DROP INTELIGENTE DO BAÚ
+// ==========================================
+// O MOTOR CINEMÁTICO DE DROP DO BAÚ
+// ==========================================
 function abrirBauDeLoot() {
-    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Tremidinha
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
     
-    // Sorteia de 1 a 6 itens por baú
+    // 1. O Sorteador de Destino (Calcula o loot primeiro)
     let qtdItens = Math.floor(Math.random() * 6) + 1; 
     let lootGanho = [];
 
-    // Roleta principal de itens
     for (let i = 0; i < qtdItens; i++) {
-        
-        // 1. Sorteia a CATEGORIA (50% Local, 30% Ataque, 20% Equipamento)
         let sorteioCategoria = Math.random();
         let categoriaAlvo = [];
         
-        if (sorteioCategoria < 0.50) {
-            categoriaAlvo = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB : [];
-        } else if (sorteioCategoria < 0.80) {
-            categoriaAlvo = typeof ATAQUES !== 'undefined' ? ATAQUES : [];
-        } else {
-            categoriaAlvo = typeof EQUIPAMENTOS !== 'undefined' ? EQUIPAMENTOS : [];
-        }
+        if (sorteioCategoria < 0.50) categoriaAlvo = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB : [];
+        else if (sorteioCategoria < 0.80) categoriaAlvo = typeof ATAQUES !== 'undefined' ? ATAQUES : [];
+        else categoriaAlvo = typeof EQUIPAMENTOS !== 'undefined' ? EQUIPAMENTOS : [];
         
-        // Se alguma lista ainda não foi criada, joga Locais como backup
         if (categoriaAlvo.length === 0) categoriaAlvo = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB : [];
-        if (categoriaAlvo.length === 0) continue; // Pula se tudo der errado
+        if (categoriaAlvo.length === 0) continue; 
 
-        // 2. Sorteia o ITEM dentro da categoria usando a Raridade Própria dele!
         let sorteioRaridade = Math.random();
         let itensPossiveis = categoriaAlvo.filter(item => item.raridade >= sorteioRaridade);
-        
-        // Se a roleta for muito alta, te dá o item [0] (o mais comum da lista) pra você não sair de mãos vazias
-        let itemSorteado = itensPossiveis.length > 0 
-            ? itensPossiveis[Math.floor(Math.random() * itensPossiveis.length)] 
-            : categoriaAlvo[0]; 
+        let itemSorteado = itensPossiveis.length > 0 ? itensPossiveis[Math.floor(Math.random() * itensPossiveis.length)] : categoriaAlvo[0]; 
             
         lootGanho.push(itemSorteado);
-        
-        // 3. O Empilhador Perfeito (Junta +1 no inventário)
-        let itemExistente = window.inventario.find(c => c.nome === itemSorteado.nome && c.tipoCarta === itemSorteado.tipoCarta);
-        if (itemExistente) {
-            itemExistente.quantidade = (itemExistente.quantidade || 1) + 1;
-        } else {
-            let novo = {...itemSorteado}; novo.id = Date.now() + i; novo.quantidade = 1;
-            window.inventario.push(novo);
-        }
     }
     
-    // Mostra na tela o que você catou
-    if (lootGanho.length > 0) {
-        salvarAlbumNaNuvem();
-        
-        // Forma elegante de mostrar itens com quantidades na mensagem de alerta
-        let resumoLoot = {};
-        lootGanho.forEach(item => { resumoLoot[item.nome] = (resumoLoot[item.nome] || 0) + 1; });
-        
-        let textoMensagem = [];
-        for(let n in resumoLoot) { textoMensagem.push(`${n} (x${resumoLoot[n]})`); }
-        
-        mostrarMensagemScanner(`🎁 BAÚ ABERTO! Você encontrou:\n${textoMensagem.join(", ")}`);
-    } else {
-        mostrarMensagemScanner("O Baú estava vazio...");
+    if (lootGanho.length === 0) { mostrarMensagemScanner("O Baú estava vazio..."); return; }
+
+    // 2. Constrói a Tela de Animação do Baú (Só cria se não existir)
+    if (!document.getElementById("modal-bau-animado")) {
+        let modalCSS = document.createElement('style');
+        modalCSS.innerHTML = `
+            @keyframes shakeLoot { 0%{transform:rotate(0deg);} 25%{transform:rotate(-15deg) scale(1.1);} 50%{transform:rotate(15deg) scale(1.1);} 75%{transform:rotate(-15deg) scale(1.1);} 100%{transform:rotate(0deg) scale(1);} }
+            .shaking-bau { animation: shakeLoot 0.3s infinite; }
+            @keyframes popInCard { 0%{transform:scale(0); opacity:0;} 80%{transform:scale(1.1); opacity:1;} 100%{transform:scale(1); opacity:1;} }
+            .pop-card { animation: popInCard 0.4s ease-out forwards; }
+        `;
+        document.head.appendChild(modalCSS);
+
+        let modal = document.createElement("div");
+        modal.id = "modal-bau-animado";
+        modal.style.cssText = "display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,10,0,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
+        document.getElementById("tela-jogo").appendChild(modal);
     }
+
+    let modal = document.getElementById("modal-bau-animado");
+    modal.style.display = "flex";
+    
+    // Reseta o visual para a animação inicial
+    modal.innerHTML = `
+        <p id="titulo-bau" style="color:#ffd700; font-weight:bold; font-size:16px; margin-bottom:20px; text-shadow: 0 0 10px #ffd700; letter-spacing: 2px;">DECODIFICANDO BAÚ...</p>
+        <img id="img-bau-animacao" class="shaking-bau" src="https://img.icons8.com/fluency/96/treasure-chest.png" style="width:120px; height:120px; filter:drop-shadow(0 0 20px #ffd700);">
+        <div id="grid-loot" style="display:none; flex-wrap:wrap; justify-content:center; gap:15px; margin-top:30px; width:100%; max-height:280px; overflow-y:auto;"></div>
+        <button id="btn-coletar-bau" style="display:none; margin-top:30px; background:#4CAF50; color:#000; font-weight:bold; border:2px solid #2e7d32; padding:12px 30px; border-radius:8px; cursor:pointer; font-size:14px; box-shadow:0 0 15px #4CAF50;">COLETAR TUDO</button>
+    `;
+
+    // 3. A Mágica: Treme por 2 segundos e depois revela as cartas!
+    setTimeout(() => {
+        if (navigator.vibrate) navigator.vibrate(200); // Batida forte ao abrir
+        document.getElementById("img-bau-animacao").classList.remove("shaking-bau");
+        document.getElementById("img-bau-animacao").src = "https://img.icons8.com/fluency/96/open-box.png"; // Muda a foto para baú aberto
+        document.getElementById("titulo-bau").innerText = "LOOT ENCONTRADO!";
+        document.getElementById("titulo-bau").style.color = "#4CAF50";
+        
+        let grid = document.getElementById("grid-loot");
+        grid.style.display = "flex";
+        grid.innerHTML = "";
+        
+        // Faz cada carta "pular" na tela uma de cada vez (staggering effect)
+        lootGanho.forEach((item, index) => {
+            let delay = index * 200; // Atrasa o pulo de cada carta em 200ms
+            let corBorda = item.tipoCarta === 'Local' ? '#00ccff' : '#ff5555';
+            if(item.tipoCarta === 'Equipamento') corBorda = '#ffd700';
+            
+            grid.innerHTML += `
+                <div class="pop-card" style="display:flex; flex-direction:column; align-items:center; width:80px; opacity:0; animation-delay:${delay}ms;">
+                    <img src="${item.img}" style="width:75px; border-radius:5px; border:2px solid ${corBorda}; box-shadow: 0 0 10px ${corBorda};">
+                    <p style="color:#fff; font-size:9px; text-align:center; margin-top:5px; font-weight:bold; line-height:1.2;">${item.nome}</p>
+                </div>
+            `;
+        });
+
+        let btnColetar = document.getElementById("btn-coletar-bau");
+        btnColetar.style.display = "block";
+        btnColetar.onclick = () => {
+            // Guarda no inventário usando nosso empilhador de quantidades
+            lootGanho.forEach((itemSorteado, i) => {
+                let itemExistente = window.inventario.find(c => c.nome === itemSorteado.nome && c.tipoCarta === itemSorteado.tipoCarta);
+                if (itemExistente) itemExistente.quantidade = (itemExistente.quantidade || 1) + 1;
+                else {
+                    let novo = {...itemSorteado}; novo.id = Date.now() + i; novo.quantidade = 1;
+                    window.inventario.push(novo);
+                }
+            });
+            salvarAlbumNaNuvem();
+            modal.style.display = "none"; // Fecha a tela
+            mostrarMensagemScanner("ITENS ARMAZENADOS NO ÁLBUM!");
+        };
+    }, 1800); 
 }
 
-// O MOTOR DE DROP DO MUGIC
+// ==========================================
+// O NOVO MINIGAME DE MUGIC: "SINTONIA DE RITMO"
+// ==========================================
+let loopSintoniaMugic;
+
 function abrirLootMugic() {
-    if (typeof MAGIAS === 'undefined' || MAGIAS.length === 0) return;
+    if (typeof MAGIAS === 'undefined' || MAGIAS.length === 0) { mostrarMensagemScanner("Banco de Magias Vazio!"); return; }
     
-    if (navigator.vibrate) navigator.vibrate(200);
-    
-    // 1. Usa a raridade própria de cada magia no cartas.js
-    let sorteioRaridade = Math.random();
-    let magiasPossiveis = MAGIAS.filter(item => item.raridade >= sorteioRaridade);
-    
-    let magiaSorteada = magiasPossiveis.length > 0 
-        ? magiasPossiveis[Math.floor(Math.random() * magiasPossiveis.length)] 
-        : MAGIAS[0];
-    
-    // 2. Empilha a Magia
-    let itemExistente = window.inventario.find(c => c.nome === magiaSorteada.nome && c.tipoCarta === "Magia");
-    if (itemExistente) {
-        itemExistente.quantidade = (itemExistente.quantidade || 1) + 1;
-    } else { 
-        let novo = {...magiaSorteada}; novo.id = Date.now(); novo.quantidade = 1; window.inventario.push(novo); 
+    // Constrói a tela do minigame de música
+    if (!document.getElementById("modal-mugic-mini")) {
+        let modal = document.createElement("div");
+        modal.id = "modal-mugic-mini";
+        modal.style.cssText = "display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,20,30,0.98); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
+        document.getElementById("tela-jogo").appendChild(modal);
     }
-    
-    salvarAlbumNaNuvem();
-    mostrarMensagemScanner(`🎵 CÓDIGO MUSICAL DECODIFICADO:\n${magiaSorteada.nome}!`);
-}
 
+    let modal = document.getElementById("modal-mugic-mini");
+    modal.style.display = "flex";
+    
+    modal.innerHTML = `
+        <img src="https://img.icons8.com/fluency/96/musical-notes.png" style="width:70px; margin-bottom:20px; filter:drop-shadow(0 0 15px #00ffff);">
+        <p id="titulo-mugic" style="color:#00ffff; font-weight:bold; font-size:18px; margin-bottom:5px; text-shadow: 0 0 10px #00ffff; text-align:center; letter-spacing: 1px;">SINTONIA MUGIC</p>
+        <p id="sub-mugic" style="color:#aaa; font-size:11px; margin-bottom:30px; text-align:center; width:80%;">TOQUE NA TELA EXATAMENTE QUANDO O CURSOR ESTIVER NA ÁREA VERDE!</p>
+        
+        <div style="width:90%; height:40px; background:#111; border:2px solid #00ffff; border-radius:20px; position:relative; overflow:hidden; box-shadow: inset 0 0 15px #000;">
+            <div style="position:absolute; top:0; left:35%; width:30%; height:100%; background:rgba(0,255,0,0.4); border-left:3px solid #0f0; border-right:3px solid #0f0;"></div>
+            <div id="cursor-mugic" style="position:absolute; top:0; left:0%; width:15px; height:100%; background:#fff; box-shadow:0 0 15px #fff; border-radius:5px;"></div>
+        </div>
+        
+        <div id="resultado-mugic" style="margin-top:30px; display:none; flex-direction:column; align-items:center;">
+            <img id="img-magia-ganha" src="" style="width:90px; border-radius:5px; border:3px solid #00ffff; box-shadow:0 0 20px #00ffff;">
+            <p id="nome-magia-ganha" style="color:#fff; font-size:14px; margin-top:10px; font-weight:bold; letter-spacing: 1px;"></p>
+        </div>
+        
+        <button id="btn-sair-mugic" style="display:none; margin-top:25px; background:#00ffff; color:#000; font-weight:bold; border:none; padding:12px 30px; border-radius:8px; cursor:pointer; font-size:14px; box-shadow:0 0 15px #00ffff;">GUARDAR CÓDIGO</button>
+    `;
+
+    let cursor = document.getElementById("cursor-mugic");
+    let pos = 0;
+    let dir = 2; // Velocidade do cursor
+    let gameAtivo = true;
+
+    // Faz a barrinha correr loucamente de um lado para o outro
+    clearInterval(loopSintoniaMugic);
+    loopSintoniaMugic = setInterval(() => {
+        if (!gameAtivo) return;
+        pos += dir;
+        if (pos >= 95) dir = -2; // Bateu na direita, volta
+        if (pos <= 0) dir = 2;   // Bateu na esquerda, vai
+        cursor.style.left = pos + "%";
+    }, 16);
+
+    // Quando o jogador toca em qualquer lugar da tela preta
+    modal.onclick = function(e) {
+        if (e.target.id === 'btn-sair-mugic') return; // Se clicou no botão de sair, não faz nada
+        if (!gameAtivo) return;
+        
+        gameAtivo = false;
+        clearInterval(loopSintoniaMugic);
+
+        // ZONA VERDE: Fica entre 35% e 65% da barra!
+        if (pos >= 35 && pos <= 65) {
+            // VITÓRIA!
+            cursor.style.background = "#0f0"; // Cursor fica verde
+            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            document.getElementById("titulo-mugic").innerText = "SINTONIA PERFEITA!";
+            document.getElementById("titulo-mugic").style.color = "#0f0";
+            document.getElementById("sub-mugic").style.display = "none";
+
+            // Roda a roleta da Magia
+            let sorteioRaridade = Math.random();
+            let magiasPossiveis = MAGIAS.filter(item => item.raridade >= sorteioRaridade);
+            let magiaSorteada = magiasPossiveis.length > 0 ? magiasPossiveis[Math.floor(Math.random() * magiasPossiveis.length)] : MAGIAS[0];
+            
+            // Exibe a carta musical na tela
+            document.getElementById("img-magia-ganha").src = magiaSorteada.img;
+            document.getElementById("nome-magia-ganha").innerText = magiaSorteada.nome;
+            document.getElementById("resultado-mugic").style.display = "flex";
+            
+            // Ativa o botão de coletar
+            let btn = document.getElementById("btn-sair-mugic");
+            btn.style.display = "block";
+            btn.onclick = () => {
+                let itemExistente = window.inventario.find(c => c.nome === magiaSorteada.nome && c.tipoCarta === "Magia");
+                if (itemExistente) itemExistente.quantidade = (itemExistente.quantidade || 1) + 1;
+                else { let novo = {...magiaSorteada}; novo.id = Date.now(); novo.quantidade = 1; window.inventario.push(novo); }
+                
+                salvarAlbumNaNuvem();
+                modal.style.display = "none";
+                mostrarMensagemScanner("MAGIA SALVA NO ÁLBUM!");
+            };
+
+        } else {
+            // DERROTA! Errou o tempo.
+            cursor.style.background = "#f00"; // Cursor fica vermelho
+            if (navigator.vibrate) navigator.vibrate(400); // Vibrada de falha
+            document.getElementById("titulo-mugic").innerText = "SINAL PERDIDO...";
+            document.getElementById("titulo-mugic").style.color = "#f00";
+            document.getElementById("sub-mugic").innerText = "Você não conseguiu captar a frequência musical.";
+            document.getElementById("sub-mugic").style.color = "#ff5555";
+            
+            // Fecha sozinho após 2 segundos de decepção
+            setTimeout(() => {
+                modal.style.display = "none";
+            }, 2000);
+        }
+    };
+}
 window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
     if (typeof MONSTROS === 'undefined' || MONSTROS.length === 0) return;
 
@@ -1739,6 +1859,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
