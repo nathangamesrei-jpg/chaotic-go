@@ -788,15 +788,22 @@ function abrirLootMugic() {
 }
 
 
-window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
-    if (typeof MONSTROS === 'undefined' || MONSTROS.length === 0) return;
+// 1. Acha as regras oficiais deste Local no banco de dados
+    let regrasLocal = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB.find(l => l.nome === localParaViagem) : null;
+    let triboRegra = regrasLocal ? regrasLocal.triboNativa : "Qualquer";
+    let elementoRegra = regrasLocal ? (regrasLocal.elementoNativo || null) : null;
 
-    // Filtra pela tribo do Local
-    let listaFiltrada = MONSTROS.filter(m => !triboLocalParaViagem || triboLocalParaViagem === "Qualquer" || m.tribo === triboLocalParaViagem);
+    // 2. O FILTRO INTELIGENTE: Checa Tribo E Elemento ao mesmo tempo!
+    let listaFiltrada = MONSTROS.filter(m => {
+        let triboOK = (triboRegra === "Qualquer" || m.tribo === triboRegra);
+        let elementoOK = (!elementoRegra || (m.elementos && m.elementos.includes(elementoRegra)));
+        return triboOK && elementoOK;
+    });
+
+    // Segurança: Se não existir nenhum monstro no jogo com essa regra, spawna todos para o mapa não quebrar vazio
     if (listaFiltrada.length === 0) listaFiltrada = MONSTROS; 
 
     let agora = new Date();
-    
     // CORREÇÃO: Transforma o nome do local e a hora em um NÚMERO REAL para a matemática não dar zero
     let textoSemente = localParaViagem + agora.getDate() + agora.getHours();
     let sementeBase = 0;
@@ -1933,6 +1940,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
