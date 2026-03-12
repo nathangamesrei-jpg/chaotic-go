@@ -500,9 +500,9 @@ function criarMarcadorMonstro(latM, lonM, sorteado, ehPassivo = false) {
 // SISTEMA DE LOOT: BAÚS E MUGICS (VISUAIS UPGRADED)
 // ==========================================
 
-// URLs de imagens de alta qualidade hospedadas externamente (CDNs)
-const IMG_BAU_TEXTURIZADO = "https://cdn.pixabay.com/photo/2021/11/03/17/23/treasure-chest-6766324_1280.png";
-const IMG_MUGIC_TEXTURIZADO = "https://cdn.pixabay.com/photo/2016/09/27/19/20/note-1698226_1280.png";
+// Servidor CDN Público liberado para Desenvolvedores (Estilo 3D)
+const IMG_BAU_TEXTURIZADO = "https://img.icons8.com/fluency/96/treasure-chest.png";
+const IMG_MUGIC_TEXTURIZADO = "https://img.icons8.com/fluency/96/musical-notes.png";
 
 window.criarMarcadorItem = function(latM, lonM, tipoNode) {
     // Usamos L.icon com as imagens externas para alta qualidade visual
@@ -1739,3 +1739,4 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
