@@ -658,14 +658,13 @@ function abrirBauDeLoot() {
 }
 
 // ==========================================
-// O NOVO MINIGAME DE MUGIC: "SINTONIA DE RITMO"
+// O NOVO MINIGAME DE MUGIC: "SINTONIA DE RITMO" (HARD MODE)
 // ==========================================
 let loopSintoniaMugic;
 
 function abrirLootMugic() {
     if (typeof MAGIAS === 'undefined' || MAGIAS.length === 0) { mostrarMensagemScanner("Banco de Magias Vazio!"); return; }
     
-    // Constrói a tela do minigame de música
     if (!document.getElementById("modal-mugic-mini")) {
         let modal = document.createElement("div");
         modal.id = "modal-mugic-mini";
@@ -676,13 +675,21 @@ function abrirLootMugic() {
     let modal = document.getElementById("modal-mugic-mini");
     modal.style.display = "flex";
     
+    // Variáveis do modo Hard!
+    let acertosAtuais = 0;
+    let targetWidth = 18; // Barra verde mais fina (18% da tela)
+    let targetPos = Math.floor(Math.random() * (100 - targetWidth)); // Posição inicial aleatória
+    let gameAtivo = true;
+    let pos = 0;
+    let dir = 2.5; // Velocidade inicial do cursor
+
     modal.innerHTML = `
         <img src="https://img.icons8.com/fluency/96/musical-notes.png" style="width:70px; margin-bottom:20px; filter:drop-shadow(0 0 15px #00ffff);">
         <p id="titulo-mugic" style="color:#00ffff; font-weight:bold; font-size:18px; margin-bottom:5px; text-shadow: 0 0 10px #00ffff; text-align:center; letter-spacing: 1px;">SINTONIA MUGIC</p>
-        <p id="sub-mugic" style="color:#aaa; font-size:11px; margin-bottom:30px; text-align:center; width:80%;">TOQUE NA TELA EXATAMENTE QUANDO O CURSOR ESTIVER NA ÁREA VERDE!</p>
+        <p id="sub-mugic" style="color:#aaa; font-size:11px; margin-bottom:30px; text-align:center; width:80%;">ACERTOS: <span id="contador-acertos" style="color:#0f0; font-weight:bold; font-size:14px;">0/3</span><br>Toque quando o cursor passar no verde!</p>
         
         <div style="width:90%; height:40px; background:#111; border:2px solid #00ffff; border-radius:20px; position:relative; overflow:hidden; box-shadow: inset 0 0 15px #000;">
-            <div style="position:absolute; top:0; left:35%; width:30%; height:100%; background:rgba(0,255,0,0.4); border-left:3px solid #0f0; border-right:3px solid #0f0;"></div>
+            <div id="zona-verde-mugic" style="position:absolute; top:0; left:${targetPos}%; width:${targetWidth}%; height:100%; background:rgba(0,255,0,0.4); border-left:3px solid #0f0; border-right:3px solid #0f0; transition: left 0.15s ease-in-out;"></div>
             <div id="cursor-mugic" style="position:absolute; top:0; left:0%; width:15px; height:100%; background:#fff; box-shadow:0 0 15px #fff; border-radius:5px;"></div>
         </div>
         
@@ -695,76 +702,92 @@ function abrirLootMugic() {
     `;
 
     let cursor = document.getElementById("cursor-mugic");
-    let pos = 0;
-    let dir = 2; // Velocidade do cursor
-    let gameAtivo = true;
+    let zonaVerde = document.getElementById("zona-verde-mugic");
+    let contador = document.getElementById("contador-acertos");
 
-    // Faz a barrinha correr loucamente de um lado para o outro
     clearInterval(loopSintoniaMugic);
     loopSintoniaMugic = setInterval(() => {
         if (!gameAtivo) return;
         pos += dir;
-        if (pos >= 95) dir = -2; // Bateu na direita, volta
-        if (pos <= 0) dir = 2;   // Bateu na esquerda, vai
+        if (pos >= 95) dir = -Math.abs(dir); // Bateu na direita
+        if (pos <= 0) dir = Math.abs(dir);   // Bateu na esquerda
         cursor.style.left = pos + "%";
     }, 16);
 
-    // Quando o jogador toca em qualquer lugar da tela preta
     modal.onclick = function(e) {
-        if (e.target.id === 'btn-sair-mugic') return; // Se clicou no botão de sair, não faz nada
+        if (e.target.id === 'btn-sair-mugic') return; 
         if (!gameAtivo) return;
         
-        gameAtivo = false;
-        clearInterval(loopSintoniaMugic);
+        let margemErro = 1; // Folga mínima de 1% para não ser injusto
+        
+        // Verifica se clicou dentro da Zona Verde
+        if (pos >= (targetPos - margemErro) && pos <= (targetPos + targetWidth + margemErro)) {
+            // ACERTOU O BEAT!
+            acertosAtuais++;
+            contador.innerText = acertosAtuais + "/3";
+            cursor.style.background = "#0f0"; // Pisca verde
+            setTimeout(() => { if(gameAtivo) cursor.style.background = "#fff"; }, 150);
 
-        // ZONA VERDE: Fica entre 35% e 65% da barra!
-        if (pos >= 35 && pos <= 65) {
-            // VITÓRIA!
-            cursor.style.background = "#0f0"; // Cursor fica verde
-            if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-            document.getElementById("titulo-mugic").innerText = "SINTONIA PERFEITA!";
-            document.getElementById("titulo-mugic").style.color = "#0f0";
-            document.getElementById("sub-mugic").style.display = "none";
-
-            // Roda a roleta da Magia
-            let sorteioRaridade = Math.random();
-            let magiasPossiveis = MAGIAS.filter(item => item.raridade >= sorteioRaridade);
-            let magiaSorteada = magiasPossiveis.length > 0 ? magiasPossiveis[Math.floor(Math.random() * magiasPossiveis.length)] : MAGIAS[0];
-            
-            // Exibe a carta musical na tela
-            document.getElementById("img-magia-ganha").src = magiaSorteada.img;
-            document.getElementById("nome-magia-ganha").innerText = magiaSorteada.nome;
-            document.getElementById("resultado-mugic").style.display = "flex";
-            
-            // Ativa o botão de coletar
-            let btn = document.getElementById("btn-sair-mugic");
-            btn.style.display = "block";
-            btn.onclick = () => {
-                let itemExistente = window.inventario.find(c => c.nome === magiaSorteada.nome && c.tipoCarta === "Magia");
-                if (itemExistente) itemExistente.quantidade = (itemExistente.quantidade || 1) + 1;
-                else { let novo = {...magiaSorteada}; novo.id = Date.now(); novo.quantidade = 1; window.inventario.push(novo); }
+            if (acertosAtuais >= 3) {
+                // VITÓRIA FINAL (Cumpriu os 3 acertos)
+                gameAtivo = false;
+                clearInterval(loopSintoniaMugic);
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
                 
-                salvarAlbumNaNuvem();
-                modal.style.display = "none";
-                mostrarMensagemScanner("MAGIA SALVA NO ÁLBUM!");
-            };
+                document.getElementById("titulo-mugic").innerText = "SINTONIA PERFEITA!";
+                document.getElementById("titulo-mugic").style.color = "#0f0";
+                document.getElementById("sub-mugic").style.display = "none";
+                zonaVerde.style.display = "none"; // Some a barrinha
+
+                // Roda a roleta e dá o Loot
+                let sorteioRaridade = Math.random();
+                let magiasPossiveis = MAGIAS.filter(item => item.raridade >= sorteioRaridade);
+                let magiaSorteada = magiasPossiveis.length > 0 ? magiasPossiveis[Math.floor(Math.random() * magiasPossiveis.length)] : MAGIAS[0];
+                
+                document.getElementById("img-magia-ganha").src = magiaSorteada.img;
+                document.getElementById("nome-magia-ganha").innerText = magiaSorteada.nome;
+                document.getElementById("resultado-mugic").style.display = "flex";
+                
+                let btn = document.getElementById("btn-sair-mugic");
+                btn.style.display = "block";
+                btn.onclick = () => {
+                    let itemExistente = window.inventario.find(c => c.nome === magiaSorteada.nome && c.tipoCarta === "Magia");
+                    if (itemExistente) itemExistente.quantidade = (itemExistente.quantidade || 1) + 1;
+                    else { let novo = {...magiaSorteada}; novo.id = Date.now(); novo.quantidade = 1; window.inventario.push(novo); }
+                    
+                    salvarAlbumNaNuvem();
+                    modal.style.display = "none";
+                    mostrarMensagemScanner("MAGIA SALVA NO ÁLBUM!");
+                };
+
+            } else {
+                // PASSOU DE FASE (Muda a zona de lugar e acelera o cursor)
+                if (navigator.vibrate) navigator.vibrate(50);
+                targetPos = Math.floor(Math.random() * (100 - targetWidth)); // Sorteia novo local
+                zonaVerde.style.left = targetPos + "%";
+                dir = dir > 0 ? dir + 0.8 : dir - 0.8; // Acelera a bolinha para ficar mais difícil!
+            }
 
         } else {
-            // DERROTA! Errou o tempo.
-            cursor.style.background = "#f00"; // Cursor fica vermelho
-            if (navigator.vibrate) navigator.vibrate(400); // Vibrada de falha
+            // ERROU O TEMPO! GAME OVER
+            gameAtivo = false;
+            clearInterval(loopSintoniaMugic);
+            cursor.style.background = "#f00"; // Fica vermelho
+            if (navigator.vibrate) navigator.vibrate(400); 
+            
             document.getElementById("titulo-mugic").innerText = "SINAL PERDIDO...";
             document.getElementById("titulo-mugic").style.color = "#f00";
-            document.getElementById("sub-mugic").innerText = "Você não conseguiu captar a frequência musical.";
+            document.getElementById("sub-mugic").innerHTML = "Você não conseguiu captar a frequência.<br>Acertos: " + acertosAtuais;
             document.getElementById("sub-mugic").style.color = "#ff5555";
             
-            // Fecha sozinho após 2 segundos de decepção
             setTimeout(() => {
                 modal.style.display = "none";
-            }, 2000);
+            }, 2500);
         }
     };
 }
+
+
 window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
     if (typeof MONSTROS === 'undefined' || MONSTROS.length === 0) return;
 
@@ -1859,6 +1882,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
