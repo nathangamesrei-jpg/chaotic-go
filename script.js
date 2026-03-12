@@ -1025,33 +1025,7 @@ if (btnSairRadar) {
 // ==========================================
 // 6. SISTEMA DE MENU E ÁLBUM
 // ==========================================
-let apps = document.querySelectorAll(".app-icone");
-apps.forEach((app, index) => {
-    app.onclick = function() {
-        if (modoMenu) {
-            indexSelecionado = index;
-            atualizarSelecao();
-            if (index === 0) {
-                document.getElementById("tela-menu").style.display = "none";
-                document.getElementById("tela-locais").style.display = "flex";
-                modoMenu = false;
-            } else if (index === 1) {
-                abrirAlbum(); 
-            } else if (index === 3) {
-                abrirSocial(); 
-            } else if (index === 4) {
-                abrirPerfil();
-            } else {
-                mostrarMensagemScanner("Módulo em desenvolvimento...");
-            }
-        }
-    };
-});
 
-function atualizarSelecao() {
-    apps.forEach(app => app.classList.remove("app-selecionado"));
-    if(apps[indexSelecionado]) apps[indexSelecionado].classList.add("app-selecionado");
-}
 
 function abrirAlbum() {
     document.getElementById("tela-menu").style.display = "none";
@@ -1959,6 +1933,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
