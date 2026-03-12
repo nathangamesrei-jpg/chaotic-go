@@ -351,7 +351,10 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
 };
 
 document.getElementById("btn-acao-dir").onclick = function() {
-    if (tipoDeCartaAtual === "local") { tocarSFX('viajar'); mudarMusicaFundo('mapa'); iniciarGPS(); }
+    if (tipoDeCartaAtual === "local") { 
+        tocarSFX('viajar'); 
+        mudarMusicaFundo('mapa'); 
+        iniciarGPS(); 
     } else if (tipoDeCartaAtual === "monstro") {
         let novaCaptura = {
             id: Date.now(), nome: monstroAtual.nome, tribo: monstroAtual.tribo || "Azul", tipoCarta: "Criatura", 
@@ -376,7 +379,6 @@ document.getElementById("btn-acao-dir").onclick = function() {
         if(document.getElementById("tela-social")) document.getElementById("tela-social").style.display = "flex";
     }
 };
-
 document.getElementById("btn-acao-esq").onclick = function() {
     if (tipoDeCartaAtual === "local") {
         location.reload(); 
@@ -2005,6 +2007,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
