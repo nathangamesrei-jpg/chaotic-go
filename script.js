@@ -47,6 +47,59 @@ window.amigos = [];
 let amigoAtualTroca = null;
 let minhaCartaOfertada = null;
 let cartaSimuladaAmigo = null;
+
+// ==========================================
+// 🎵 GERENCIADOR DE ÁUDIO MESTRE
+// ==========================================
+const AUDIO = {
+    menu: new Audio('audio/scaner-menu.mp3'),
+    mapa: new Audio('audio/drento-dos-locais.mp3'),
+    lobby: new Audio('audio/dentro-do-trocas.mp3'),
+    minigameCriatura: new Audio('audio/scanear-criaturas.mp3'),
+    minigameMugic: new Audio('audio/scanear-mugic.mp3'),
+    viajar: new Audio('audio/entrando-nos-locais.mp3'),
+    bau: new Audio('audio/animacao-bau.mp3'),
+    spawn: new Audio('audio/aparicao-de-criatura.mp3'),
+    notificacao: new Audio('audio/notificacao-troca.mp3')
+};
+
+// Configuração das Músicas em Loop e Volume (Ajuste os números se ficar alto/baixo)
+AUDIO.menu.loop = true; AUDIO.menu.volume = 0.3;
+AUDIO.mapa.loop = true; AUDIO.mapa.volume = 0.3;
+AUDIO.lobby.loop = true; AUDIO.lobby.volume = 0.3;
+AUDIO.minigameCriatura.loop = true; AUDIO.minigameCriatura.volume = 0.4;
+AUDIO.minigameMugic.loop = true; AUDIO.minigameMugic.volume = 0.4;
+
+// Função de Efeitos Rápidos (SFX)
+window.tocarSFX = function(nome) {
+    if(AUDIO[nome]) {
+        AUDIO[nome].currentTime = 0;
+        AUDIO[nome].play().catch(() => {});
+    }
+};
+
+// Função Inteligente do DJ (Troca a música sem encavalar duas ao mesmo tempo)
+window.mudarMusicaFundo = function(novaMusica) {
+    let musicas = ['menu', 'mapa', 'lobby', 'minigameCriatura', 'minigameMugic'];
+    musicas.forEach(m => {
+        if(AUDIO[m]) { AUDIO[m].pause(); AUDIO[m].currentTime = 0; }
+    });
+    if(novaMusica && AUDIO[novaMusica]) {
+        AUDIO[novaMusica].play().catch(() => {});
+    }
+};
+
+// 1º Clique liga o motor do jogo
+document.body.addEventListener('click', () => {
+    let telaMapa = document.getElementById("tela-mapa").style.display === "flex";
+    let telaMini = document.getElementById("tela-minigame").style.display === "block";
+    let telaMugic = document.getElementById("modal-mugic-mini") && document.getElementById("modal-mugic-mini").style.display === "flex";
+    let telaLobby = document.getElementById("modal-troca") && document.getElementById("modal-troca").style.display === "flex";
+
+    if(AUDIO.menu.paused && !telaMapa && !telaMini && !telaMugic && !telaLobby) {
+        mudarMusicaFundo('menu');
+    }
+}, { once: true });
 // ==========================================
 // 2. SINCRONIZAÇÃO EM TEMPO REAL COM O FIREBASE
 // ==========================================
@@ -140,6 +193,7 @@ onValue(conviteLobbyRef, (snapshot) => {
 
         if (modal && texto && chamadaPendente.nome) {
             texto.innerText = chamadaPendente.nome.toUpperCase() + "\nABRIU UM PORTAL DE TROCAS!";
+            tocarSFX('notificacao');
             modal.style.display = "flex";
             
             // Toca um som ou vibra se possível para alertar o jogador
@@ -297,8 +351,7 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
 };
 
 document.getElementById("btn-acao-dir").onclick = function() {
-    if (tipoDeCartaAtual === "local") {
-        iniciarGPS(); 
+    if (tipoDeCartaAtual === "local") { tocarSFX('viajar'); mudarMusicaFundo('mapa'); iniciarGPS(); }
     } else if (tipoDeCartaAtual === "monstro") {
         let novaCaptura = {
             id: Date.now(), nome: monstroAtual.nome, tribo: monstroAtual.tribo || "Azul", tipoCarta: "Criatura", 
@@ -356,6 +409,7 @@ window.excluirCartaConfirmada = function() {
 }
 
 function voltarAoRadar() {
+    mudarMusicaFundo('mapa');
     setTimeout(() => {
         document.getElementById("tela-detalhe-carta").style.display = "none";
         document.getElementById("painel-viagem").style.display = "none";
@@ -371,6 +425,7 @@ function voltarAoRadar() {
 // 4. LÓGICA DO MINI-GAME E RADAR
 // ==========================================
 function iniciarMinigame(monstro) {
+    mudarMusicaFundo('minigameCriatura');
     monstroAtual = monstro;
     modoMenu = false;
     document.getElementById("tela-mapa").style.display = "none";
@@ -558,6 +613,7 @@ window.criarMarcadorItem = function(latM, lonM, tipoNode) {
 // O MOTOR CINEMÁTICO DE DROP DO BAÚ
 // ==========================================
 function abrirBauDeLoot() {
+    tocarSFX('bau');
     if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
     
     // 1. O Sorteador de Destino (Calcula o loot primeiro)
@@ -663,6 +719,7 @@ function abrirBauDeLoot() {
 let loopSintoniaMugic;
 
 function abrirLootMugic() {
+    mudarMusicaFundo('minigameMugic');
     if (typeof MAGIAS === 'undefined' || MAGIAS.length === 0) { mostrarMensagemScanner("Banco de Magias Vazio!"); return; }
     
     if (!document.getElementById("modal-mugic-mini")) {
@@ -858,6 +915,7 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
         criarMarcadorMonstro(lat + offLat, lon + offLon, sorteadoPassivo, true);
         
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+        tocarSFX('spawn');
         mostrarMensagemScanner("⚠️ UMA CRIATURA SELVAGEM APARECEU!");
     }
 }
@@ -1559,6 +1617,7 @@ window.iniciarTroca = function(index) {
 window.trocaEmAndamento = false; // O Cadeado Global
 
 function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
+    mudarMusicaFundo('lobby');
     salaTrocaAtual = salaId;
     souP1 = isP1;
     minhaCartaOfertada = null;
@@ -1792,6 +1851,7 @@ function executarTrocaFinal(sala) {
 }
 
 window.fecharTroca = function() { 
+    mudarMusicaFundo('menu');
     if(salaTrocaAtual && souP1) { remove(ref(db, 'salas_troca/' + salaTrocaAtual)); }
     salaTrocaAtual = null;
     window.trocaEmAndamento = false; // Garante o reset do cadeado
@@ -1945,6 +2005,7 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+
 
 
 
