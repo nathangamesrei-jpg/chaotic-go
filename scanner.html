@@ -23,14 +23,15 @@
         <div class="tela-digital" id="tela-jogo">
             
             <div id="tela-menu">
-                <div class="menu-grade">
-                    <div class="app-icone" id="app-mapa"><span class="icone-emoji">📡</span><span class="app-texto">MAPA</span></div>
-                    <div class="app-icone" id="app-cartas"><span class="icone-emoji">🎴</span><span class="app-texto">CARTAS</span></div>
-                    <div class="app-icone" id="app-batalha"><span class="icone-emoji">⚔️</span><span class="app-texto">DROME</span></div>
-                    <div class="app-icone" id="app-social"><span class="icone-emoji">🤝</span><span class="app-texto">SOCIAL</span></div>
-                    <div class="app-icone" id="app-perfil"><span class="icone-emoji">👤</span><span class="app-texto">PERFIL</span></div>
-                </div>
-            </div>
+    <div class="menu-grade">
+        <div class="app-icone" id="app-mapa"><span class="icone-emoji">📡</span><span class="app-texto">MAPA</span></div>
+        <div class="app-icone" id="app-cartas"><span class="icone-emoji">🎴</span><span class="app-texto">CARTAS</span></div>
+        <div class="app-icone" id="app-batalha"><span class="icone-emoji">⚔️</span><span class="app-texto">DROME</span></div>
+        <div class="app-icone" id="app-social"><span class="icone-emoji">🤝</span><span class="app-texto">SOCIAL</span></div>
+        <div class="app-icone" id="app-perfil"><span class="icone-emoji">👤</span><span class="app-texto">PERFIL</span></div>
+        <div class="app-icone" id="app-decks"><span class="icone-emoji">🗂️</span><span class="app-texto">DECKS</span></div>
+    </div>
+</div>
 
             <div id="tela-locais" style="display: none;">
                 <p class="titulo-tela">SELECIONE O LOCAL</p>
@@ -206,6 +207,32 @@
             </div>
 
         </div> 
+
+        <div id="tela-decks" class="tela-jogo" style="display: none; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box; background: #0a0f0a;">
+            <h2 style="color: #4CAF50; font-size: 16px; margin-bottom: 10px; text-shadow: 0 0 10px #4CAF50;">OFICINA DE DECKS</h2>
+            
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; width: 100%; justify-content: space-between;">
+                <select id="seletor-modo-deck" style="background: #111; color: #00ffff; border: 1px solid #00ffff; padding: 5px; border-radius: 5px; font-weight: bold; flex: 1;">
+                    <option value="6x6">Modo Principal (6x6)</option>
+                    <option value="3x3">Modo Rápido (3x3)</option>
+                    <option value="1x1">Modo Duelo (1x1)</option>
+                </select>
+                
+                <select id="seletor-slot-deck" style="background: #111; color: #ffd700; border: 1px solid #ffd700; padding: 5px; border-radius: 5px; font-weight: bold; flex: 1;">
+                    <option value="1">Deck Slot 1</option>
+                    <option value="2">Deck Slot 2</option>
+                    <option value="3">Deck Slot 3</option>
+                    <option value="4">Deck Slot 4</option>
+                    <option value="5">Deck Slot 5</option>
+                </select>
+            </div>
+
+            <div id="painel-construcao-deck" style="width: 100%; flex: 1; background: #112211; border: 1px solid #4CAF50; border-radius: 8px; padding: 10px; overflow-y: auto;">
+                <p style="color: #aaa; font-size: 11px; text-align: center; margin-top: 50px;">Inicializando banco de dados de cartas...</p>
+            </div>
+
+            <button id="btn-voltar-decks" style="margin-top: 15px; padding: 10px 30px; background: transparent; border: 2px solid #ff5555; color: #ff5555; font-weight: bold; border-radius: 5px; cursor: pointer;">Sair da Oficina</button>
+        </div>
         
         <div class="painel-botoes" id="painel-botoes-fisicos">
             <div class="linha-botoes"><button class="btn-direcional" id="btn-cima">▲</button></div>
