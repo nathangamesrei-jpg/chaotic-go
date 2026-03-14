@@ -774,7 +774,18 @@ html, body {
 /* Áreas divididas */
 .area-pilhas { display: flex; flex-direction: column; gap: 20px; justify-content: center; width: 25%; }
 .area-formacao { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; width: 50%; }
-.area-mugics { display: flex; flex-direction: column; gap: 5px; align-items: center; justify-content: center; width: 25%; background: rgba(0,255,255,0.1); border-radius: 10px; border: 1px solid rgba(0,255,255,0.3); padding: 5px; }
+.area-mugics { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px; /* Mais espaço entre os mugics */
+    align-items: center; 
+    justify-content: center; 
+    width: 25%; 
+    background: rgba(0,255,255,0.1); 
+    border-radius: 10px; 
+    border: 1px solid rgba(0,255,255,0.3); 
+    padding: 10px 5px; /* Ajuste no padding para não cortar as bordas */
+}
 
 /* Pilhas 3D (Ataques e Locais) */
 .pilha-cartas {
@@ -833,30 +844,34 @@ html, body {
     box-shadow: 2px 2px 5px rgba(0,0,0,0.8);
 }
 
-/* Seu código existente para o heptágono, com um leve ajuste */
+/* =========================================
+   MUGICS - BORDAS HEPTAGONAIS CORRIGIDAS
+   ========================================= */
+/* A borda externa de luz neon (um pouco maior) */
 .slot-mugic-heptagono {
-    position: relative; /* Importante para o posicionamento da borda */
-    width: 65px;
-    height: 90px;
-    background: #111; /* Cor de fundo do slot */
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%); /* Seu clip-path original */
-    margin: 0 auto;
+    width: 45px;  /* Largura e Altura quase iguais para o heptágono ficar simétrico */
+    height: 45px;
+    background: #00ffff; /* A cor da Borda Neon */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    overflow: hidden; /* Para garantir que o conteúdo não saia */
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); /* Leve brilho atrás */
+    transition: transform 0.2s;
 }
 
-/* Criando a borda com o pseudoelemento ::before */
-.slot-mugic-heptagono::before {
+.slot-mugic-heptagono:hover {
+    transform: scale(1.1);
+    background: #fff; /* Pisca branco ao passar o mouse */
+}
+
+/* O "buraco" escuro do meio onde a carta entra (um pouco menor) */
+.slot-mugic-heptagono::after {
     content: '';
+    width: 41px;  /* 4px menor que o contêiner principal */
+    height: 41px;
+    background: #050a0f; /* Cor escura do fundo */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
     position: absolute;
-    top: -2px;    /* Espessura da borda no topo */
-    left: -2px;   /* Espessura da borda na esquerda */
-    right: -2px;  /* Espessura da borda na direita */
-    bottom: -2px; /* Espessura da borda embaixo */
-    background: #00ffff; /* Cor da borda (neon) */
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%); /* O MESMO clip-path do slot principal */
-    z-index: -1; /* Coloca a borda atrás do slot principal */
 }
