@@ -1941,19 +1941,34 @@ apps.forEach((app, index) => {
                 document.getElementById("tela-menu").style.display = "none";
                 document.getElementById("tela-locais").style.display = "flex";
                 modoMenu = false;
-                renderizarCarrosselLocais(); // <-- MAGIA AQUI: Carrega o carrossel ao abrir!
+                renderizarCarrosselLocais(); 
             } else if (index === 1) {
                 abrirAlbum();
+            } else if (index === 2) {
+                mostrarMensagemScanner("Drome em manutenção..."); // Index 2 é o Drome antigo
             } else if (index === 3) {
                 abrirSocial();
             } else if (index === 4) {
                 abrirPerfil();
-            } else {
-                mostrarMensagemScanner("Módulo em desenvolvimento...");
+            } else if (index === 5) {
+                abrirOficinaDecks(); // <--- NOSSA NOVA TELA AQUI!
             }
         }
     };
 });
+
+// A função que liga a tela e o botão de voltar
+window.abrirOficinaDecks = function() {
+    document.getElementById("tela-menu").style.display = "none";
+    document.getElementById("tela-decks").style.display = "flex";
+    modoMenu = false;
+    
+    // Música de fundo caso a gente coloque uma música de "oficina" depois
+    mudarMusicaFundo('menu'); 
+};
+
+let btnVoltarDecks = document.getElementById("btn-voltar-decks");
+if(btnVoltarDecks) { btnVoltarDecks.onclick = () => location.reload(); }
 
 function atualizarSelecao() {
     apps.forEach(app => app.classList.remove("app-selecionado"));
