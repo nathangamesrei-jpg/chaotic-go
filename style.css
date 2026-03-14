@@ -841,11 +841,10 @@ html, body {
 .area-mugics { 
     display: flex; 
     flex-direction: column; 
-    gap: 8px; 
+    gap: 4px; /* ⬅️ Diminuí o espaço entre eles para caber a torre toda! */
     align-items: center; 
     justify-content: center; 
-    width: 60px; 
-    /* Removemos bordas e fundos para ficar limpo! */
+    width: 45px; /* Caixa mais fina para acompanhar os mugics menores */
 }
 
 /* =========================================
@@ -853,8 +852,8 @@ html, body {
    ========================================= */
 .slot-mugic-heptagono {
     position: relative; 
-    width: 45px;  
-    height: 45px; 
+    width: 30px;  /* ⬅️ Reduzimos o tamanho para os 6 caberem na vertical */
+    height: 30px; 
     background: #00ffff; /* A cor Neon da borda */
     /* HEPTÁGONO RESTAURADO (7 pontas) */
     clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
@@ -875,8 +874,8 @@ html, body {
 .slot-mugic-heptagono::after {
     content: '';
     position: absolute;
-    width: 41px; /* 4 pixels menor para criar a borda ciano de 2px */
-    height: 41px; 
+    width: 26px; /* ⬅️ Exatamente 4 pixels menor para manter a borda de 2px! */
+    height: 26px; 
     background: #050a0f; /* Mesma cor de fundo do tabuleiro */
     clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
     top: 50%; 
