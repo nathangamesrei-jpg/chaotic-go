@@ -837,6 +837,7 @@ html, body {
    MUGICS - BORDAS HEPTAGONAIS CORRIGIDAS
    ========================================= */
 /* Container da direita (agora protegido contra esmagamentos) */
+/* Container da direita (agora INVISÍVEL, apenas organiza os mugics) */
 .area-mugics { 
     display: flex; 
     flex-direction: column; 
@@ -844,48 +845,41 @@ html, body {
     align-items: center; 
     justify-content: center; 
     width: 60px; 
-    min-width: 60px; /* Proíbe o navegador de encolher a caixa */
-    background: rgba(0,255,255,0.05); /* Fundo um pouco mais escuro para o neon brilhar mais */
-    border-radius: 10px; 
-    border: 1px solid #00ffff;
-    box-shadow: inset 0 0 10px rgba(0,255,255,0.1); 
-    padding: 15px 0; 
+    /* Removemos bordas e fundos para ficar limpo! */
 }
 
 /* =========================================
-   MUGICS - CRISTAIS HEXAGONAIS NEON
+   MUGICS - HEPTÁGONOS ORIGINAIS COM BORDA NEON
    ========================================= */
 .slot-mugic-heptagono {
     position: relative; 
-    width: 36px;  /* Largura do cristal */
-    height: 46px; /* Altura maior para ficar em pé */
+    width: 45px;  
+    height: 45px; 
     background: #00ffff; /* A cor Neon da borda */
-    /* Formato de Cristal (Hexágono Vertical) */
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    /* HEPTÁGONO RESTAURADO (7 pontas) */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    flex-shrink: 0; /* 🛡️ ESCUDO: Proíbe o Flexbox de amassar o cristal! */
-    transition: transform 0.2s, filter 0.2s;
-    /* MAGIA NEON: Drop-shadow brilha mesmo com o clip-path cortando as beiradas! */
-    filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.8));
+    flex-shrink: 0; /* Proíbe o navegador de esmagar as cartas */
+    transition: transform 0.2s;
 }
 
 .slot-mugic-heptagono:hover {
     transform: scale(1.1);
-    filter: drop-shadow(0 0 8px #00ffff) brightness(1.3);
+    background: #fff; /* Pisca branco ao passar o mouse */
 }
 
 /* O "buraco" escuro do meio onde a carta entra */
 .slot-mugic-heptagono::after {
     content: '';
     position: absolute;
-    width: 32px; /* Exatamente 4 pixels menor para dar a borda de 2px */
-    height: 42px; 
-    background: #050a0f; /* Fundo preto */
-    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    width: 41px; /* 4 pixels menor para criar a borda ciano de 2px */
+    height: 41px; 
+    background: #050a0f; /* Mesma cor de fundo do tabuleiro */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
     top: 50%; 
     left: 50%; 
-    transform: translate(-50%, -50%); 
+    transform: translate(-50%, -50%); /* Centraliza a borda milimetricamente */
 }
