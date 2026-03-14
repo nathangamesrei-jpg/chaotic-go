@@ -2012,8 +2012,7 @@ window.abrirOficinaDecks = function() {
     if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
 };
 
-let btnVoltarDecks = document.getElementById("btn-voltar-decks");
-if(btnVoltarDecks) { btnVoltarDecks.onclick = () => location.reload(); }
+
 
 document.getElementById("btn-dir").onclick = () => { 
     if(modoMenu && indexSelecionado < apps.length - 1) { indexSelecionado++; atualizarSelecao(); } 
