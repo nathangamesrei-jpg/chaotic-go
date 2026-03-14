@@ -886,3 +886,121 @@ html, body {
 .escondido {
     display: none !important; /* Faz o elemento sumir do tabuleiro sem quebrar o layout */
 }
+/* =========================================
+   14. COMPONENTES DE AJUDA & LIVRO DE REGRAS
+   ========================================= */
+
+/* Botão de Ajuda "?" (Círculo Neon) */
+.btn-help-decks {
+    width: 30px;
+    height: 30px;
+    border: 2px solid #00ffff;
+    border-radius: 50%;
+    color: #00ffff;
+    background: transparent;
+    font-size: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    transition: background 0.2s, box-shadow 0.2s;
+    user-select: none; /* Proíbe seleção de texto */
+}
+
+.btn-help-decks:hover {
+    background: rgba(0, 255, 255, 0.2);
+    box-shadow: 0 0 15px #00ffff;
+}
+
+/* Botão Fechar do Modal (×) */
+.btn-close-livro {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    color: #ff5555;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+}
+
+.btn-close-livro:hover {
+    color: #fff;
+}
+
+/* --- O Livro Animado --- */
+.livro {
+    width: 280px; /* Tamanho fininho para caber no visor */
+    height: 400px;
+    background: #111; /* Cor de fundo escura original */
+    border: 2px solid #00ffff;
+    border-radius: 10px;
+    perspective: 1500px; /* Dá a sensação de 3D */
+    position: relative;
+    overflow: hidden; /* Corta o conteúdo vazado durante a animação */
+}
+
+/* As Páginas do Livro */
+.pagina {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: url('https://img.icons8.com/fluency/96/stack-of-cards.png') no-repeat center center; /* Sutil ícone de fundo */
+    background-size: contain; /* Ícone de fundo original */
+    background: #0a0f0a; /* Fundo escuro */
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backface-visibility: hidden; /* Esconde a parte de trás da página ao girar */
+    transition: transform 0.6s; /* Tempo da animação de virada */
+    transform-origin: left center; /* O eixo de rotação é na esquerda (como uma lombada) */
+    opacity: 0; /* Começa invisível */
+    z-index: 1; /* Começa em z-index baixo */
+}
+
+/* Página Ativa (vísivel e de pé) */
+.pagina-ativa {
+    opacity: 1;
+    z-index: 10;
+    transform: rotateY(0deg); /* Posição normal */
+}
+
+/* Página Anterior (girada para trás) */
+.pagina-anterior {
+    transform: rotateY(-180deg); /* Gira 180 graus para trás */
+}
+
+/* Estilização do Conteúdo do Livro */
+.livro h3, .livro h4 { color: #00ffff; margin-bottom: 10px; text-shadow: 0 0 5px #00ffff; text-align: center;}
+.livro h3 { font-size: 20px; text-transform: uppercase; }
+.livro p { color: #fff; font-size: 12px; margin-bottom: 15px; text-align: center; }
+.livro ul { color: #4CAF50; font-size: 11px; margin-top: 10px; padding-left: 15px; text-align: left; list-style-type: decimal; }
+.livro li { margin-bottom: 5px; line-height: 1.3;}
+.livro strong { color: #fff; }
+
+/* Navegação do Livro (Setas) */
+.navegacao-livro {
+    display: flex;
+    gap: 30px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.seta-livro {
+    background: transparent;
+    border: none;
+    color: #4CAF50;
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.2s;
+    user-select: none;
+}
+
+.seta-livro:hover {
+    color: #00ffff;
+}
