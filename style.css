@@ -833,16 +833,30 @@ html, body {
     box-shadow: 2px 2px 5px rgba(0,0,0,0.8);
 }
 
-/* O Heptágono dos Mugics */
+/* Seu código existente para o heptágono, com um leve ajuste */
 .slot-mugic-heptagono {
-    width: 30px;
-    height: 30px;
-    background: #1a0a2a;
-    border: 2px solid #a020f0;
-    /* Recorte matemático para fazer um heptágono */
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
-    box-shadow: inset 0 0 10px rgba(160,32,240,0.5);
+    position: relative; /* Importante para o posicionamento da borda */
+    width: 65px;
+    height: 90px;
+    background: #111; /* Cor de fundo do slot */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%); /* Seu clip-path original */
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: transform 0.2s;
+    overflow: hidden; /* Para garantir que o conteúdo não saia */
 }
-.slot-mugic-heptagono:hover { transform: scale(1.2); background: #3a1a5a; }
+
+/* Criando a borda com o pseudoelemento ::before */
+.slot-mugic-heptagono::before {
+    content: '';
+    position: absolute;
+    top: -2px;    /* Espessura da borda no topo */
+    left: -2px;   /* Espessura da borda na esquerda */
+    right: -2px;  /* Espessura da borda na direita */
+    bottom: -2px; /* Espessura da borda embaixo */
+    background: #00ffff; /* Cor da borda (neon) */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%); /* O MESMO clip-path do slot principal */
+    z-index: -1; /* Coloca a borda atrás do slot principal */
+}
