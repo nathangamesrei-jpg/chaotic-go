@@ -1965,7 +1965,51 @@ window.abrirOficinaDecks = function() {
 
 // Declarando o botão de voltar UMA ÚNICA VEZ
 let btnVoltarDecks = document.getElementById("btn-voltar-decks");
+// ==========================================
+// ⚙️ LÓGICA DO TABULEIRO DE DECKS
+// ==========================================
+let btnVoltarDecks = document.getElementById("btn-voltar-decks");
 if(btnVoltarDecks) { btnVoltarDecks.onclick = () => location.reload(); }
+
+let seletorModo = document.getElementById("seletor-modo-deck");
+if(seletorModo) {
+    seletorModo.addEventListener("change", function() {
+        let modo = this.value; // Pega o que você escolheu (6x6, 3x3 ou 1x1)
+        
+        let linha3 = document.querySelector(".linha-3"); // Fileira de trás (3 slots)
+        let linha2 = document.querySelector(".linha-2"); // Fileira do meio (2 slots)
+        let mugics = document.querySelectorAll(".slot-mugic-heptagono"); // Pega todos os 6 mugics
+
+        // MODO 6x6 (Mostra tudo)
+        if(modo === "6x6") {
+            linha3.classList.remove("escondido");
+            linha2.classList.remove("escondido");
+            mugics.forEach(m => m.classList.remove("escondido"));
+        } 
+        // MODO 3x3 RÁPIDO (Referência 2-1)
+        else if(modo === "3x3") {
+            linha3.classList.add("escondido");   // Some com os 3 de trás
+            linha2.classList.remove("escondido"); // Mantém os 2 do meio
+            
+            // Varre os Mugics e esconde os que passarem do número 3
+            mugics.forEach((m, index) => {
+                if(index >= 3) m.classList.add("escondido");
+                else m.classList.remove("escondido");
+            });
+        } 
+        // MODO 1x1 DUELO
+        else if(modo === "1x1") {
+            linha3.classList.add("escondido"); // Some com os 3 de trás
+            linha2.classList.add("escondido"); // Some com os 2 do meio
+            
+            // Varre os Mugics e deixa apenas o PRIMEIRO
+            mugics.forEach((m, index) => {
+                if(index >= 1) m.classList.add("escondido");
+                else m.classList.remove("escondido");
+            });
+        }
+    });
+}
 
 function atualizarSelecao() {
     apps.forEach(app => app.classList.remove("app-selecionado"));
