@@ -1981,13 +1981,19 @@ document.getElementById("btn-escanear").onclick = function() {
             document.getElementById("tela-menu").style.display = "none";
             document.getElementById("tela-locais").style.display = "flex";
             modoMenu = false;
-            renderizarCarrosselLocais(); // <-- MAGIA AQUI TAMBÉM
+            renderizarCarrosselLocais(); 
         } else if (indexSelecionado === 1) {
             abrirAlbum();
+        } else if (indexSelecionado === 2) {
+            mostrarMensagemScanner("Drome em manutenção...");
         } else if (indexSelecionado === 3) {
             abrirSocial();
         } else if (indexSelecionado === 4) {
             abrirPerfil();
+        } else if (indexSelecionado === 5) {
+            abrirOficinaDecks(); // <--- AGORA O BOTÃO SCAN SABE O QUE FAZER!
+        } else {
+            mostrarMensagemScanner("Módulo em desenvolvimento...");
         }
     } else if (document.getElementById("tela-minigame") && document.getElementById("tela-minigame").style.display === "block") {
         verificarAcerto();
@@ -1995,6 +2001,19 @@ document.getElementById("btn-escanear").onclick = function() {
         escanearLocalAtual();
     }
 };
+
+// Garantindo que a função de abrir a tela existe e está ligada
+window.abrirOficinaDecks = function() {
+    document.getElementById("tela-menu").style.display = "none";
+    document.getElementById("tela-decks").style.display = "flex";
+    modoMenu = false;
+    
+    // Mantém a música do menu tocando (se o motor de áudio estiver ligado)
+    if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
+};
+
+let btnVoltarDecks = document.getElementById("btn-voltar-decks");
+if(btnVoltarDecks) { btnVoltarDecks.onclick = () => location.reload(); }
 
 document.getElementById("btn-dir").onclick = () => { 
     if(modoMenu && indexSelecionado < apps.length - 1) { indexSelecionado++; atualizarSelecao(); } 
