@@ -1874,24 +1874,21 @@ let indiceLocalAtual = 0;
 
 // O Motor que constrói a tela de seleção de lugares
 window.renderizarCarrosselLocais = function() {
-    // 1. Vasculha o seu álbum e separa apenas as cartas do tipo "Local"
     let locaisUnicos = {};
     window.inventario.forEach(item => {
         if (item.tipoCarta === "Local") {
-            locaisUnicos[item.nome] = item; // Impede que apareça repetido
+            locaisUnicos[item.nome] = item;
         }
     });
     locaisDesbloqueados = Object.values(locaisUnicos);
 
-    if (locaisDesbloqueados.length === 0) return; // Segurança
+    if (locaisDesbloqueados.length === 0) return;
 
-    // 2. Faz o carrossel dar a volta
     if (indiceLocalAtual >= locaisDesbloqueados.length) indiceLocalAtual = 0;
     if (indiceLocalAtual < 0) indiceLocalAtual = locaisDesbloqueados.length - 1;
 
     let localAtual = locaisDesbloqueados[indiceLocalAtual];
 
-    // 3. Atualiza a tela (NOME EM CIMA DA CARTA, empilhados em coluna)
     let container = document.querySelector(".carrossel-cartas");
     container.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center;">
@@ -1945,7 +1942,7 @@ apps.forEach((app, index) => {
             } else if (index === 1) {
                 abrirAlbum();
             } else if (index === 2) {
-                mostrarMensagemScanner("Drome em manutenção..."); // Index 2 é o Drome antigo
+                mostrarMensagemScanner("Drome em manutenção..."); 
             } else if (index === 3) {
                 abrirSocial();
             } else if (index === 4) {
@@ -1957,16 +1954,16 @@ apps.forEach((app, index) => {
     };
 });
 
-// A função que liga a tela e o botão de voltar
+// A função que liga a tela e o botão de voltar da Oficina
 window.abrirOficinaDecks = function() {
     document.getElementById("tela-menu").style.display = "none";
     document.getElementById("tela-decks").style.display = "flex";
     modoMenu = false;
     
-    // Música de fundo caso a gente coloque uma música de "oficina" depois
-    mudarMusicaFundo('menu'); 
+    if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
 };
 
+// Declarando o botão de voltar UMA ÚNICA VEZ
 let btnVoltarDecks = document.getElementById("btn-voltar-decks");
 if(btnVoltarDecks) { btnVoltarDecks.onclick = () => location.reload(); }
 
@@ -1991,7 +1988,7 @@ document.getElementById("btn-escanear").onclick = function() {
         } else if (indexSelecionado === 4) {
             abrirPerfil();
         } else if (indexSelecionado === 5) {
-            abrirOficinaDecks(); // <--- AGORA O BOTÃO SCAN SABE O QUE FAZER!
+            abrirOficinaDecks(); 
         } else {
             mostrarMensagemScanner("Módulo em desenvolvimento...");
         }
@@ -2001,18 +1998,6 @@ document.getElementById("btn-escanear").onclick = function() {
         escanearLocalAtual();
     }
 };
-
-// Garantindo que a função de abrir a tela existe e está ligada
-window.abrirOficinaDecks = function() {
-    document.getElementById("tela-menu").style.display = "none";
-    document.getElementById("tela-decks").style.display = "flex";
-    modoMenu = false;
-    
-    // Mantém a música do menu tocando (se o motor de áudio estiver ligado)
-    if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
-};
-
-
 
 document.getElementById("btn-dir").onclick = () => { 
     if(modoMenu && indexSelecionado < apps.length - 1) { indexSelecionado++; atualizarSelecao(); } 
@@ -2040,7 +2025,6 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
-
 
 
 
