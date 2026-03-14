@@ -1963,8 +1963,7 @@ window.abrirOficinaDecks = function() {
     if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
 };
 
-// Declarando o botão de voltar UMA ÚNICA VEZ
-let btnVoltarDecks = document.getElementById("btn-voltar-decks");
+
 // ==========================================
 // ⚙️ LÓGICA DO TABULEIRO DE DECKS
 // ==========================================
