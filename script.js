@@ -1965,11 +1965,79 @@ window.abrirOficinaDecks = function() {
 
 
 // ==========================================
-// ⚙️ LÓGICA DO TABULEIRO DE DECKS
+// 📚 LÓGICA DO MANUAL DE REGRAS (LIVRO ANIMADO)
 // ==========================================
-let btnVoltarDecks = document.getElementById("btn-voltar-decks");
-if(btnVoltarDecks) { btnVoltarDecks.onclick = () => location.reload(); }
 
+// Função para Abrir o Modal do Livro
+window.abrirLivroRegras = function() {
+    let modal = document.getElementById("modal-livro-regras");
+    if(modal) {
+        modal.classList.remove("escondido"); // Mostra o modal
+        tocarSFX('notificacao'); // Toca o som de notificação (opcional)
+        // Reinicia para a primeira página ao abrir
+        let paginas = document.querySelectorAll(".pagina");
+        paginas.forEach((p, index) => {
+            p.classList.remove("pagina-ativa", "pagina-anterior");
+            if(index === 0) p.classList.add("pagina-ativa");
+            else p.classList.add("pagina-proxima");
+        });
+        window.paginaAtualLivro = 0; // Controla a página atual globalmente
+    }
+};
+
+// Função para Fechar o Modal do Livro
+window.fecharLivroRegras = function() {
+    let modal = document.getElementById("modal-livro-regras");
+    if(modal) {
+        modal.classList.add("escondido"); // Esconde o modal
+        mudarMusicaFundo('menu'); // Toca a música do menu (opcional)
+    }
+};
+
+// Função Inteligente para Mudar Página
+window.mudarPaginaLivro = function(direcao) {
+    let paginas = document.querySelectorAll(".pagina");
+    let numPaginas = paginas.length;
+    let novaPagina = window.paginaAtualLivro + direcao;
+
+    // Impede de ir além da primeira ou última página
+    if(novaPagina < 0 || novaPagina >= numPaginas) return;
+
+    // Aplica as classes CSS para animação de virada
+    paginas.forEach((p, index) => {
+        p.classList.remove("pagina-ativa", "pagina-anterior", "pagina-proxima");
+        
+        if(index === novaPagina) {
+            p.classList.add("pagina-ativa"); // A página que está sendo lida
+        } else if(index < novaPagina) {
+            p.classList.add("pagina-anterior"); // Páginas que já foram viradas
+        } else {
+            p.classList.add("pagina-proxima"); // Páginas que ainda não foram lidas
+        }
+    });
+
+    window.paginaAtualLivro = novaPagina; // Atualiza o índice da página atual
+    tocarSFX('viajar'); // Toca o som de virar página (opcional, use o mesmo som de 'viajar')
+};
+
+// Adiciona os Ouvintes de Evento (onclick)
+if(document.getElementById("btn-help-decks")) {
+    document.getElementById("btn-help-decks").onclick = () => abrirLivroRegras();
+}
+
+if(document.getElementById("btn-close-livro")) {
+    document.getElementById("btn-close-livro").onclick = () => fecharLivroRegras();
+}
+
+if(document.getElementById("btn-pagina-anterior")) {
+    document.getElementById("btn-pagina-anterior").onclick = () => mudarPaginaLivro(-1);
+}
+
+if(document.getElementById("btn-pagina-proxima")) {
+    document.getElementById("btn-pagina-proxima").onclick = () => mudarPaginaLivro(1);
+}
+
+// ⚙️ LÓGICA DO TABULEIRO DE DECKS
 let seletorModo = document.getElementById("seletor-modo-deck");
 if(seletorModo) {
     seletorModo.addEventListener("change", function() {
