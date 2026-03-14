@@ -775,20 +775,7 @@ html, body {
 .area-pilhas { display: flex; flex-direction: column; gap: 20px; justify-content: center; width: 75px; align-items: center; }
 .area-formacao { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; flex: 1; } /* flex: 1 faz o meio empurrar a lateral direita */
 
-.area-mugics { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 8px; 
-    align-items: center; 
-    justify-content: center; 
-    width: 65px; /* Força a largura exata */
-    min-width: 65px; /* Impede o sistema de tentar encolher a caixa */
-    max-width: 65px; /* Impede o sistema de tentar esticar a caixa */
-    background: rgba(0,255,255,0.1); 
-    border-radius: 10px; 
-    border: 1px solid rgba(0,255,255,0.3); 
-    padding: 10px 0; 
-}
+
 /* Pilhas 3D (Ataques e Locais) */
 .pilha-cartas {
     width: 60px;
@@ -849,31 +836,56 @@ html, body {
 /* =========================================
    MUGICS - BORDAS HEPTAGONAIS CORRIGIDAS
    ========================================= */
+/* Container da direita (agora protegido contra esmagamentos) */
+.area-mugics { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 8px; 
+    align-items: center; 
+    justify-content: center; 
+    width: 60px; 
+    min-width: 60px; /* Proíbe o navegador de encolher a caixa */
+    background: rgba(0,255,255,0.05); /* Fundo um pouco mais escuro para o neon brilhar mais */
+    border-radius: 10px; 
+    border: 1px solid #00ffff;
+    box-shadow: inset 0 0 10px rgba(0,255,255,0.1); 
+    padding: 15px 0; 
+}
+
+/* =========================================
+   MUGICS - CRISTAIS HEXAGONAIS NEON
+   ========================================= */
 .slot-mugic-heptagono {
-    position: relative; /* Mantém o centro escuro preso aqui dentro */
-    width: 45px;
-    height: 45px;
-    background: #00ffff; /* A cor da Borda Neon fica no fundo brilhando */
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+    position: relative; 
+    width: 36px;  /* Largura do cristal */
+    height: 46px; /* Altura maior para ficar em pé */
+    background: #00ffff; /* A cor Neon da borda */
+    /* Formato de Cristal (Hexágono Vertical) */
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); /* Brilho neon externo */
-    transition: transform 0.2s;
+    flex-shrink: 0; /* 🛡️ ESCUDO: Proíbe o Flexbox de amassar o cristal! */
+    transition: transform 0.2s, filter 0.2s;
+    /* MAGIA NEON: Drop-shadow brilha mesmo com o clip-path cortando as beiradas! */
+    filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.8));
 }
 
 .slot-mugic-heptagono:hover {
     transform: scale(1.1);
-    background: #fff; /* Pisca branco ao passar o mouse */
+    filter: drop-shadow(0 0 8px #00ffff) brightness(1.3);
 }
 
 /* O "buraco" escuro do meio onde a carta entra */
 .slot-mugic-heptagono::after {
     content: '';
     position: absolute;
-    width: 41px; /* Exatamente 4 pixels menor que o contêiner original (dá 2px de borda) */
-    height: 41px;
-    background: #050a0f; /* Cor escura do fundo (apaga o meio) */
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
-    top: 50%; /* Empurra para o meio da altura */
-    left: 50%; /* Empurra para o meio da largura */
-    transform: translate(-50%, -50%); /* Centraliza milimetricamente nos eixos X e Y */
+    width: 32px; /* Exatamente 4 pixels menor para dar a borda de 2px */
+    height: 42px; 
+    background: #050a0f; /* Fundo preto */
+    clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+    top: 50%; 
+    left: 50%; 
+    transform: translate(-50%, -50%); 
 }
