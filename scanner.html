@@ -266,9 +266,58 @@
                     <button id="btn-salvar-deck" style="background: #4CAF50; color: #000; font-weight: bold; padding: 10px; border-radius: 5px; flex: 1; cursor:pointer; border: none;">SALVAR DECK</button>
                 </div>
                 
-                <p id="aviso-deck" style="color: #ff5555; font-size: 10px; margin-top: 10px; font-weight: bold; text-align: center; height: 12px;"></p>
+                <div style="display: flex; gap: 10px; width: 100%; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <div class="btn-help-decks" id="btn-help-decks" title="Regras de Construção de Deck">?</div>
+                <p id="aviso-deck" style="color: #ff5555; font-size: 10px; font-weight: bold; text-align: center; height: 12px; margin: 0;"></p>
+                <button id="btn-voltar-decks" style="padding: 8px 15px; background: transparent; border: 2px solid #ff5555; color: #ff5555; font-weight: bold; border-radius: 5px; cursor: pointer;">Sair</button>
+            </div>
 
-                <button id="btn-voltar-decks" style="margin-top: 5px; padding: 8px 30px; background: transparent; border: 2px solid #ff5555; color: #ff5555; font-weight: bold; border-radius: 5px; cursor: pointer;">Sair da Oficina</button>
+            <div id="modal-livro-regras" class="escondido" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 200; justify-content: center; align-items: center; flex-direction: column; padding: 20px; box-sizing: border-box; border-radius: 10px; border: 2px solid #00ffff; backdrop-filter: blur(5px);">
+                
+                <div class="btn-close-livro" id="btn-close-livro" title="Fechar Manual">×</div>
+
+                <div class="livro" id="livro-regras">
+                    
+                    <div class="pagina pagina-ativa">
+                        <h3>MANUAL DE REGRAS <br> DECK CHAO GO</h3>
+                        <p>Bem-vindo, Escaneador! <br> Este manual contém todas as regras para montar seus decks e batalhar no Drome. Use as setas para ler as páginas.</p>
+                        <img src="https://img.icons8.com/fluency/96/stack-of-cards.png" alt="Stack of Cards icon" style="width: 60px; height: 60px; margin-top: 20px;">
+                    </div>
+                    
+                    <div class="paginapagina-proxima">
+                        <h4>ATAQUES & CRIATURAS</h4>
+                        <ul>
+                            <li><strong>ATAQUES:</strong> 20 cartas. SOMA DOS CUSTOS = 20 PONTOS (ex: 1 de custo 5 + 2 de custo 4 + 7 de custo 1 = 20 ptos. Compensar com 10 de custo 0).</li>
+                            <li><strong>CRIATURAS (Classes):</strong> Max 1 Líder, 2 Magos, 2 Guerreiros, 3 Subordinados.</li>
+                            <li><strong>LEALDADE:</strong> Com Líder, Subordinados devem ser da mesma cor/tribo (salvo efeito contrário). Sem Líder, podem ser de outras tribos. Magos e Guerreiros podem ser mistos.</li>
+                        </ul>
+                    </div>
+
+                    <div class="pagina pagina-proxima">
+                        <h4>MUGICS, EQUIPS, LOCAIS</h4>
+                        <ul>
+                            <li><strong>MUGICS (Magias):</strong> Max 2 cópias (salvo efeito contrário). Cor correspondente (salvo se sem restrição). Marcador de ficha.</li>
+                            <li><strong>EQUIPAMENTOS:</strong> Sem limite de cópias (salvo efeito contrário).</li>
+                            <li><strong>LOCAIS:</strong> Sem limite de cópias (salvo efeito contrário).</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="pagina pagina-proxima">
+                        <h4>MODOS DE JOGO</h4>
+                        <ul>
+                            <li><strong>PRINCIPAL (6x6):</strong> 6 Criaturas, 6 Mugics, 6 Equipamentos, 20 Ataques, 10 Locais. A formação clássica em pirâmide invertida (3-2-1).</li>
+                            <li><strong>RÁPIDO (3x3):</strong> 3 Criaturas, 3 Mugics, 3 Equipamentos, 20 Ataques, 10 Locais. A formação em "2 atrás, 1 na frente".</li>
+                            <li><strong>DUELO (1x1):</strong> 1 Criatura, 1 Mugic, 1 Equipamento, 20 Ataques, 10 Locais. O confronto direto e rápido.</li>
+                        </ul>
+                    </div>
+
+                </div>
+
+                <div class="navegacao-livro">
+                    <button class="seta-livro" id="btn-pagina-anterior">◀</button>
+                    <button class="seta-livro" id="btn-pagina-proxima">▶</button>
+                </div>
+
             </div>
 
         </div> <div class="painel-botoes" id="painel-botoes-fisicos">
