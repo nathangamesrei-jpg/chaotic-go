@@ -208,30 +208,70 @@
 
         </div> 
 
-        <div id="tela-decks" class="tela-jogo" style="display: none; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box; background: #0a0f0a;">
-            <h2 style="color: #4CAF50; font-size: 16px; margin-bottom: 10px; text-shadow: 0 0 10px #4CAF50;">OFICINA DE DECKS</h2>
+        <div id="tela-decks" class="tela-jogo" style="display: none; flex-direction: column; align-items: center; padding: 15px; box-sizing: border-box; background: #050a0f;">
             
-            <div style="display: flex; gap: 10px; margin-bottom: 15px; width: 100%; justify-content: space-between;">
-                <select id="seletor-modo-deck" style="background: #111; color: #00ffff; border: 1px solid #00ffff; padding: 5px; border-radius: 5px; font-weight: bold; flex: 1;">
-                    <option value="6x6">Modo Principal (6x6)</option>
-                    <option value="3x3">Modo Rápido (3x3)</option>
-                    <option value="1x1">Modo Duelo (1x1)</option>
-                </select>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px; width: 100%; justify-content: space-between; align-items: center;">
+                <input type="text" id="nome-do-deck" placeholder="Nome do Deck..." style="background: #111; color: #4CAF50; border: 1px solid #4CAF50; padding: 8px; border-radius: 5px; font-weight: bold; flex: 2; font-family: monospace;">
                 
-                <select id="seletor-slot-deck" style="background: #111; color: #ffd700; border: 1px solid #ffd700; padding: 5px; border-radius: 5px; font-weight: bold; flex: 1;">
-                    <option value="1">Deck Slot 1</option>
-                    <option value="2">Deck Slot 2</option>
-                    <option value="3">Deck Slot 3</option>
-                    <option value="4">Deck Slot 4</option>
-                    <option value="5">Deck Slot 5</option>
+                <select id="seletor-modo-deck" style="background: #111; color: #00ffff; border: 1px solid #00ffff; padding: 8px; border-radius: 5px; font-weight: bold; flex: 1;">
+                    <option value="6x6">6x6 Principal</option>
+                    <option value="3x3">3x3 Rápido</option>
+                    <option value="1x1">1x1 Duelo</option>
                 </select>
             </div>
 
-            <div id="painel-construcao-deck" style="width: 100%; flex: 1; background: #112211; border: 1px solid #4CAF50; border-radius: 8px; padding: 10px; overflow-y: auto;">
-                <p style="color: #aaa; font-size: 11px; text-align: center; margin-top: 50px;">Inicializando banco de dados de cartas...</p>
+            <div id="tabuleiro-drome" class="tabuleiro-glow">
+                
+                <div class="area-pilhas">
+                    <div class="pilha-cartas slot-local" id="pilha-locais" title="10 Locais">
+                        <span>LOCAIS</span>
+                        <div class="contador-cartas">0/10</div>
+                    </div>
+                    <div class="pilha-cartas slot-ataque" id="pilha-ataques" title="20 Ataques (Custo Mág. 20)">
+                        <span>ATAQUES</span>
+                        <div class="contador-cartas">0/20</div>
+                        <div class="contador-custo" style="color: #ff5555; font-size: 8px; margin-top:2px;">Custo: 0/20</div>
+                    </div>
+                </div>
+
+                <div class="area-formacao" id="grade-criaturas">
+                    <div class="linha-formacao linha-3">
+                        <div class="combo-slot"><div class="slot-equipamento"></div><div class="slot-criatura" id="c1"></div></div>
+                        <div class="combo-slot"><div class="slot-equipamento"></div><div class="slot-criatura" id="c2"></div></div>
+                        <div class="combo-slot"><div class="slot-equipamento"></div><div class="slot-criatura" id="c3"></div></div>
+                    </div>
+                    <div class="linha-formacao linha-2">
+                        <div class="combo-slot"><div class="slot-equipamento"></div><div class="slot-criatura" id="c4"></div></div>
+                        <div class="combo-slot"><div class="slot-equipamento"></div><div class="slot-criatura" id="c5"></div></div>
+                    </div>
+                    <div class="linha-formacao linha-1">
+                        <div class="combo-slot"><div class="slot-equipamento"></div><div class="slot-criatura" id="c6"></div></div>
+                    </div>
+                </div>
+
+                <div class="area-mugics" id="grade-mugics">
+                    <div class="slot-mugic-heptagono"></div>
+                    <div class="slot-mugic-heptagono"></div>
+                    <div class="slot-mugic-heptagono"></div>
+                    <div class="slot-mugic-heptagono"></div>
+                    <div class="slot-mugic-heptagono"></div>
+                    <div class="slot-mugic-heptagono"></div>
+                </div>
+
             </div>
 
-            <button id="btn-voltar-decks" style="margin-top: 15px; padding: 10px 30px; background: transparent; border: 2px solid #ff5555; color: #ff5555; font-weight: bold; border-radius: 5px; cursor: pointer;">Sair da Oficina</button>
+            <div style="display: flex; gap: 10px; width: 100%; margin-top: 15px;">
+                <select id="seletor-slot-save" style="background: #111; color: #ffd700; border: 1px solid #ffd700; padding: 10px; border-radius: 5px; font-weight: bold; flex: 1;">
+                    <option value="1">Salvar no Slot 1</option>
+                    <option value="2">Salvar no Slot 2</option>
+                    <option value="3">Salvar no Slot 3</option>
+                </select>
+                <button id="btn-salvar-deck" style="background: #4CAF50; color: #000; font-weight: bold; padding: 10px; border-radius: 5px; flex: 1; cursor:pointer; border: none;">SALVAR DECK</button>
+            </div>
+            
+            <p id="aviso-deck" style="color: #ff5555; font-size: 10px; margin-top: 10px; font-weight: bold; text-align: center; height: 12px;"></p>
+
+            <button id="btn-voltar-decks" style="margin-top: 10px; padding: 8px 30px; background: transparent; border: 2px solid #ff5555; color: #ff5555; font-weight: bold; border-radius: 5px; cursor: pointer;">Sair da Oficina</button>
         </div>
         
         <div class="painel-botoes" id="painel-botoes-fisicos">
