@@ -772,21 +772,23 @@ html, body {
 }
 
 /* Áreas divididas */
-.area-pilhas { display: flex; flex-direction: column; gap: 20px; justify-content: center; width: 25%; }
-.area-formacao { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; width: 50%; }
+.area-pilhas { display: flex; flex-direction: column; gap: 20px; justify-content: center; width: 75px; align-items: center; }
+.area-formacao { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; flex: 1; } /* flex: 1 faz o meio empurrar a lateral direita */
+
 .area-mugics { 
     display: flex; 
     flex-direction: column; 
-    gap: 8px; /* Mais espaço entre os mugics */
+    gap: 8px; 
     align-items: center; 
     justify-content: center; 
-    width: 25%; 
+    width: 65px; /* Força a largura exata */
+    min-width: 65px; /* Impede o sistema de tentar encolher a caixa */
+    max-width: 65px; /* Impede o sistema de tentar esticar a caixa */
     background: rgba(0,255,255,0.1); 
     border-radius: 10px; 
     border: 1px solid rgba(0,255,255,0.3); 
-    padding: 10px 5px; /* Ajuste no padding para não cortar as bordas */
+    padding: 10px 0; 
 }
-
 /* Pilhas 3D (Ataques e Locais) */
 .pilha-cartas {
     width: 60px;
@@ -847,17 +849,14 @@ html, body {
 /* =========================================
    MUGICS - BORDAS HEPTAGONAIS CORRIGIDAS
    ========================================= */
-/* A borda externa de luz neon (um pouco maior) */
 .slot-mugic-heptagono {
-    width: 45px;  /* Largura e Altura quase iguais para o heptágono ficar simétrico */
+    position: relative; /* Mantém o centro escuro preso aqui dentro */
+    width: 45px;
     height: 45px;
-    background: #00ffff; /* A cor da Borda Neon */
+    background: #00ffff; /* A cor da Borda Neon fica no fundo brilhando */
     clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
-    display: flex;
-    align-items: center;
-    justify-content: center;
     cursor: pointer;
-    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); /* Leve brilho atrás */
+    box-shadow: 0 0 10px rgba(0, 255, 255, 0.5); /* Brilho neon externo */
     transition: transform 0.2s;
 }
 
@@ -866,12 +865,15 @@ html, body {
     background: #fff; /* Pisca branco ao passar o mouse */
 }
 
-/* O "buraco" escuro do meio onde a carta entra (um pouco menor) */
+/* O "buraco" escuro do meio onde a carta entra */
 .slot-mugic-heptagono::after {
     content: '';
-    width: 41px;  /* 4px menor que o contêiner principal */
-    height: 41px;
-    background: #050a0f; /* Cor escura do fundo */
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
     position: absolute;
+    width: 41px; /* Exatamente 4 pixels menor que o contêiner original (dá 2px de borda) */
+    height: 41px;
+    background: #050a0f; /* Cor escura do fundo (apaga o meio) */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+    top: 50%; /* Empurra para o meio da altura */
+    left: 50%; /* Empurra para o meio da largura */
+    transform: translate(-50%, -50%); /* Centraliza milimetricamente nos eixos X e Y */
 }
