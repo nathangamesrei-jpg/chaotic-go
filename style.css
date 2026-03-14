@@ -880,3 +880,9 @@ html, body {
     left: 50%; 
     transform: translate(-50%, -50%); 
 }
+/* =========================================
+   13. CLASSES AUXILIARES (LÓGICA)
+   ========================================= */
+.escondido {
+    display: none !important; /* Faz o elemento sumir do tabuleiro sem quebrar o layout */
+}
