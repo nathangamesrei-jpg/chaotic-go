@@ -392,13 +392,23 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
             }
         }
 
-        // 3. PASSOU PELAS TRAVAS? AGORA SIM, APLICA AS MUDANÇAS!
         if (!slot.classList.contains('pilha-cartas')) {
             slot.style.backgroundImage = `url('${img}')`; 
-            slot.style.backgroundSize = 'cover';
-            slot.style.backgroundPosition = 'center';
+            
+            // 💡 MAGIA DO ZOOM: Foca apenas na imagem do monstro!
+            if (cartaSelecionada.tipoCarta === "Criatura") {
+                slot.style.backgroundSize = '180%'; // Dá um zoom monstro!
+                slot.style.backgroundPosition = 'center 15%'; // Puxa pra cima, bem na arte da carta
+            } else if (cartaSelecionada.tipoCarta === "Equipamento") {
+                slot.style.backgroundSize = '160%'; 
+                slot.style.backgroundPosition = 'center 20%';
+            } else {
+                slot.style.backgroundSize = 'cover'; // Mugics e outros ficam normais
+                slot.style.backgroundPosition = 'center';
+            }
+            
             slot.innerHTML = ''; 
-            slot.dataset.cartaNome = nomeDaCarta; // Salva a "memória" do nome no quadrado
+            slot.dataset.cartaNome = nomeDaCarta; // Salva a "memória"
         } else {
             let contador = slot.querySelector('.contador-cartas');
             if(contador) {
@@ -2117,6 +2127,15 @@ window.abrirOficinaDecks = function() {
     modoMenu = false;
     
     if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
+
+    // 💡 GATILHO DE CARREGAMENTO AUTOMÁTICO: Ao abrir a tela, puxa o Slot 1!
+    let seletorSlot = Array.from(document.querySelectorAll('#tela-decks select')).find(s => s.innerHTML.includes('Slot'));
+    if (seletorSlot) {
+        let slotId = seletorSlot.value.toLowerCase().replace(/salvar no /g, '').replace(/ /g, '_');
+        if (typeof window.carregarDeckDaNuvem === "function") {
+            window.carregarDeckDaNuvem(slotId);
+        }
+    }
 };
 
 
@@ -2372,8 +2391,8 @@ window.limparTabuleiroDeck = function() {
     // 1. Limpa todas as imagens e memórias dos quadrados (Criaturas, Equips, Magias)
     document.querySelectorAll('.slot-criatura, .slot-equipamento, .slot-mugic-heptagono').forEach(slot => {
         slot.style.backgroundImage = 'none';
-        slot.innerHTML = ''; // Tira qualquer emoji de erro
-        delete slot.dataset.cartaNome; // Apaga a memória da carta que estava ali
+        slot.innerHTML = ''; 
+        delete slot.dataset.cartaNome; 
     });
 
     // 2. Reseta a Pilha de Locais
@@ -2381,7 +2400,7 @@ window.limparTabuleiroDeck = function() {
     if(pLocais) {
         let cont = pLocais.querySelector('.contador-cartas');
         if(cont) { cont.innerText = "0/10"; cont.style.color = "white"; }
-        delete pLocais.dataset.cartas; // Zera a memória de locais
+        delete pLocais.dataset.cartas; 
     }
 
     // 3. Reseta a Pilha de Ataques e o Custo
@@ -2389,24 +2408,131 @@ window.limparTabuleiroDeck = function() {
     if(pAtaques) {
         let cont = pAtaques.querySelector('.contador-cartas');
         if(cont) { cont.innerText = "0/20"; cont.style.color = "white"; }
-        
         let custo = pAtaques.querySelector('.contador-custo');
         if(custo) { custo.innerText = "Custo: 0/20"; custo.style.color = "#ff5555"; }
-        
-        delete pAtaques.dataset.cartas; // Zera a memória de ataques
+        delete pAtaques.dataset.cartas; 
     }
+    
+    let inputNome = document.querySelector('input[placeholder*="Nome do Deck"]');
+    if(inputNome) inputNome.value = "";
 };
 
-// 4. O Gatilho Automático! 
-// Fica escutando TODAS as caixinhas de seleção (Modo e Slot) da Oficina
-document.querySelectorAll('#tela-decks select').forEach(select => {
-    select.addEventListener('change', () => {
-        window.limparTabuleiroDeck();
-        mostrarMensagemScanner("TABULEIRO REINICIADO!");
+// ==========================================
+// 📥 SISTEMA DE CARREGAR DECK (NUVEM -> SCANNER)
+// ==========================================
+window.carregarDeckDaNuvem = function(slotId) {
+    mostrarMensagemScanner("ACESSANDO BANCO DE DADOS...");
+    
+    get(ref(db, 'jogadores/' + uid + '/decks/' + slotId)).then((snapshot) => {
+        window.limparTabuleiroDeck(); // Limpa a mesa antes de servir
+        
+        if (snapshot.exists()) {
+            let deckData = snapshot.val();
+            
+            // 1. Restaura Nome e Modo
+            let inputNome = document.querySelector('input[placeholder*="Nome do Deck"]');
+            if(inputNome) inputNome.value = deckData.nome || "";
+            
+            let seletorModo = document.getElementById("seletor-modo-deck");
+            if(seletorModo && deckData.modo) {
+                seletorModo.value = deckData.modo;
+                // Dispara a lógica visual do tabuleiro para esconder/mostrar as fileiras certas
+                seletorModo.dispatchEvent(new Event('change')); 
+            }
+            
+            // Função Mágica para Pintar os Quadrados e Aplicar o Zoom
+            const carimbarSlot = (slot, nomeCarta, tipo) => {
+                if (!nomeCarta) return;
+                let carta = window.inventario.find(c => c.nome === nomeCarta);
+                if (!carta) return; // Se você deletou a carta do álbum, ela não carrega
+                
+                slot.style.backgroundImage = `url('${carta.img}')`;
+                if (tipo === "Criatura") {
+                    slot.style.backgroundSize = '180%'; slot.style.backgroundPosition = 'center 15%';
+                } else if (tipo === "Equipamento") {
+                    slot.style.backgroundSize = '160%'; slot.style.backgroundPosition = 'center 20%';
+                } else {
+                    slot.style.backgroundSize = 'cover'; slot.style.backgroundPosition = 'center';
+                }
+                slot.dataset.cartaNome = nomeCarta; // Planta a memória!
+            };
+
+            // 2. Restaura Imagens Individuais (Atraso mínimo para o HTML montar as fileiras)
+            setTimeout(() => {
+                let slotsCriatura = document.querySelectorAll('.slot-criatura');
+                if (deckData.criaturas) deckData.criaturas.forEach((n, i) => { if(slotsCriatura[i]) carimbarSlot(slotsCriatura[i], n, "Criatura"); });
+                
+                let slotsEquip = document.querySelectorAll('.slot-equipamento');
+                if (deckData.equipamentos) deckData.equipamentos.forEach((n, i) => { if(slotsEquip[i]) carimbarSlot(slotsEquip[i], n, "Equipamento"); });
+                
+                let slotsMugic = document.querySelectorAll('.slot-mugic-heptagono');
+                if (deckData.mugics) deckData.mugics.forEach((n, i) => { if(slotsMugic[i]) carimbarSlot(slotsMugic[i], n, "Magia"); });
+            }, 50);
+            
+            // 3. Restaura Locais
+            if (deckData.locais && deckData.locais.length > 0) {
+                let pLocais = document.getElementById('pilha-locais');
+                if (pLocais) {
+                    pLocais.dataset.cartas = JSON.stringify(deckData.locais);
+                    let cont = pLocais.querySelector('.contador-cartas');
+                    if (cont) { cont.innerText = `${deckData.locais.length}/10`; cont.style.color = "#00ffff"; }
+                }
+            }
+            
+            // 4. Restaura Ataques e faz a matemática do Custo
+            if (deckData.ataques && deckData.ataques.length > 0) {
+                let pAtaques = document.getElementById('pilha-ataques');
+                if (pAtaques) {
+                    pAtaques.dataset.cartas = JSON.stringify(deckData.ataques);
+                    let cont = pAtaques.querySelector('.contador-cartas');
+                    if (cont) { cont.innerText = `${deckData.ataques.length}/20`; cont.style.color = "#00ffff"; }
+                    
+                    let custoTotal = 0;
+                    deckData.ataques.forEach(nomeAtaque => {
+                        let cartaA = window.inventario.find(c => c.nome === nomeAtaque);
+                        if (cartaA) custoTotal += (parseInt(cartaA.custo) || 0);
+                    });
+                    
+                    let contadorCusto = pAtaques.querySelector('.contador-custo');
+                    if (contadorCusto) {
+                        contadorCusto.innerText = `Custo: ${custoTotal}/20`;
+                        contadorCusto.style.color = custoTotal > 20 ? "#ff5555" : "#00ffff";
+                    }
+                }
+            }
+            mostrarMensagemScanner("DECK CARREGADO COM SUCESSO! 💾");
+            tocarSFX('viajar'); // Toca um som legal
+        } else {
+            mostrarMensagemScanner("SLOT VAZIO. CRIE SUA ESTRATÉGIA!");
+        }
+    }).catch(err => {
+        console.error("Erro ao carregar:", err);
+        mostrarMensagemScanner("FALHA AO CONECTAR COM A NUVEM!");
     });
-});
+};
 
+// ==========================================
+// 🎯 OS GATILHOS INTELIGENTES
+// ==========================================
+let evtSeletorModo = document.getElementById("seletor-modo-deck");
+let evtSeletorSlot = Array.from(document.querySelectorAll('#tela-decks select')).find(s => s.innerHTML.includes('Slot'));
 
+if (evtSeletorModo) {
+    evtSeletorModo.addEventListener('change', () => {
+        // Se o usuário mexer na mão, a gente limpa o tabuleiro
+        if (event && event.isTrusted) { 
+            window.limparTabuleiroDeck();
+            mostrarMensagemScanner("MODO ALTERADO. TABULEIRO LIMPO!");
+        }
+    });
+}
+
+if (evtSeletorSlot) {
+    evtSeletorSlot.addEventListener('change', () => {
+        let slotId = evtSeletorSlot.value.toLowerCase().replace(/salvar no /g, '').replace(/ /g, '_');
+        window.carregarDeckDaNuvem(slotId);
+    });
+}
 
 
 
