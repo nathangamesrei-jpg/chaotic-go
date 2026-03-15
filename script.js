@@ -2077,15 +2077,16 @@ if(document.getElementById("btn-pagina-proxima")) {
 // ⚙️ LÓGICA DO TABULEIRO DE DECKS
 // ==========================================
 
-// 1. Botão de Sair da Oficina
+// 1. Botão de Sair (Corrigido o travamento do Menu!)
 let btnSairOficina = document.getElementById("btn-voltar-decks");
 if (btnSairOficina) {
     btnSairOficina.addEventListener("click", function() {
         document.getElementById("tela-decks").style.display = "none";
         document.getElementById("tela-menu").style.display = "flex";
+        window.slotSelecionadoAtual = null; // Limpa a memória por segurança
         
-        // Opcional: Tocar musiquinha do menu se você tiver!
-        // mudarMusicaFundo('menu'); 
+        // 💡 A MÁGICA DO DESCONGELAMENTO: Religa os botões físicos do Scanner!
+        modoMenu = true; 
     });
 }
 let seletorModo = document.getElementById("seletor-modo-deck");
