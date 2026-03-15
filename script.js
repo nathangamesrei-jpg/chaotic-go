@@ -317,35 +317,47 @@ function gerarDNA(monstroID) {
 // ==========================================
 window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
    // ==========================================
+    // ==========================================
     // 🃏 INTERCEPTADOR DE MONTAGEM DE DECK
     // ==========================================
     if (window.slotSelecionadoAtual !== null) {
         let slot = window.slotSelecionadoAtual;
 
-        // Se for um slot de imagem (Criatura, Equipamento, Magia)
+        // SE FOR UM SLOT DE IMAGEM (Criatura, Equipamento, Magia)
         if (!slot.classList.contains('pilha-cartas')) {
-            slot.style.backgroundImage = `url('${img}')`; // 💡 Carimba a imagem no fundo!
+            // (Substitua "imagemUrl" pela palavra certa que está na sua função original, ex: "imagem", "img")
+            slot.style.backgroundImage = `url('${imagemUrl}')`; 
             slot.style.backgroundSize = 'cover';
             slot.style.backgroundPosition = 'center';
-            slot.innerHTML = ''; // Limpa qualquer emoji/texto que estivesse dentro
+            slot.innerHTML = ''; // Limpa qualquer emoji/texto dentro do slot
         } 
-        // Se for uma pilha (Ataques ou Locais), por enquanto só daremos um aviso de sucesso
+        // SE FOR UMA PILHA (Ataques ou Locais)
         else {
             let contador = slot.querySelector('.contador-cartas');
-            if(contador) contador.style.color = "#00ffff"; // Muda a cor para indicar que mexeu
-            // (Na próxima etapa faremos o contador numérico de fato)
+            if(contador) {
+                // Truque visual: Pega o número atual e soma 1 (só pra gente ver funcionando)
+                let valores = contador.innerText.split('/');
+                let atual = parseInt(valores[0]);
+                let max = parseInt(valores[1]);
+                
+                if (atual < max) {
+                    atual++;
+                    contador.innerText = `${atual}/${max}`;
+                    contador.style.color = "#00ffff"; // Muda a cor para ciano pra avisar que preencheu
+                }
+            }
         }
 
-        // 1. Esconde o Álbum e Volta para a Oficina
+        // FECHA O ÁLBUM E VOLTA PRA OFICINA
         document.getElementById('tela-album').style.display = 'none';
         document.getElementById('tela-decks').style.display = 'flex';
         
-        // 2. Limpa a memória do Scanner e reseta o título do Álbum
+        // LIMPA A MEMÓRIA DO SCANNER
         window.slotSelecionadoAtual = null;
         let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
         if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
 
-        return; // 🛑 PARA A FUNÇÃO AQUI! Impede que a tela de inspeção abra.
+        return; // 🛑 PARA A FUNÇÃO DE INSPEÇÃO AQUI!
     }
     // ==========================================
     tipoDeCartaAtual = tipo;
@@ -2086,7 +2098,21 @@ if(document.getElementById("btn-pagina-proxima")) {
     document.getElementById("btn-pagina-proxima").onclick = () => mudarPaginaLivro(1);
 }
 
+// ==========================================
 // ⚙️ LÓGICA DO TABULEIRO DE DECKS
+// ==========================================
+
+// 1. Botão de Sair da Oficina
+let btnSairOficina = document.getElementById("btn-voltar-decks");
+if (btnSairOficina) {
+    btnSairOficina.addEventListener("click", function() {
+        document.getElementById("tela-decks").style.display = "none";
+        document.getElementById("tela-menu").style.display = "flex";
+        
+        // Opcional: Tocar musiquinha do menu se você tiver!
+        // mudarMusicaFundo('menu'); 
+    });
+}
 let seletorModo = document.getElementById("seletor-modo-deck");
 if(seletorModo) {
     seletorModo.addEventListener("change", function() {
