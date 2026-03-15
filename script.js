@@ -2365,7 +2365,46 @@ function prepararSelecaoDeck(tipoDesejado, elementoSlot) {
         selectTipo.dispatchEvent(new Event('change')); // Avisa o sistema que o filtro mudou
     }
 }
+// ==========================================
+// 🧹 SISTEMA DE LIMPEZA DE TABULEIRO
+// ==========================================
+window.limparTabuleiroDeck = function() {
+    // 1. Limpa todas as imagens e memórias dos quadrados (Criaturas, Equips, Magias)
+    document.querySelectorAll('.slot-criatura, .slot-equipamento, .slot-mugic-heptagono').forEach(slot => {
+        slot.style.backgroundImage = 'none';
+        slot.innerHTML = ''; // Tira qualquer emoji de erro
+        delete slot.dataset.cartaNome; // Apaga a memória da carta que estava ali
+    });
 
+    // 2. Reseta a Pilha de Locais
+    let pLocais = document.getElementById('pilha-locais');
+    if(pLocais) {
+        let cont = pLocais.querySelector('.contador-cartas');
+        if(cont) { cont.innerText = "0/10"; cont.style.color = "white"; }
+        delete pLocais.dataset.cartas; // Zera a memória de locais
+    }
+
+    // 3. Reseta a Pilha de Ataques e o Custo
+    let pAtaques = document.getElementById('pilha-ataques');
+    if(pAtaques) {
+        let cont = pAtaques.querySelector('.contador-cartas');
+        if(cont) { cont.innerText = "0/20"; cont.style.color = "white"; }
+        
+        let custo = pAtaques.querySelector('.contador-custo');
+        if(custo) { custo.innerText = "Custo: 0/20"; custo.style.color = "#ff5555"; }
+        
+        delete pAtaques.dataset.cartas; // Zera a memória de ataques
+    }
+};
+
+// 4. O Gatilho Automático! 
+// Fica escutando TODAS as caixinhas de seleção (Modo e Slot) da Oficina
+document.querySelectorAll('#tela-decks select').forEach(select => {
+    select.addEventListener('change', () => {
+        window.limparTabuleiroDeck();
+        mostrarMensagemScanner("TABULEIRO REINICIADO!");
+    });
+});
 
 
 
