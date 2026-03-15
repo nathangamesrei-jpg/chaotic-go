@@ -758,7 +758,7 @@ html, body {
    12. OFICINA DE DECKS (TABULEIRO)
    ========================================= */
 .tabuleiro-glow {
-    background: transparent; /* 💡 Fundo transparente para o livro cobrir! */
+    background: linear-gradient(135deg, #1f4f59 0%, #112d33 100%); /* 🔙 FUNDO BONITO DE VOLTA! */
     border: 3px solid #00ffff;
     border-radius: 15px;
     box-shadow: 0 0 15px #00ffff, inset 0 0 20px rgba(0,255,255,0.2);
@@ -768,22 +768,20 @@ html, body {
     padding: 10px;
     box-sizing: border-box;
     position: relative;
-    /* overflow: hidden; 🪓 REMOVEMOS A GUILHOTINA! */
+    /* Sem 'overflow: hidden' para não cortar o neon de baixo! */
 }
 
-/* Áreas divididas - Centralizando tudo no Visor */
-.area-pilhas { display: flex; flex-direction: column; gap: 20px; justify-content: center; width: 75px; align-items: center; background: transparent; /* 💡 Fundo transparente! */ }
-.area-formacao { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; flex: 1; background: transparent; /* 💡 Fundo transparente! */ }
+/* Áreas divididas */
+.area-pilhas { display: flex; flex-direction: column; gap: 20px; justify-content: center; width: 75px; align-items: center; }
+.area-formacao { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; flex: 1; }
 
 .area-mugics { 
     display: flex; 
     flex-direction: column; 
-    gap: 3px; /* Espaço ultra apertado! */
+    gap: 3px; 
     align-items: center; 
     justify-content: center; 
-    width: 40px; /* Afinamos o máximo possível */
-    background: transparent; /* 💡 Fundo transparente! */
-    /* Removemos bordas e fundos para ficar limpo, como combinamos! 😉 */
+    width: 40px; 
 }
 
 /* =========================================
