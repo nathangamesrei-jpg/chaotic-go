@@ -758,7 +758,7 @@ html, body {
    12. OFICINA DE DECKS (TABULEIRO)
    ========================================= */
 .tabuleiro-glow {
-    background: linear-gradient(135deg, #1f4f59 0%, #112d33 100%); /* 🔙 FUNDO BONITO DE VOLTA! */
+    background: linear-gradient(135deg, #1f4f59 0%, #112d33 100%);
     border: 3px solid #00ffff;
     border-radius: 15px;
     box-shadow: 0 0 15px #00ffff, inset 0 0 20px rgba(0,255,255,0.2);
@@ -768,20 +768,66 @@ html, body {
     padding: 10px;
     box-sizing: border-box;
     position: relative;
-    /* Sem 'overflow: hidden' para não cortar o neon de baixo! */
 }
 
 /* Áreas divididas */
 .area-pilhas { display: flex; flex-direction: column; gap: 20px; justify-content: center; width: 75px; align-items: center; }
 .area-formacao { display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; flex: 1; }
+.area-mugics { display: flex; flex-direction: column; gap: 3px; align-items: center; justify-content: center; width: 40px; }
 
-.area-mugics { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 3px; 
-    align-items: center; 
-    justify-content: center; 
-    width: 40px; 
+/* Pilhas 3D (Ataques e Locais) */
+.pilha-cartas {
+    width: 60px;
+    height: 85px;
+    background: #111;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 9px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: -2px 2px 0 #222, -4px 4px 0 #444, -6px 6px 0 #666;
+    border: 2px solid #555;
+    transition: transform 0.2s;
+}
+.pilha-cartas:hover { transform: translate(2px, -2px); }
+.slot-local { border-color: #4CAF50; color: #4CAF50; }
+.slot-ataque { border-color: #ff5555; color: #ff5555; }
+.contador-cartas { font-size: 14px; margin-top: 5px; color: white; }
+
+/* Linhas 3-2-1 e Combo Criatura/Equipamento */
+.linha-formacao { display: flex; justify-content: center; gap: 10px; width: 100%; }
+.combo-slot { position: relative; width: 50px; height: 50px; cursor: pointer; }
+
+.slot-criatura {
+    width: 100%;
+    height: 100%;
+    background: #0a1515;
+    border: 2px solid #00ffff;
+    border-radius: 8px;
+    box-shadow: inset 0 0 10px rgba(0,255,255,0.2);
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.2s;
+}
+.slot-criatura:hover { transform: scale(1.1); border-color: #fff; }
+
+.slot-equipamento {
+    width: 80%;
+    height: 80%;
+    background: #331111;
+    border: 2px solid #ffaa00;
+    border-radius: 5px;
+    position: absolute;
+    bottom: -8px;
+    right: -8px;
+    z-index: 1;
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.8);
 }
 
 /* =========================================
