@@ -914,23 +914,18 @@ html, body {
 
 /* --- O Livro Animado (Encaixado Perfeitamente no Visor) --- */
 .livro {
-    width: 90%; /* Ocupa 90% da largura do visor preto */
-    height: 85%; /* Ocupa 85% da altura do visor preto */
-    max-width: 320px; /* Largura máxima de segurança */
-    max-height: 450px; /* Altura máxima de segurança */
-    background: #111; /* Cor de fundo escura original */
-    border: 2px solid #00ffff; /* Bordas Neon originais */
+    width: 90%; 
+    height: 75%; /* 💡 Reduzi um pouco a altura para as setas caberem embaixo! */
+    max-width: 320px; 
+    max-height: 450px; 
+    background: #111; 
+    border: 2px solid #00ffff; 
     border-radius: 10px;
-    perspective: 1500px; /* Sensação de 3D original */
-    overflow: hidden; /* Corta o conteúdo vazado original */
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); /* Brilho neon sutil */
-    
-    /* 👇 Centralização Milimétrica no Visor (Matemática Infallível) 👇 */
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%); /* Garante o encaixe perfeito no meio */
-    z-index: 10; /* Garante que está no topo do modal */
+    perspective: 1500px; 
+    overflow: hidden; 
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); 
+    position: relative; /* 💡 Tirei a flutuação! Agora as setas aparecem! */
+    z-index: 10; 
 }
 
 /* As Páginas do Livro */
