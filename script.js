@@ -2666,15 +2666,26 @@ window.carregarDeckDaNuvem = function(slotId) {
     }).catch(err => { mostrarMensagemScanner("FALHA AO CONECTAR COM A NUVEM!"); });
 };
 
-// 🎯 OS GATILHOS (CORRIGIDO BUG DO TRAVAMENTO!)
+// ==========================================
+// 🎯 OS GATILHOS INTELIGENTES DA OFICINA
+// ==========================================
 let evtSeletorModo = document.getElementById("seletor-modo-deck");
 let evtSeletorSlot = Array.from(document.querySelectorAll('#tela-decks select')).find(s => s.innerHTML.includes('Slot'));
 
 if (evtSeletorModo) {
     evtSeletorModo.addEventListener('change', (e) => { 
+        // Verifica se foi o usuário que clicou (e.isTrusted) 
+        // para não entrar em loop infinito quando o código muda o modo sozinho!
         if (e && e.isTrusted) {
             window.limparTabuleiroDeck();
-            mostrarMensagemScanner("MODO ALTERADO. TABULEIRO LIMPO!");
+            
+            // 💡 O NOVO PULO DO GATO: Se mudou o modo, manda recarregar o Slot atual da nuvem!
+            if (evtSeletorSlot) {
+                let slotAtual = evtSeletorSlot.value.toLowerCase().replace(/salvar no /g, '').replace(/ /g, '_');
+                window.carregarDeckDaNuvem(slotAtual);
+            } else {
+                mostrarMensagemScanner("MODO ALTERADO. TABULEIRO LIMPO!");
+            }
         }
     });
 }
