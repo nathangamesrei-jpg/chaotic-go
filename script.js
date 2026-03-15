@@ -2196,8 +2196,117 @@ window.slotSelecionadoAtual = null;
 document.querySelectorAll('.slot-criatura').forEach(s => s.addEventListener('click', function() { prepararSelecaoDeck('Criatura', this); }));
 document.querySelectorAll('.slot-equipamento').forEach(s => s.addEventListener('click', function(e) { e.stopPropagation(); prepararSelecaoDeck('Equipamento', this); }));
 document.querySelectorAll('.slot-mugic-heptagono').forEach(s => s.addEventListener('click', function() { prepararSelecaoDeck('Magia', this); }));
-let btnPA = document.getElementById('pilha-ataques'); if(btnPA) btnPA.addEventListener('click', () => prepararSelecaoDeck('Ataque', btnPA));
-let btnPL = document.getElementById('pilha-locais'); if(btnPL) btnPL.addEventListener('click', () => prepararSelecaoDeck('Local', btnPL));
+// ==========================================
+// 🗂️ GERENCIADOR DE PILHAS (MODAL DE EDIÇÃO)
+// ==========================================
+
+// Cria o Modal Invisível no HTML (Só roda uma vez)
+if (!document.getElementById("modal-pilha-deck")) {
+    let m = document.createElement("div");
+    m.id = "modal-pilha-deck";
+    m.style.cssText = "display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,15,15,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
+    m.innerHTML = `
+        <div style="width: 100%; max-width: 320px; background: #111; border: 2px solid #00ffff; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; max-height: 80%; box-shadow: 0 0 20px rgba(0,255,255,0.3);">
+            <h3 id="titulo-modal-pilha" style="color: #00ffff; text-align: center; margin-bottom: 15px; font-family: monospace; font-size: 16px; letter-spacing: 1px;">PILHA</h3>
+            <div id="lista-cartas-pilha" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px; padding-right: 5px;"></div>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="btn-fechar-pilha" style="background: #ff5555; color: #fff; border: 2px solid #aa0000; padding: 12px; border-radius: 8px; font-weight: bold; flex: 1; cursor: pointer;">FECHAR</button>
+                <button id="btn-add-pilha" style="background: #4CAF50; color: #000; border: 2px solid #2e7d32; padding: 12px; border-radius: 8px; font-weight: bold; flex: 1; cursor: pointer;">+ ADICIONAR</button>
+            </div>
+        </div>
+    `;
+    document.getElementById("tela-jogo").appendChild(m);
+
+    document.getElementById("btn-fechar-pilha").onclick = () => { m.style.display = "none"; };
+}
+
+// Substitui o clique antigo por abrir o Modal
+let btnPA = document.getElementById('pilha-ataques'); 
+if(btnPA) btnPA.addEventListener('click', () => abrirModalPilha('Ataque', btnPA));
+
+let btnPL = document.getElementById('pilha-locais'); 
+if(btnPL) btnPL.addEventListener('click', () => abrirModalPilha('Local', btnPL));
+
+// Função que monta a lista de cartas dentro do Modal
+window.abrirModalPilha = function(tipo, slotElement) {
+    let m = document.getElementById("modal-pilha-deck");
+    let titulo = document.getElementById("titulo-modal-pilha");
+    let lista = document.getElementById("lista-cartas-pilha");
+    
+    titulo.innerText = `PILHA DE ${tipo.toUpperCase()}S`;
+    titulo.style.color = tipo === 'Ataque' ? '#ff5555' : '#4CAF50';
+    m.querySelector('div').style.borderColor = tipo === 'Ataque' ? '#ff5555' : '#4CAF50';
+    
+    lista.innerHTML = "";
+
+    // Pega as memórias salvas na pilha
+    let idsNaPilha = slotElement.dataset.cartas ? JSON.parse(slotElement.dataset.cartas) : [];
+
+    if (idsNaPilha.length === 0) {
+        lista.innerHTML = "<p style='color:#aaa; text-align:center; font-size:12px; margin: 20px 0;'>A pilha está vazia.</p>";
+    } else {
+        idsNaPilha.forEach((id, index) => {
+            let carta = window.inventario.find(c => c.id == id);
+            if (!carta) return;
+            
+            let div = document.createElement("div");
+            div.style = "display: flex; align-items: center; justify-content: space-between; background: #222; padding: 6px; border-radius: 5px; border: 1px solid #444;";
+            div.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${carta.img}" style="width: 35px; height: 45px; object-fit: cover; border-radius: 3px; border: 1px solid ${tipo === 'Ataque' ? '#ff5555' : '#4CAF50'};">
+                    <div>
+                        <div style="color: white; font-size: 11px; font-weight: bold;">${carta.nome}</div>
+                        ${tipo === 'Ataque' ? `<div style="color: #ff5555; font-size: 10px; margin-top: 3px;">Custo: ${carta.custo || 0}</div>` : ''}
+                    </div>
+                </div>
+                <button style="background: #aa0000; color: white; border: none; border-radius: 5px; width: 30px; height: 30px; font-weight: bold; cursor: pointer; font-size: 14px;" onclick="removerCartaDaPilha('${tipo}', ${index})">X</button>
+            `;
+            lista.appendChild(div);
+        });
+    }
+
+    // Configura o botão de Adicionar para pular pro Álbum
+    document.getElementById("btn-add-pilha").onclick = () => {
+        m.style.display = "none";
+        prepararSelecaoDeck(tipo, slotElement);
+    };
+
+    m.style.display = "flex";
+};
+
+// Função para APAGAR a carta específica e recalcular a matemática
+window.removerCartaDaPilha = function(tipo, index) {
+    let slotElement = tipo === 'Ataque' ? document.getElementById('pilha-ataques') : document.getElementById('pilha-locais');
+    let idsNaPilha = JSON.parse(slotElement.dataset.cartas);
+    
+    // Remove EXATAMENTE a carta que você clicou no "X"
+    idsNaPilha.splice(index, 1); 
+    slotElement.dataset.cartas = JSON.stringify(idsNaPilha);
+    
+    // Atualiza os Textos do Tabuleiro
+    let maxCartas = tipo === 'Ataque' ? 20 : 10;
+    let cont = slotElement.querySelector('.contador-cartas');
+    if(cont) {
+        cont.innerText = `${idsNaPilha.length}/${maxCartas}`;
+        cont.style.color = idsNaPilha.length > 0 ? "#00ffff" : "white";
+    }
+
+    if (tipo === 'Ataque') {
+        let custoTotal = 0;
+        idsNaPilha.forEach(id => {
+            let c = window.inventario.find(carta => carta.id == id);
+            if (c) custoTotal += (parseInt(c.custo) || 0);
+        });
+        let contCusto = slotElement.querySelector('.contador-custo');
+        if(contCusto) {
+            contCusto.innerText = `Custo: ${custoTotal}/20`;
+            contCusto.style.color = custoTotal > 20 ? "#ff5555" : (idsNaPilha.length > 0 ? "#00ffff" : "#ff5555");
+        }
+    }
+
+    // Atualiza a tela do Modal na mesma hora!
+    abrirModalPilha(tipo, slotElement);
+};
 
 function prepararSelecaoDeck(tipoDesejado, elementoSlot) {
     window.slotSelecionadoAtual = elementoSlot; 
