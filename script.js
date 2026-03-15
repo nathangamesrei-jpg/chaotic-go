@@ -2446,9 +2446,11 @@ if (btnSalvarDeck) {
 
         let deckData = { nome: nomeDeck, modo: modo, criaturas: [], equipamentos: [], mugics: [], ataques: [], locais: [] };
 
-        document.querySelectorAll('.slot-criatura').forEach(s => { if(!s.closest('.escondido')) deckData.criaturas.push(s.dataset.cartaId || null); });
-        document.querySelectorAll('.slot-equipamento').forEach(s => { if(!s.closest('.escondido')) deckData.equipamentos.push(s.dataset.cartaId || null); });
-        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => { if(!s.classList.contains('escondido')) deckData.mugics.push(s.dataset.cartaId || null); });
+        // 🐛 BUG DA CARTA FANTASMA CORRIGIDO: 
+        // Agora o Scanner salva a ordem exata (0 a 5) de todos os slots, mesmo se estiverem invisíveis!
+        document.querySelectorAll('.slot-criatura').forEach(s => { deckData.criaturas.push(s.dataset.cartaId || null); });
+        document.querySelectorAll('.slot-equipamento').forEach(s => { deckData.equipamentos.push(s.dataset.cartaId || null); });
+        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => { deckData.mugics.push(s.dataset.cartaId || null); });
 
         let pAtaques = document.getElementById('pilha-ataques');
         if(pAtaques && pAtaques.dataset.cartas) deckData.ataques = JSON.parse(pAtaques.dataset.cartas);
