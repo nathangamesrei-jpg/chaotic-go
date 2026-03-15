@@ -314,7 +314,7 @@ function gerarDNA(monstroID) {
 
 // ==========================================
 // ==========================================
-// 3. SISTEMA DE CARTA HÍBRIDA (INSPEÇÃO NORMAL)
+// 3. SISTEMA DE CARTA HÍBRIDA (INSPEÇÃO)
 // ==========================================
 window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
     tipoDeCartaAtual = tipo;
@@ -1176,7 +1176,9 @@ window.verCartaAlbum = function(id) {
     
     // 💡 O NOVO INTERCEPTADOR: Se estiver montando deck, manda o ID pra Oficina!
     if (window.slotSelecionadoAtual !== null) {
-        window.interceptarMontagemDeck(id);
+        if (typeof window.interceptarMontagemDeck === "function") {
+            window.interceptarMontagemDeck(id);
+        }
         return; // Para aqui, não abre a inspeção preta!
     }
 
@@ -1199,13 +1201,17 @@ window.verCartaAlbum = function(id) {
 let btnVoltarAlbum = document.getElementById('btn-voltar-album');
 if(btnVoltarAlbum) {
     btnVoltarAlbum.onclick = () => {
+        // Se estava escolhendo carta pro Deck, cancela e volta pra Oficina
         if (window.slotSelecionadoAtual !== null) {
-            window.slotSelecionadoAtual = null; 
+            window.slotSelecionadoAtual = null; // Limpa a memória
             document.getElementById('tela-album').style.display = 'none';
             document.getElementById('tela-decks').style.display = 'flex';
+            
             let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
             if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
-        } else {
+        } 
+        // Se era só uma visita normal ao álbum, volta pro Menu Principal
+        else {
             document.getElementById('tela-album').style.display = 'none';
             document.getElementById('tela-menu').style.display = 'flex';
         }
@@ -1213,39 +1219,976 @@ if(btnVoltarAlbum) {
 }
 
 // ==========================================
-// ⚙️ MOTOR DA OFICINA DE DECKS (ID ÚNICO, SALVAR E CARREGAR)
+// 7. SISTEMA DE PERFIL DO JOGADOR
+// ==========================================
+function abrirPerfil() {
+    document.getElementById("tela-menu").style.display = "none";
+    document.getElementById("tela-perfil").style.display = "flex";
+    modoMenu = false;
+
+    document.getElementById("nome-jogador").innerText = perfilJogador.nome + " ✏️";
+    
+    let hashId = 0; 
+    for(let i=0; i<perfilJogador.nome.length; i++) hashId += perfilJogador.nome.charCodeAt(i);
+    document.getElementById("id-jogador").innerText = "#" + (hashId * 7).toString().padStart(4, '0').substring(0,4);
+
+    let avatarBox = document.getElementById("avatar-jogador");
+    if(perfilJogador.avatar.startsWith("http") || perfilJogador.avatar.startsWith("data:image")) {
+        avatarBox.innerHTML = "";
+        avatarBox.style.backgroundImage = `url('${perfilJogador.avatar}')`;
+    } else {
+        avatarBox.style.backgroundImage = "none";
+        avatarBox.innerHTML = perfilJogador.avatar;
+    }
+
+    document.getElementById("stat-vitorias").innerText = perfilJogador.vitorias;
+    document.getElementById("stat-derrotas").innerText = perfilJogador.derrotas;
+
+    let totalCartas = 0, totalCriaturas = 0, totalLocais = 0;
+    let totalMagias = 0, totalEquips = 0, totalAtaques = 0;
+    let contagemTribos = {};
+
+    inventario.forEach(item => {
+        let qtd = item.quantidade || 1;
+        totalCartas += qtd;
+        
+        let tipo = item.tipoCarta || "Criatura";
+        if(tipo === "Criatura") totalCriaturas += qtd;
+        if(tipo === "Local") totalLocais += qtd;
+        if(tipo === "Magia") totalMagias += qtd;
+        if(tipo === "Equipamento") totalEquips += qtd;
+        if(tipo === "Ataque") totalAtaques += qtd;
+        
+        if(item.tribo) {
+            contagemTribos[item.tribo] = (contagemTribos[item.tribo] || 0) + qtd;
+        }
+    });
+
+    let triboDominante = "NENHUMA";
+    let max = 0;
+    for(let tribo in contagemTribos) {
+        if(contagemTribos[tribo] > max) {
+            max = contagemTribos[tribo];
+            triboDominante = tribo.toUpperCase();
+        }
+    }
+
+    document.getElementById("estatisticas-perfil").innerHTML = `
+        <div class="perfil-stats-grid">
+            <div class="stat-box">Cartas Totais<span>${totalCartas}</span></div>
+            <div class="stat-box">Afinidade<span>${triboDominante}</span></div>
+            <div class="stat-box">Criaturas<span>${totalCriaturas}</span></div>
+            <div class="stat-box">Locais<span>${totalLocais}</span></div>
+            <div class="stat-box">Ataques<span>${totalAtaques}</span></div>
+            <div class="stat-box">Magias<span>${totalMagias}</span></div>
+            <div class="stat-box">Equips<span>${totalEquips}</span></div>
+        </div>
+    `;
+}
+
+document.getElementById("upload-foto").addEventListener("change", function(event) {
+    let file = event.target.files[0];
+    if(!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        let img = new Image();
+        img.onload = function() {
+            let canvas = document.createElement("canvas");
+            let MAX_WIDTH = 150;
+            let MAX_HEIGHT = 150;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+                if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+            } else {
+                if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+            }
+
+            canvas.width = width; canvas.height = height;
+            let ctxCanvas = canvas.getContext("2d");
+            ctxCanvas.drawImage(img, 0, 0, width, height);
+
+            let base64Comprimido = canvas.toDataURL("image/jpeg", 0.7);
+            document.getElementById("input-novo-avatar").value = base64Comprimido;
+            mostrarMensagemScanner("FOTO CARREGADA E COMPRIMIDA!");
+        }
+        img.src = e.target.result;
+    }
+    reader.readAsDataURL(file);
+});
+
+window.abrirModalPerfil = function() {
+    document.getElementById("input-novo-nome").value = perfilJogador.nome;
+    if(perfilJogador.avatar.startsWith("http") || perfilJogador.avatar.startsWith("data:image")) {
+        document.getElementById("input-novo-avatar").value = "";
+    } else {
+        document.getElementById("input-novo-avatar").value = perfilJogador.avatar === "👤" ? "" : perfilJogador.avatar;
+    }
+    document.getElementById("modal-editar-perfil").style.display = "flex";
+}
+
+window.fecharModalPerfil = function() {
+    document.getElementById("modal-editar-perfil").style.display = "none";
+}
+
+window.salvarEdicaoPerfil = function() {
+    let nNome = document.getElementById("input-novo-nome").value.trim();
+    let nAvatar = document.getElementById("input-novo-avatar").value.trim();
+    
+    if(nNome !== "") perfilJogador.nome = nNome;
+    if(nAvatar !== "") perfilJogador.avatar = nAvatar;
+    else if (perfilJogador.avatar === "") perfilJogador.avatar = "👤"; 
+    
+    salvarPerfilNaNuvem(); // Correção: Agora salva os dados de perfil corretamente
+    fecharModalPerfil();
+    abrirPerfil(); 
+}
+
+let btnVoltarPerfil = document.getElementById("btn-voltar-perfil");
+if(btnVoltarPerfil) { btnVoltarPerfil.onclick = () => location.reload(); }
+
+// ==========================================
+// 8. REDE SOCIAL E TROCAS (EASTER EGG JOHNES)
+// ==========================================
+function abrirSocial() {
+    // 1. MODO LIMPEZA TOTAL: Desliga TODAS as outras telas antes de abrir a Social
+    document.getElementById("tela-menu").style.display = "none";
+    document.getElementById("tela-mapa").style.display = "none";
+    document.getElementById("tela-locais").style.display = "none";
+    document.getElementById("tela-album").style.display = "none";
+    document.getElementById("tela-perfil").style.display = "none";
+    document.getElementById("tela-minigame").style.display = "none";
+    document.getElementById("painel-viagem").style.display = "none";
+
+    // 2. LIGA SÓ A TELA SOCIAL
+    document.getElementById("tela-social").style.display = "flex";
+    document.getElementById("painel-botoes-fisicos").style.display = "flex";
+    
+    modoMenu = false;
+    renderizarAmigos();
+}
+
+window.adicionarAmigo = function() {
+    let busca = document.getElementById("input-add-amigo").value.trim();
+    if(busca.length < 3) { mostrarMensagemScanner("DIGITE UM NOME OU ID VÁLIDO!"); return; }
+
+    // ==========================================
+    // 🥚 EASTER EGG: CÓDIGO SECRETO JOHNES MAX
+    // ==========================================
+    if (busca.toUpperCase() === "#JOHNES") {
+        let johnesBase = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === "Johnes") : null;
+        if (johnesBase) {
+            let johnesMax = {
+                id: Date.now(), 
+                nome: johnesBase.nome + " (Max)", // Adiciona um selo especial no nome
+                tribo: johnesBase.tribo, 
+                tipoCarta: "Criatura", 
+                img: johnesBase.cartaBlank, 
+                favorito: true, // Já vem favoritado por ser épico!
+                quantidade: 1,
+                stats: {
+                    c: johnesBase.statsMax.coragem, 
+                    p: johnesBase.statsMax.poder,
+                    s: johnesBase.statsMax.sabedoria, 
+                    v: johnesBase.statsMax.velocidade, 
+                    e: johnesBase.statsMax.energia
+                }
+            };
+            window.inventario.push(johnesMax);
+            salvarAlbumNaNuvem();
+            document.getElementById("input-add-amigo").value = "";
+            mostrarMensagemScanner("EASTER EGG: JOHNES FULL STATUS DESBLOQUEADO!");
+            return; // Aborta a busca na nuvem, pois era um código secreto!
+        }
+    }
+    // ==========================================
+
+    document.getElementById("input-add-amigo").value = "Buscando na Nuvem...";
+
+    // Vai na nuvem procurar todos os jogadores
+    get(ref(db, 'jogadores')).then((snapshot) => {
+        document.getElementById("input-add-amigo").value = "";
+        
+        if (snapshot.exists()) {
+            let todosJogadores = snapshot.val();
+            let jogadorEncontrado = null;
+            let uidEncontrado = null;
+            
+            // Verifica se o jogador digitou um ID (começa com # e não é o Easter Egg)
+            let isBuscaPorID = busca.startsWith("#");
+
+            // Varredura no banco de dados
+            for (let idNuvem in todosJogadores) {
+                let jog = todosJogadores[idNuvem];
+                
+                if (isBuscaPorID) {
+                    let hashId = 0;
+                    for(let i=0; i<jog.nome.length; i++) hashId += jog.nome.charCodeAt(i);
+                    let idVisual = "#" + (hashId * 7).toString().padStart(4, '0').substring(0,4);
+                    
+                    if (idVisual === busca) {
+                        jogadorEncontrado = jog;
+                        uidEncontrado = idNuvem;
+                        break; 
+                    }
+                } else {
+                    if (jog.nome.toLowerCase() === busca.toLowerCase()) {
+                        jogadorEncontrado = jog;
+                        uidEncontrado = idNuvem;
+                        break; 
+                    }
+                }
+            }
+
+            if (jogadorEncontrado) {
+                if (uidEncontrado === uid) { mostrarMensagemScanner("NÃO PODE ADICIONAR A SI MESMO!"); return; }
+                
+                let jaAmigo = amigos.find(a => a.uid === uidEncontrado);
+                if (jaAmigo) { mostrarMensagemScanner("JÁ ESTÁ NA SUA LISTA!"); return; }
+
+                // Cria a "carta de solicitação" para enviar
+                let meuPedido = {
+                    uid: uid, 
+                    nome: perfilJogador.nome,
+                    avatar: perfilJogador.avatar
+                };
+
+                // Envia direto para a "caixa de entrada" do amigo
+                set(ref(db, 'jogadores/' + uidEncontrado + '/pedidos/' + uid), meuPedido)
+                    .then(() => mostrarMensagemScanner("PEDIDO ENVIADO PARA " + jogadorEncontrado.nome.toUpperCase() + "!"));
+            } else {
+                mostrarMensagemScanner("SINAL PERDIDO! JOGADOR OU ID NÃO ENCONTRADO.");
+            }
+        }
+    }).catch(error => {
+        document.getElementById("input-add-amigo").value = "";
+        mostrarMensagemScanner("ERRO DE CONEXÃO NO RADAR!");
+    });
+}
+
+function renderizarAmigos() {
+    let lista = document.getElementById("lista-amigos"); 
+    lista.innerHTML = "";
+
+    // 1. PRIMEIRO: Renderiza os pedidos de amizade pendentes (se alguém te adicionou)
+    if (window.pedidosAmizade) {
+        for (let idPedido in window.pedidosAmizade) {
+            let remetente = window.pedidosAmizade[idPedido];
+            let divPedido = document.createElement("div"); 
+            divPedido.className = "amigo-item";
+            divPedido.style.border = "2px dashed #ffd700"; // Borda dourada para destacar
+            
+            // O Avatar real (se for imagem URL ou emoji)
+            let avatarHTML = remetente.avatar.startsWith("http") || remetente.avatar.startsWith("data:") 
+                ? `<div class="amigo-avatar" style="background-image: url('${remetente.avatar}'); background-size: cover; background-position: center; color: transparent;">.</div>`
+                : `<div class="amigo-avatar">${remetente.avatar}</div>`;
+
+            divPedido.innerHTML = `
+                <div class="amigo-info">
+                    ${avatarHTML}
+                    <div>
+                        <div class="amigo-nome" style="color: #ffd700;">${remetente.nome}</div>
+                        <div class="amigo-id">Quer ser seu amigo!</div>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 5px;">
+                    <button class="btn-trocar" style="background: #e53935; color: #fff; font-weight: bold; padding: 6px 12px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="recusarAmigo('${idPedido}')">RECUSAR</button>
+                    <button class="btn-trocar" style="background: #ffd700; color: #000; font-weight: bold; padding: 6px 12px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="aceitarAmigo('${idPedido}', '${remetente.nome}', '${remetente.avatar}')">ACEITAR</button>
+                </div>
+            `;
+            lista.appendChild(divPedido);
+        }
+    }
+
+    // 2. DEPOIS: Renderiza os amigos que já estão na sua lista
+    if(amigos.length === 0 && !window.pedidosAmizade) { 
+        lista.innerHTML = "<p style='color:#666; font-size:10px; margin-top: 20px;'>Nenhum sinal no Radar...</p>"; 
+        return; 
+    }
+    
+    amigos.forEach((amigo, i) => {
+        let div = document.createElement("div"); 
+        div.className = "amigo-item";
+        
+        let avatarHTML = amigo.avatar.startsWith("http") || amigo.avatar.startsWith("data:") 
+            ? `<div class="amigo-avatar" style="background-image: url('${amigo.avatar}'); background-size: cover; background-position: center; color: transparent;">.</div>`
+            : `<div class="amigo-avatar">${amigo.avatar}</div>`;
+
+        div.innerHTML = `
+            <div class="amigo-info" style="cursor: pointer;" onclick="mostrarPerfilDoAmigo(${i})">
+                ${avatarHTML}
+                <div>
+                    <div class="amigo-nome">${amigo.nome}</div>
+                    <div class="amigo-id">Status: Online 🟢</div>
+                </div>
+            </div>
+            <div style="display: flex; gap: 5px;">
+                <button class="btn-trocar" style="background: #e53935; color: #fff; font-weight: bold; padding: 6px 8px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="excluirAmigo(${i})">X</button>
+                <button class="btn-trocar" style="background: #4CAF50; color: #000; font-weight: bold; padding: 6px 12px; border-radius: 5px; border:none; cursor: pointer; font-size: 10px;" onclick="iniciarTroca(${i})">TROCAR</button>
+            </div>
+        `;
+        lista.appendChild(div);
+    });
+}
+
+// Função para quando você clica em RECUSAR o convite
+window.recusarAmigo = function(uidAmigo) {
+    // Apenas apaga o pedido da sua "caixa de entrada" sem adicionar à lista
+    set(ref(db, 'jogadores/' + uid + '/pedidos/' + uidAmigo), null);
+    mostrarMensagemScanner("SINAL REJEITADO.");
+}
+
+// Função para quando você clica em ACEITAR o convite
+window.aceitarAmigo = function(uidAmigo, nomeAmigo, avatarAmigo) {
+    // 1. Adiciona ele na sua lista
+    amigos.push({ uid: uidAmigo, nome: nomeAmigo, avatar: avatarAmigo });
+    salvarAmigosNaNuvem();
+
+    // 2. Apaga o pedido da sua "caixa de entrada"
+    set(ref(db, 'jogadores/' + uid + '/pedidos/' + uidAmigo), null);
+
+    // 3. (Opcional) Adiciona você na lista dele automaticamente!
+    get(ref(db, 'jogadores/' + uidAmigo + '/amigos')).then((snap) => {
+        let amigosDele = snap.exists() ? snap.val() : [];
+        amigosDele.push({ uid: uid, nome: perfilJogador.nome, avatar: perfilJogador.avatar });
+        set(ref(db, 'jogadores/' + uidAmigo + '/amigos'), amigosDele);
+    });
+
+    mostrarMensagemScanner(nomeAmigo.toUpperCase() + " AGORA É SEU ALIADO!");
+}
+
+// Função para EXCLUIR o amigo da lista
+window.excluirAmigo = function(index) {
+    let amigoRemovido = amigos[index];
+    amigos.splice(index, 1); // Remove da sua lista local
+    salvarAmigosNaNuvem();   // Atualiza a nuvem
+    
+    // Remove você da lista do seu amigo também (Corte definitivo)
+    get(ref(db, 'jogadores/' + amigoRemovido.uid + '/amigos')).then((snap) => {
+        if (snap.exists()) {
+            let amigosDele = snap.val();
+            let novaListaDele = amigosDele.filter(a => a.uid !== uid);
+            set(ref(db, 'jogadores/' + amigoRemovido.uid + '/amigos'), novaListaDele);
+        }
+    });
+    
+    mostrarMensagemScanner("CONEXÃO COM " + amigoRemovido.nome.toUpperCase() + " CORTADA!");
+    renderizarAmigos();
+}
+
+// Função para ver o perfil do amigo em tempo real!
+window.mostrarPerfilDoAmigo = function(index) {
+    let amigo = amigos[index];
+    mostrarMensagemScanner("Acessando dados de " + amigo.nome.toUpperCase() + "...");
+    
+    // Conecta na pasta pessoal do amigo na nuvem
+    get(ref(db, 'jogadores/' + amigo.uid)).then((snapshot) => {
+        if (snapshot.exists()) {
+            let dadosAmigo = snapshot.val();
+            
+            // Preenche o nome
+            document.getElementById("nome-amigo-modal").innerText = dadosAmigo.nome;
+            
+            // Preenche o Avatar (suporta Emojis e Fotos com compressão)
+            let avatarBox = document.getElementById("avatar-amigo-modal");
+            if (dadosAmigo.avatar && (dadosAmigo.avatar.startsWith("http") || dadosAmigo.avatar.startsWith("data:"))) {
+                avatarBox.innerHTML = "";
+                avatarBox.style.backgroundImage = `url('${dadosAmigo.avatar}')`;
+            } else {
+                avatarBox.style.backgroundImage = "none";
+                avatarBox.innerHTML = dadosAmigo.avatar || "👤";
+            }
+
+            // Preenche as estatísticas de batalha
+            document.getElementById("vitorias-amigo-modal").innerText = dadosAmigo.vitorias || 0;
+            document.getElementById("derrotas-amigo-modal").innerText = dadosAmigo.derrotas || 0;
+            
+            // Exibe a tela hacker!
+            document.getElementById("modal-perfil-amigo").style.display = "flex";
+            
+        } else {
+            mostrarMensagemScanner("SINAL PERDIDO! Dados corrompidos.");
+        }
+    }).catch(error => {
+        mostrarMensagemScanner("ERRO DE COMUNICAÇÃO NO RADAR!");
+    });
+}
+
+// O botão de fechar a inspeção
+window.fecharPerfilAmigo = function() {
+    document.getElementById("modal-perfil-amigo").style.display = "none";
+}
+
+// Cria a sala e chama o amigo
+window.iniciarTroca = function(index) {
+    amigoAtualTroca = amigos[index];
+    let salaId = uid + "_" + amigoAtualTroca.uid; // ID único da sala
+    
+    mostrarMensagemScanner("CHAMANDO " + amigoAtualTroca.nome.toUpperCase() + "...");
+
+    // Cria a sala no servidor
+    set(ref(db, 'salas_troca/' + salaId), {
+        p1: { uid: uid, nome: perfilJogador.nome, carta: null, pronto: false },
+        p2: { uid: amigoAtualTroca.uid, nome: amigoAtualTroca.nome, carta: null, pronto: false },
+        status: "aberta"
+    });
+
+    // Envia o "toca o telefone" pro celular do amigo
+    set(ref(db, 'jogadores/' + amigoAtualTroca.uid + '/chamada_troca'), {
+        de: uid, nome: perfilJogador.nome, salaId: salaId
+    });
+
+    entrarNaSalaDeTroca(salaId, true, amigoAtualTroca.uid, amigoAtualTroca.nome);
+}
+
+window.trocaEmAndamento = false; // O Cadeado Global
+
+function entrarNaSalaDeTroca(salaId, isP1, idAmigo, nomeAmigo) {
+    mudarMusicaFundo('lobby');
+    salaTrocaAtual = salaId;
+    souP1 = isP1;
+    minhaCartaOfertada = null;
+    cartaSimuladaAmigo = null;
+    window.trocaEmAndamento = false; // Destranca o cadeado ao entrar
+
+    document.getElementById("nome-troca-amigo").innerText = "Lobby com " + nomeAmigo;
+    document.getElementById("modal-troca").style.display = "flex";
+    
+    document.getElementById("slot-minha-carta").style.backgroundImage = "none";
+    document.getElementById("slot-minha-carta").innerHTML = "+";
+    document.getElementById("slot-carta-amigo").style.backgroundImage = "none";
+    document.getElementById("slot-carta-amigo").innerHTML = "?";
+    
+    let btnConf = document.getElementById("btn-confirmar-troca");
+    btnConf.disabled = true;
+    btnConf.innerText = "CONFIRMAR";
+    btnConf.style.background = "#555"; btnConf.style.color = "#222";
+
+    onValue(ref(db, 'salas_troca/' + salaId), (snapshot) => {
+        if (!snapshot.exists()) {
+            if (document.getElementById("modal-troca").style.display === "flex") {
+                fecharTroca();
+                mostrarMensagemScanner("A SALA DE TROCA FOI FECHADA.");
+            }
+            return;
+        }
+
+        let sala = snapshot.val();
+        
+        if (sala.status === "concluida") {
+            mostrarMensagemScanner("TROCA ÉPICA CONCLUÍDA!");
+            fecharTroca();
+            return;
+        }
+
+        if (sala.status === "ocupado" && isP1) {
+            mostrarMensagemScanner("O JOGADOR PEDIU PARA ESPERAR!");
+            fecharTroca();
+            return;
+        }
+        if (sala.status === "recusado" && isP1) {
+            mostrarMensagemScanner("O JOGADOR RECUSOU A TROCA.");
+            fecharTroca();
+            return;
+        }
+
+        let meusDados = isP1 ? sala.p1 : sala.p2;
+        let dadosAmigo = isP1 ? sala.p2 : sala.p1;
+
+        let slotAmigo = document.getElementById("slot-carta-amigo");
+        slotAmigo.style.position = "relative";
+        slotAmigo.onclick = null; 
+        
+        if (dadosAmigo.carta) {
+            cartaSimuladaAmigo = dadosAmigo.carta;
+            slotAmigo.innerHTML = `<div style="position:absolute; top: -8px; right: -8px; background: #000; border: 1px solid #4CAF50; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; z-index: 10;">🔍</div>`;
+            slotAmigo.style.backgroundImage = `url('${dadosAmigo.carta.img}')`;
+            slotAmigo.style.backgroundSize = "cover";
+            slotAmigo.style.cursor = "pointer";
+            slotAmigo.onclick = () => inspecionarCartaTroca(cartaSimuladaAmigo);
+            
+        } else {
+            slotAmigo.innerHTML = "?";
+            slotAmigo.style.backgroundImage = "none";
+            slotAmigo.style.cursor = "default";
+            cartaSimuladaAmigo = null;
+        }
+
+        // CADEADO ATIVADO: Só roda a matemática UMA VEZ!
+        if (sala.p1.pronto && sala.p2.pronto && isP1 && sala.status === "aberta" && !window.trocaEmAndamento) {
+            window.trocaEmAndamento = true; // Tranca a porta!
+            executarTrocaFinal(sala);
+        }
+    });
+}
+// Função para Inspecionar Cartas dentro do Lobby de Troca
+window.inspecionarCartaTroca = function(carta) {
+    if(!carta) return;
+    abrirDetalheCarta(carta.nome, carta.tribo, carta.img, "inspecao_troca");
+    
+    if (carta.tipoCarta === "Local") {
+        document.getElementById("camada-stats").style.display = "none";
+    } else {
+        document.getElementById("camada-stats").style.display = "block";
+        document.getElementById("stat-coragem").innerText = carta.stats.c;
+        document.getElementById("stat-poder").innerText = carta.stats.p;
+        document.getElementById("stat-sabedoria").innerText = carta.stats.s;
+        document.getElementById("stat-velocidade").innerText = carta.stats.v;
+        document.getElementById("stat-energia").innerText = carta.stats.e;
+    }
+}
+
+
+// Quando você clica no [+] para escolher a sua carta
+window.abrirSelecaoTroca = function() {
+    document.getElementById("modal-selecao-troca").style.display = "flex";
+    let lista = document.getElementById("lista-cartas-troca"); 
+    lista.innerHTML = "";
+    
+    let disponiveis = inventario.filter(c => !c.favorito); 
+    if(disponiveis.length === 0) { lista.innerHTML = "<p style='color:#ff5555; font-size:10px; text-align:center;'>Nenhuma carta disponível.</p>"; return; }
+
+    disponiveis.forEach(item => {
+        let div = document.createElement("div");
+        div.style = "background: #111; border: 1px solid #ff5555; padding: 5px; display: flex; align-items: center; gap: 10px; cursor: pointer;";
+        div.onclick = () => selecionarMinhaCartaTroca(item.id);
+        
+        let qtd = item.quantidade || 1;
+        let detalhesCarta = "";
+        
+        // Puxa os stats para mostrar na tela de escolha!
+        if (item.tipoCarta === "Local") {
+            detalhesCarta = `<div style="font-size: 9px; color: #4CAF50; margin-top: 2px;">TIPO: LOCAL | CÓPIAS: ${qtd}</div>`;
+        } else {
+            detalhesCarta = `<div style="font-size: 8px; color: #4CAF50; line-height: 1.2; margin-top: 2px;">E:${item.stats.e} | C:${item.stats.c} | P:${item.stats.p} | S:${item.stats.s} | V:${item.stats.v}</div>`;
+        }
+
+        div.innerHTML = `
+            <img src="${item.img}" style="width: 40px; border-radius: 3px;">
+            <div style="text-align: left; flex: 1;">
+                <span style="color: white; font-size: 11px; font-weight: bold;">${item.nome}</span>
+                ${detalhesCarta}
+            </div>
+        `;
+        lista.appendChild(div);
+    });
+}
+
+// Quando você escolhe a carta, ela vai para a nuvem na hora!
+window.selecionarMinhaCartaTroca = function(idCarta) {
+    minhaCartaOfertada = inventario.find(c => c.id === idCarta);
+    
+    let slot = document.getElementById("slot-minha-carta");
+    slot.style.position = "relative";
+    
+    // Adiciona uma Lupa no canto. Clicar nela inspeciona a carta!
+    slot.innerHTML = `<div onclick="event.stopPropagation(); inspecionarCartaTroca(minhaCartaOfertada)" style="position:absolute; top: -8px; right: -8px; background: #000; border: 1px solid #ff5555; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; z-index: 10;">🔍</div>`;
+    
+    slot.style.backgroundImage = `url('${minhaCartaOfertada.img}')`;
+    slot.style.backgroundSize = "cover";
+    
+    let jogadorKey = souP1 ? 'p1' : 'p2';
+    update(ref(db, 'salas_troca/' + salaTrocaAtual + '/' + jogadorKey), { carta: minhaCartaOfertada });
+    
+    let btnConf = document.getElementById("btn-confirmar-troca");
+    btnConf.disabled = false;
+    btnConf.style.background = "#4CAF50"; btnConf.style.color = "#000";
+    
+    fecharSelecaoTroca();
+}
+
+window.confirmarTroca = function() {
+    if(!minhaCartaOfertada || !cartaSimuladaAmigo) {
+        mostrarMensagemScanner("Aguarde a oferta do outro escaneador!"); return;
+    }
+    
+    // Avisa a sala que você está pronto
+    let jogadorKey = souP1 ? 'p1' : 'p2';
+    update(ref(db, 'salas_troca/' + salaTrocaAtual + '/' + jogadorKey), { pronto: true });
+    
+    let btnConf = document.getElementById("btn-confirmar-troca");
+    btnConf.innerText = "AGUARDANDO O OUTRO...";
+    btnConf.disabled = true;
+    btnConf.style.background = "#ffd700";
+}
+
+function executarTrocaFinal(sala) {
+    update(ref(db, 'salas_troca/' + salaTrocaAtual), { status: "processando" });
+
+    // A REGRA DE OURO: Quais cartas podem ser empilhadas? (Tudo, menos Criatura!)
+    const podeEmpilhar = (tipo) => ["Local", "Magia", "Ataque", "Equipamento"].includes(tipo);
+
+    // Puxa o álbum do Amigo (P2)
+    get(ref(db, 'jogadores/' + sala.p2.uid + '/album')).then(snap2 => {
+        let albumAmigo = snap2.exists() ? snap2.val() : [];
+
+        // 1. REMOVE A CARTA DO AMIGO (P2) DA NUVEM DELE
+        let c2Index = albumAmigo.findIndex(c => c.id === sala.p2.carta.id);
+        if(c2Index > -1) {
+            if(albumAmigo[c2Index].quantidade > 1) { albumAmigo[c2Index].quantidade--; }
+            else { albumAmigo.splice(c2Index, 1); }
+        }
+
+        // 2. REMOVE A SUA CARTA (P1) DA SUA NUVEM
+        let meuAlbum = [...window.inventario]; 
+        let c1Index = meuAlbum.findIndex(c => c.id === sala.p1.carta.id);
+        if(c1Index > -1) {
+            if(meuAlbum[c1Index].quantidade > 1) { meuAlbum[c1Index].quantidade--; }
+            else { meuAlbum.splice(c1Index, 1); }
+        }
+
+        // 3. DÁ A SUA CARTA PARA O AMIGO (P2)
+        if (podeEmpilhar(sala.p1.carta.tipoCarta)) {
+            // Procura se o amigo já tem essa carta específica
+            let cartaExistente = albumAmigo.find(c => c.nome === sala.p1.carta.nome && c.tipoCarta === sala.p1.carta.tipoCarta);
+            if (cartaExistente) { cartaExistente.quantidade = (cartaExistente.quantidade || 1) + 1; }
+            else {
+                let nova = {...sala.p1.carta}; nova.id = Date.now() + 10; nova.quantidade = 1; albumAmigo.push(nova);
+            }
+        } else {
+            // É criatura, então cria uma única com DNA/Stats próprios
+            let nova = {...sala.p1.carta}; nova.id = Date.now() + 10; nova.quantidade = 1; albumAmigo.push(nova);
+        }
+
+        // 4. DÁ A CARTA DO AMIGO PARA VOCÊ (P1)
+        if (podeEmpilhar(sala.p2.carta.tipoCarta)) {
+            // Procura se você já tem essa carta específica
+            let cartaExistente = meuAlbum.find(c => c.nome === sala.p2.carta.nome && c.tipoCarta === sala.p2.carta.tipoCarta);
+            if (cartaExistente) { cartaExistente.quantidade = (cartaExistente.quantidade || 1) + 1; }
+            else {
+                let nova = {...sala.p2.carta}; nova.id = Date.now() + 20; nova.quantidade = 1; meuAlbum.push(nova);
+            }
+        } else {
+            // É criatura, então cria uma única com DNA/Stats próprios
+            let nova = {...sala.p2.carta}; nova.id = Date.now() + 20; nova.quantidade = 1; meuAlbum.push(nova);
+        }
+
+        // SALVA AS DUAS CONTAS NA NUVEM!
+        set(ref(db, 'jogadores/' + sala.p2.uid + '/album'), albumAmigo); 
+        window.inventario = meuAlbum; 
+        salvarAlbumNaNuvem(); 
+
+        // ENCERRA E DESTRÓI A SALA
+        update(ref(db, 'salas_troca/' + salaTrocaAtual), { status: "concluida" });
+        setTimeout(() => {
+            remove(ref(db, 'salas_troca/' + salaTrocaAtual));
+            window.trocaEmAndamento = false; // Destranca a porta pro futuro
+        }, 2000);
+    });
+}
+
+window.fecharTroca = function() { 
+    mudarMusicaFundo('menu');
+    if(salaTrocaAtual && souP1) { remove(ref(db, 'salas_troca/' + salaTrocaAtual)); }
+    salaTrocaAtual = null;
+    window.trocaEmAndamento = false; // Garante o reset do cadeado
+    document.getElementById("modal-troca").style.display = "none"; 
+}
+
+window.fecharSelecaoTroca = function() { document.getElementById("modal-selecao-troca").style.display = "none"; }
+
+// Ativando o botão Voltar da Aba Social
+let btnVoltarSocial = document.getElementById("btn-voltar-social");
+if(btnVoltarSocial) { btnVoltarSocial.onclick = () => location.reload(); }
+
+// ==========================================
+// 9. CARROSSEL DINÂMICO E BOTÕES FÍSICOS
+// ==========================================
+let locaisDesbloqueados = [];
+let indiceLocalAtual = 0;
+
+// O Motor que constrói a tela de seleção de lugares
+window.renderizarCarrosselLocais = function() {
+    let locaisUnicos = {};
+    window.inventario.forEach(item => {
+        if (item.tipoCarta === "Local") {
+            locaisUnicos[item.nome] = item;
+        }
+    });
+    locaisDesbloqueados = Object.values(locaisUnicos);
+
+    if (locaisDesbloqueados.length === 0) return;
+
+    if (indiceLocalAtual >= locaisDesbloqueados.length) indiceLocalAtual = 0;
+    if (indiceLocalAtual < 0) indiceLocalAtual = locaisDesbloqueados.length - 1;
+
+    let localAtual = locaisDesbloqueados[indiceLocalAtual];
+
+    let container = document.querySelector(".carrossel-cartas");
+    container.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center;">
+            <p style="color: #4CAF50; font-weight: bold; margin-bottom: 15px; font-size: 15px; text-shadow: 0 0 5px #000; text-align: center; font-family: monospace; letter-spacing: 1px;">
+                ${localAtual.nome.toUpperCase()}
+            </p>
+            <div class="carta-local-real" onclick="abrirDetalheCarta('${localAtual.nome}', '${localAtual.tribo}', '${localAtual.img}', 'local')">
+                <img src="${localAtual.img}" alt="Carta ${localAtual.nome}">
+            </div>
+        </div>
+    `;
+}
+
+// Configura as setinhas verdes da tela de Locais
+document.addEventListener("DOMContentLoaded", () => {
+    let sEsq = document.getElementById("seta-esq-local");
+    if(sEsq) {
+        sEsq.onclick = () => {
+            if (locaisDesbloqueados.length <= 1) { mostrarMensagemScanner("Nenhum outro local desbloqueado!"); return; }
+            if (navigator.vibrate) navigator.vibrate(50);
+            indiceLocalAtual--;
+            renderizarCarrosselLocais();
+        };
+    }
+    
+    let sDir = document.getElementById("seta-dir-local");
+    if(sDir) {
+        sDir.onclick = () => {
+            if (locaisDesbloqueados.length <= 1) { mostrarMensagemScanner("Nenhum outro local desbloqueado!"); return; }
+            if (navigator.vibrate) navigator.vibrate(50);
+            indiceLocalAtual++;
+            renderizarCarrosselLocais();
+        };
+    }
+    
+    let vMenu = document.getElementById("btn-voltar-menu");
+    if(vMenu) vMenu.onclick = () => location.reload();
+});
+
+let apps = document.querySelectorAll(".app-icone");
+apps.forEach((app, index) => {
+    app.onclick = function() {
+        if (modoMenu) {
+            indexSelecionado = index;
+            atualizarSelecao();
+            if (index === 0) {
+                document.getElementById("tela-menu").style.display = "none";
+                document.getElementById("tela-locais").style.display = "flex";
+                modoMenu = false;
+                renderizarCarrosselLocais(); 
+            } else if (index === 1) {
+                abrirAlbum();
+            } else if (index === 2) {
+                mostrarMensagemScanner("Drome em manutenção..."); 
+            } else if (index === 3) {
+                abrirSocial();
+            } else if (index === 4) {
+                abrirPerfil();
+            } else if (index === 5) {
+                abrirOficinaDecks(); // <--- NOSSA NOVA TELA AQUI!
+            }
+        }
+    };
+});
+
+// A função que liga a tela e o botão de voltar da Oficina
+window.abrirOficinaDecks = function() {
+    document.getElementById("tela-menu").style.display = "none";
+    document.getElementById("tela-decks").style.display = "flex";
+    modoMenu = false;
+    
+    if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
+
+    // 💡 GATILHO DE CARREGAMENTO AUTOMÁTICO: Ao abrir a tela, puxa o Slot 1!
+    let seletorSlot = Array.from(document.querySelectorAll('#tela-decks select')).find(s => s.innerHTML.includes('Slot'));
+    if (seletorSlot) {
+        let slotId = seletorSlot.value.toLowerCase().replace(/salvar no /g, '').replace(/ /g, '_');
+        if (typeof window.carregarDeckDaNuvem === "function") {
+            window.carregarDeckDaNuvem(slotId);
+        }
+    }
+};
+
+
+// ==========================================
+// 📚 LÓGICA DO MANUAL DE REGRAS (LIVRO ANIMADO)
 // ==========================================
 
-// 1. Botão de Sair (Corrigido o travamento!)
+// Função para Abrir o Modal do Livro
+window.abrirLivroRegras = function() {
+    let modal = document.getElementById("modal-livro-regras");
+    if(modal) {
+        modal.classList.remove("escondido"); // Mostra o modal
+        tocarSFX('notificacao'); // Toca o som de notificação (opcional)
+        // Reinicia para a primeira página ao abrir
+        let paginas = document.querySelectorAll(".pagina");
+        paginas.forEach((p, index) => {
+            p.classList.remove("pagina-ativa", "pagina-anterior");
+            if(index === 0) p.classList.add("pagina-ativa");
+            else p.classList.add("pagina-proxima");
+        });
+        window.paginaAtualLivro = 0; // Controla a página atual globalmente
+    }
+};
+
+// Função para Fechar o Modal do Livro
+window.fecharLivroRegras = function() {
+    let modal = document.getElementById("modal-livro-regras");
+    if(modal) {
+        modal.classList.add("escondido"); // Esconde o modal
+        mudarMusicaFundo('menu'); // Toca a música do menu (opcional)
+    }
+};
+
+// Função Inteligente para Mudar Página
+window.mudarPaginaLivro = function(direcao) {
+    let paginas = document.querySelectorAll(".pagina");
+    let numPaginas = paginas.length;
+    let novaPagina = window.paginaAtualLivro + direcao;
+
+    // Impede de ir além da primeira ou última página
+    if(novaPagina < 0 || novaPagina >= numPaginas) return;
+
+    // Aplica as classes CSS para animação de virada
+    paginas.forEach((p, index) => {
+        p.classList.remove("pagina-ativa", "pagina-anterior", "pagina-proxima");
+        
+        if(index === novaPagina) {
+            p.classList.add("pagina-ativa"); // A página que está sendo lida
+        } else if(index < novaPagina) {
+            p.classList.add("pagina-anterior"); // Páginas que já foram viradas
+        } else {
+            p.classList.add("pagina-proxima"); // Páginas que ainda não foram lidas
+        }
+    });
+
+    window.paginaAtualLivro = novaPagina; // Atualiza o índice da página atual
+    tocarSFX('viajar'); // Toca o som de virar página (opcional, use o mesmo som de 'viajar')
+};
+
+// Adiciona os Ouvintes de Evento (onclick)
+if(document.getElementById("btn-help-decks")) {
+    document.getElementById("btn-help-decks").onclick = () => abrirLivroRegras();
+}
+
+if(document.getElementById("btn-close-livro")) {
+    document.getElementById("btn-close-livro").onclick = () => fecharLivroRegras();
+}
+
+if(document.getElementById("btn-pagina-anterior")) {
+    document.getElementById("btn-pagina-anterior").onclick = () => mudarPaginaLivro(-1);
+}
+
+if(document.getElementById("btn-pagina-proxima")) {
+    document.getElementById("btn-pagina-proxima").onclick = () => mudarPaginaLivro(1);
+}
+
+// ==========================================
+// ⚙️ LÓGICA DO TABULEIRO DE DECKS
+// ==========================================
+
+// 1. Botão de Sair da Oficina
 let btnSairOficina = document.getElementById("btn-voltar-decks");
 if (btnSairOficina) {
     btnSairOficina.addEventListener("click", function() {
         document.getElementById("tela-decks").style.display = "none";
         document.getElementById("tela-menu").style.display = "flex";
-        window.slotSelecionadoAtual = null; // Limpa a memória por segurança
+        
+        // Opcional: Tocar musiquinha do menu se você tiver!
+        // mudarMusicaFundo('menu'); 
     });
 }
-
 let seletorModo = document.getElementById("seletor-modo-deck");
 if(seletorModo) {
     seletorModo.addEventListener("change", function() {
-        let modo = this.value; 
-        let linha3 = document.querySelector(".linha-3"); 
-        let linha2 = document.querySelector(".linha-2"); 
-        let mugics = document.querySelectorAll(".slot-mugic-heptagono"); 
+        let modo = this.value; // Pega o que você escolheu (6x6, 3x3 ou 1x1)
+        
+        let linha3 = document.querySelector(".linha-3"); // Fileira de trás (3 slots)
+        let linha2 = document.querySelector(".linha-2"); // Fileira do meio (2 slots)
+        let mugics = document.querySelectorAll(".slot-mugic-heptagono"); // Pega todos os 6 mugics
 
+        // MODO 6x6 (Mostra tudo)
         if(modo === "6x6") {
-            linha3.classList.remove("escondido"); linha2.classList.remove("escondido");
+            linha3.classList.remove("escondido");
+            linha2.classList.remove("escondido");
             mugics.forEach(m => m.classList.remove("escondido"));
-        } else if(modo === "3x3") {
-            linha3.classList.add("escondido"); linha2.classList.remove("escondido");
-            mugics.forEach((m, index) => { if(index >= 3) m.classList.add("escondido"); else m.classList.remove("escondido"); });
-        } else if(modo === "1x1") {
-            linha3.classList.add("escondido"); linha2.classList.add("escondido");
-            mugics.forEach((m, index) => { if(index >= 1) m.classList.add("escondido"); else m.classList.remove("escondido"); });
+        } 
+        // MODO 3x3 RÁPIDO (Referência 2-1)
+        else if(modo === "3x3") {
+            linha3.classList.add("escondido");   // Some com os 3 de trás
+            linha2.classList.remove("escondido"); // Mantém os 2 do meio
+            
+            // Varre os Mugics e esconde os que passarem do número 3
+            mugics.forEach((m, index) => {
+                if(index >= 3) m.classList.add("escondido");
+                else m.classList.remove("escondido");
+            });
+        } 
+        // MODO 1x1 DUELO
+        else if(modo === "1x1") {
+            linha3.classList.add("escondido"); // Some com os 3 de trás
+            linha2.classList.add("escondido"); // Some com os 2 do meio
+            
+            // Varre os Mugics e deixa apenas o PRIMEIRO
+            mugics.forEach((m, index) => {
+                if(index >= 1) m.classList.add("escondido");
+                else m.classList.remove("escondido");
+            });
         }
     });
 }
+
+function atualizarSelecao() {
+    apps.forEach(app => app.classList.remove("app-selecionado"));
+    if(apps[indexSelecionado]) apps[indexSelecionado].classList.add("app-selecionado");
+}
+
+document.getElementById("btn-escanear").onclick = function() {
+    if (modoMenu) {
+        if (indexSelecionado === 0) {
+            document.getElementById("tela-menu").style.display = "none";
+            document.getElementById("tela-locais").style.display = "flex";
+            modoMenu = false;
+            renderizarCarrosselLocais(); 
+        } else if (indexSelecionado === 1) {
+            abrirAlbum();
+        } else if (indexSelecionado === 2) {
+            mostrarMensagemScanner("Drome em manutenção...");
+        } else if (indexSelecionado === 3) {
+            abrirSocial();
+        } else if (indexSelecionado === 4) {
+            abrirPerfil();
+        } else if (indexSelecionado === 5) {
+            abrirOficinaDecks(); 
+        } else {
+            mostrarMensagemScanner("Módulo em desenvolvimento...");
+        }
+    } else if (document.getElementById("tela-minigame") && document.getElementById("tela-minigame").style.display === "block") {
+        verificarAcerto();
+    } else if (document.getElementById("tela-mapa") && document.getElementById("tela-mapa").style.display === "flex") {
+        escanearLocalAtual();
+    }
+};
+
+document.getElementById("btn-dir").onclick = () => { 
+    if(modoMenu && indexSelecionado < apps.length - 1) { indexSelecionado++; atualizarSelecao(); } 
+};
+document.getElementById("btn-esq").onclick = () => { 
+    if(modoMenu && indexSelecionado > 0) { indexSelecionado--; atualizarSelecao(); } 
+};
+
+document.getElementById("btn-baixo").onclick = () => {
+    let tAlbum = document.getElementById("lista-cartas");
+    let tPerfil = document.getElementById("tela-perfil");
+    let tSocial = document.getElementById("tela-social");
+    if (document.getElementById("tela-album").style.display === "flex") tAlbum.scrollBy({ top: 50, behavior: 'smooth' });
+    if (document.getElementById("tela-perfil").style.display === "flex") tPerfil.scrollBy({ top: 50, behavior: 'smooth' });
+    if (document.getElementById("tela-social").style.display === "flex") tSocial.scrollBy({ top: 50, behavior: 'smooth' });
+};
+
+document.getElementById("btn-cima").onclick = () => {
+    let tAlbum = document.getElementById("lista-cartas");
+    let tPerfil = document.getElementById("tela-perfil");
+    let tSocial = document.getElementById("tela-social");
+    if (document.getElementById("tela-album").style.display === "flex") tAlbum.scrollBy({ top: -50, behavior: 'smooth' });
+    if (document.getElementById("tela-perfil").style.display === "flex") tPerfil.scrollBy({ top: -50, behavior: 'smooth' });
+    if (document.getElementById("tela-social").style.display === "flex") tSocial.scrollBy({ top: -50, behavior: 'smooth' });
+};
+
+atualizarSelecao();
+// ==========================================
+// ⚙️ MOTOR DA OFICINA DE DECKS (ID ÚNICO E NUVEM)
+// ==========================================
 
 // Ouvintes de Clique nos Buracos do Tabuleiro
 window.slotSelecionadoAtual = null; 
@@ -1293,7 +2236,7 @@ window.interceptarMontagemDeck = function(idCarta) {
     document.querySelectorAll('.pilha-cartas').forEach(p => {
         if(p.dataset.cartas) {
             let arr = JSON.parse(p.dataset.cartas);
-            qtdPilhas += arr.filter(idSalvo => idSalvo == idCarta).length; // Procura pelo ID
+            qtdPilhas += arr.filter(idSalvo => idSalvo == idCarta).length;
         }
     });
     if (slot.dataset.cartaId == idCarta) qtdNoDOM--; // Desconta se for o mesmo buraco
@@ -1331,7 +2274,7 @@ window.interceptarMontagemDeck = function(idCarta) {
             slot.style.backgroundSize = 'cover'; slot.style.backgroundPosition = 'center';
         }
         slot.innerHTML = '';
-        slot.dataset.cartaId = idCarta; // SALVA O ID NO QUADRADO!
+        slot.dataset.cartaId = idCarta; // SALVA O ID
     } else {
         let contador = slot.querySelector('.contador-cartas');
         if(contador) {
@@ -1345,7 +2288,7 @@ window.interceptarMontagemDeck = function(idCarta) {
                 contador.style.color = "#00ffff";
 
                 let cartasNaPilha = slot.dataset.cartas ? JSON.parse(slot.dataset.cartas) : [];
-                cartasNaPilha.push(idCarta); // SALVA O ID NA PILHA!
+                cartasNaPilha.push(idCarta);
                 slot.dataset.cartas = JSON.stringify(cartasNaPilha);
 
                 if (slot.id === 'pilha-ataques') {
@@ -1507,7 +2450,7 @@ let evtSeletorModo = document.getElementById("seletor-modo-deck");
 let evtSeletorSlot = Array.from(document.querySelectorAll('#tela-decks select')).find(s => s.innerHTML.includes('Slot'));
 
 if (evtSeletorModo) {
-    evtSeletorModo.addEventListener('change', (e) => { // <-- O 'e' evita o bug!
+    evtSeletorModo.addEventListener('change', (e) => { 
         if (e && e.isTrusted) {
             window.limparTabuleiroDeck();
             mostrarMensagemScanner("MODO ALTERADO. TABULEIRO LIMPO!");
@@ -1521,9 +2464,6 @@ if (evtSeletorSlot) {
         window.carregarDeckDaNuvem(slotId);
     });
 }
-// ==========================================
-// FIM DO ARQUIVO
-
 
 
 
