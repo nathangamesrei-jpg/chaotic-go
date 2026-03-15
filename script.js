@@ -2136,7 +2136,65 @@ document.getElementById("btn-cima").onclick = () => {
 };
 
 atualizarSelecao();
+// ==========================================
+// 🃏 SISTEMA DE MONTAGEM DE DECK (ETAPA 1: A PONTE)
+// ==========================================
 
+// Variável global para o Scanner lembrar qual buraco você quer preencher
+window.slotSelecionadoAtual = null; 
+
+// 1. Ouvintes de Clique nas Criaturas
+document.querySelectorAll('.slot-criatura').forEach(slot => {
+    slot.addEventListener('click', function() {
+        prepararSelecaoDeck('Criatura', this);
+    });
+});
+
+// 2. Ouvintes de Clique nos Equipamentos
+document.querySelectorAll('.slot-equipamento').forEach(slot => {
+    slot.addEventListener('click', function(event) {
+        event.stopPropagation(); // 🛡️ Evita clicar na criatura sem querer!
+        prepararSelecaoDeck('Equipamento', this);
+    });
+});
+
+// 3. Ouvintes de Clique nos Mugics
+document.querySelectorAll('.slot-mugic-heptagono').forEach(slot => {
+    slot.addEventListener('click', function() {
+        prepararSelecaoDeck('Magia', this);
+    });
+});
+
+// 4. Ouvintes de Clique nas Pilhas (Ataques e Locais)
+let btnPilhaAtaques = document.getElementById('pilha-ataques');
+if(btnPilhaAtaques) {
+    btnPilhaAtaques.addEventListener('click', () => prepararSelecaoDeck('Ataque', btnPilhaAtaques));
+}
+
+let btnPilhaLocais = document.getElementById('pilha-locais');
+if(btnPilhaLocais) {
+    btnPilhaLocais.addEventListener('click', () => prepararSelecaoDeck('Local', btnPilhaLocais));
+}
+
+// 🎯 Função Mágica que liga a Oficina ao Álbum
+function prepararSelecaoDeck(tipoDesejado, elementoSlot) {
+    window.slotSelecionadoAtual = elementoSlot; // Grava o slot na memória
+    
+    // Esconde a Oficina e mostra o Álbum
+    document.getElementById('tela-decks').style.display = 'none';
+    document.getElementById('tela-album').style.display = 'flex';
+    
+    // Muda o título do álbum para você saber o que está escolhendo
+    let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
+    if(tituloAlbum) tituloAlbum.innerText = "SELECIONE: " + tipoDesejado.toUpperCase();
+    
+    // Força o Filtro do álbum a mostrar só o tipo certo!
+    let selectTipo = document.getElementById('filtro-tipo');
+    if(selectTipo) {
+        selectTipo.value = tipoDesejado;
+        selectTipo.dispatchEvent(new Event('change')); // Avisa o sistema que o filtro mudou
+    }
+}
 
 
 
