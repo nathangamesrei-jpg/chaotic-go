@@ -316,7 +316,7 @@ function gerarDNA(monstroID) {
 // 3. SISTEMA DE CARTA HÍBRIDA
 // ==========================================
 window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
-   // ==========================================
+    
     // ==========================================
     // 🃏 INTERCEPTADOR DE MONTAGEM DE DECK
     // ==========================================
@@ -325,7 +325,6 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
 
         // SE FOR UM SLOT DE IMAGEM (Criatura, Equipamento, Magia)
         if (!slot.classList.contains('pilha-cartas')) {
-            // (Substitua "imagemUrl" pela palavra certa que está na sua função original, ex: "imagem", "img")
             slot.style.backgroundImage = `url('${img}')`; 
             slot.style.backgroundSize = 'cover';
             slot.style.backgroundPosition = 'center';
@@ -335,7 +334,7 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
         else {
             let contador = slot.querySelector('.contador-cartas');
             if(contador) {
-                // Truque visual: Pega o número atual e soma 1 (só pra gente ver funcionando)
+                // Truque visual: Pega o número atual e soma 1
                 let valores = contador.innerText.split('/');
                 let atual = parseInt(valores[0]);
                 let max = parseInt(valores[1]);
@@ -343,7 +342,7 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
                 if (atual < max) {
                     atual++;
                     contador.innerText = `${atual}/${max}`;
-                    contador.style.color = "#00ffff"; // Muda a cor para ciano pra avisar que preencheu
+                    contador.style.color = "#00ffff"; // Fica ciano
                 }
             }
         }
@@ -352,14 +351,19 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
         document.getElementById('tela-album').style.display = 'none';
         document.getElementById('tela-decks').style.display = 'flex';
         
-        // LIMPA A MEMÓRIA DO SCANNER
+        // LIMPA A MEMÓRIA DO SCANNER E RESTAURA O TÍTULO
         window.slotSelecionadoAtual = null;
         let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
         if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
 
-        return; // 🛑 PARA A FUNÇÃO DE INSPEÇÃO AQUI!
+        // RESETA O FILTRO DO ÁLBUM PARA "TODAS"
+        let selectTipo = document.getElementById('filtro-tipo');
+        if(selectTipo) { selectTipo.value = "Todas"; selectTipo.dispatchEvent(new Event('change')); }
+
+        return; // 🛑 PARA A FUNÇÃO AQUI (Não abre a tela preta de status)
     }
     // ==========================================
+
     tipoDeCartaAtual = tipo;
     document.getElementById("imagem-detalhe").src = img;
     
