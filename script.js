@@ -326,7 +326,7 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
         // SE FOR UM SLOT DE IMAGEM (Criatura, Equipamento, Magia)
         if (!slot.classList.contains('pilha-cartas')) {
             // (Substitua "imagemUrl" pela palavra certa que está na sua função original, ex: "imagem", "img")
-            slot.style.backgroundImage = `url('${imagemUrl}')`; 
+            slot.style.backgroundImage = `url('${img}')`; 
             slot.style.backgroundSize = 'cover';
             slot.style.backgroundPosition = 'center';
             slot.innerHTML = ''; // Limpa qualquer emoji/texto dentro do slot
