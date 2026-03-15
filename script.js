@@ -444,42 +444,6 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
     document.getElementById("painel-botoes-fisicos").style.display = "none";
     document.getElementById("painel-viagem").style.display = "flex";
 };
-    
-   
-
-    tipoDeCartaAtual = tipo;
-    document.getElementById("imagem-detalhe").src = img;
-    
-    let btnEsq = document.getElementById("btn-acao-esq"); 
-    let btnDir = document.getElementById("btn-acao-dir"); 
-
-    if (tipo === "local") {
-        localParaViagem = nome;
-        imgLocalParaViagem = img;
-        triboLocalParaViagem = tribo;
-        document.getElementById("camada-stats").style.display = "none";
-        btnEsq.innerText = "VOLTAR";
-        btnDir.innerText = "VIAJAR";
-    } else if (tipo === "monstro") {
-        btnEsq.innerText = "DELETAR";
-        btnDir.innerText = "GUARDAR";
-    } else if (tipo === "album" || tipo === "inspecao_troca") {
-        btnEsq.innerText = "EXCLUIR"; 
-        btnDir.innerText = "VOLTAR"; 
-        // Na inspeção de troca antes de aceitar, não permitimos excluir
-        if(tipo === "inspecao_troca") btnEsq.style.display = "none";
-        else btnEsq.style.display = "block";
-    }
-
-    document.getElementById("tela-locais").style.display = "none";
-    document.getElementById("tela-album").style.display = "none";
-    document.getElementById("tela-perfil").style.display = "none";
-    if(document.getElementById("tela-social")) document.getElementById("tela-social").style.display = "none"; 
-    
-    document.getElementById("tela-detalhe-carta").style.display = "flex";
-    document.getElementById("painel-botoes-fisicos").style.display = "none";
-    document.getElementById("painel-viagem").style.display = "flex";
-};
 
 document.getElementById("btn-acao-dir").onclick = function() {
     if (tipoDeCartaAtual === "local") { 
