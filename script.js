@@ -316,6 +316,38 @@ function gerarDNA(monstroID) {
 // 3. SISTEMA DE CARTA HÍBRIDA
 // ==========================================
 window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
+   // ==========================================
+    // 🃏 INTERCEPTADOR DE MONTAGEM DE DECK
+    // ==========================================
+    if (window.slotSelecionadoAtual !== null) {
+        let slot = window.slotSelecionadoAtual;
+
+        // Se for um slot de imagem (Criatura, Equipamento, Magia)
+        if (!slot.classList.contains('pilha-cartas')) {
+            slot.style.backgroundImage = `url('${img}')`; // 💡 Carimba a imagem no fundo!
+            slot.style.backgroundSize = 'cover';
+            slot.style.backgroundPosition = 'center';
+            slot.innerHTML = ''; // Limpa qualquer emoji/texto que estivesse dentro
+        } 
+        // Se for uma pilha (Ataques ou Locais), por enquanto só daremos um aviso de sucesso
+        else {
+            let contador = slot.querySelector('.contador-cartas');
+            if(contador) contador.style.color = "#00ffff"; // Muda a cor para indicar que mexeu
+            // (Na próxima etapa faremos o contador numérico de fato)
+        }
+
+        // 1. Esconde o Álbum e Volta para a Oficina
+        document.getElementById('tela-album').style.display = 'none';
+        document.getElementById('tela-decks').style.display = 'flex';
+        
+        // 2. Limpa a memória do Scanner e reseta o título do Álbum
+        window.slotSelecionadoAtual = null;
+        let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
+        if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
+
+        return; // 🛑 PARA A FUNÇÃO AQUI! Impede que a tela de inspeção abra.
+    }
+    // ==========================================
     tipoDeCartaAtual = tipo;
     document.getElementById("imagem-detalhe").src = img;
     
@@ -1188,8 +1220,25 @@ window.verCartaAlbum = function(id) {
     }
 }
 
-let btnVoltarAlbum = document.getElementById("btn-voltar-album");
-if(btnVoltarAlbum) { btnVoltarAlbum.onclick = () => location.reload(); }
+let btnVoltarAlbum = document.getElementById('btn-voltar-album');
+if(btnVoltarAlbum) {
+    btnVoltarAlbum.onclick = () => {
+        // Se estava escolhendo carta pro Deck, cancela e volta pra Oficina
+        if (window.slotSelecionadoAtual !== null) {
+            window.slotSelecionadoAtual = null; // Limpa a memória
+            document.getElementById('tela-album').style.display = 'none';
+            document.getElementById('tela-decks').style.display = 'flex';
+            
+            let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
+            if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
+        } 
+        // Se era só uma visita normal ao álbum, volta pro Menu Principal
+        else {
+            document.getElementById('tela-album').style.display = 'none';
+            document.getElementById('tela-menu').style.display = 'flex';
+        }
+    };
+}
 
 // ==========================================
 // 7. SISTEMA DE PERFIL DO JOGADOR
