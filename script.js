@@ -2188,44 +2188,53 @@ document.getElementById("btn-cima").onclick = () => {
 
 atualizarSelecao();
 // ==========================================
-// ⚙️ MOTOR DA OFICINA DE DECKS (ID ÚNICO, NUVEM E HUB)
+// ⚙️ MOTOR DA OFICINA DE DECKS (ID ÚNICO, NUVEM E GERENCIADOR VISUAL)
 // ==========================================
 
-// Cria o Modal de Escolha de Ação (Criatura Hub) - Só roda uma vez
+// Cria o Novo Modal do Gerenciador Visual do Slot - Só roda uma vez
 if (!document.getElementById("modal-hub-criatura")) {
     let m = document.createElement("div");
     m.id = "modal-hub-criatura";
-    m.style.cssText = "display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,10,10,0.9); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
+    // Fundo mais escuro para as miniaturas brilharem
+    m.style.cssText = "display:none; position:absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,10,10,0.95); z-index:9999; flex-direction:column; align-items:center; justify-content:center; padding:20px; box-sizing:border-box;";
+    
     m.innerHTML = `
-        <div style="width: 100%; max-width: 320px; background: #000; border: 2px solid #00ffff; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 0 30px rgba(0,255,255,0.4);">
-            <h3 id="titulo-hub-criatura" style="color: #00ffff; text-align: center; margin: 0 0 10px 0; font-family: monospace; font-size: 16px; letter-spacing: 1px;">GERENCIAR SLOT</h3>
+        <div style="width: 100%; max-width: 340px; background: #000; border: 2px solid #00ffff; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 20px; box-shadow: 0 0 30px rgba(0,255,255,0.4);">
+            <h3 id="titulo-hub-criatura" style="color: #00ffff; text-align: center; margin: 0; font-family: monospace; font-size: 16px; letter-spacing: 1px;">GERENCIAR SLOT #</h3>
             
-            <button id="btn-hub-criatura" style="background: #111; color: #4CAF50; border: 2px solid #4CAF50; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; text-transform: uppercase;">SELECIONAR / TROCAR CRIATURA</button>
+            <div style="display: flex; gap: 25px; align-items: center; justify-content: center;">
+                
+                <div id="mini-hub-criatura" style="width: 100px; height: 130px; background: #111; border: 2px solid #4CAF50; border-radius: 6px; cursor: pointer; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 0 15px rgba(76,175,80,0.5);">
+                    <div class="empty-visual" style="color: #4CAF50; font-size: 30px; font-weight: bold;">+</div>
+                    <div style="position: absolute; bottom: 3px; left: 0; width: 100%; text-align: center; color: #4CAF50; font-size: 9px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 2px 0;">CRIATURA</div>
+                </div>
+
+                <div id="mini-hub-equip" style="width: 90px; height: 110px; background: #111; border: 2px solid #ffd700; border-radius: 6px; cursor: pointer; background-size: cover; background-position: center; display: flex; align-items: center; justify-content: center; position: relative; box-shadow: 0 0 15px rgba(255,215,0,0.4);">
+                    <div class="empty-visual" style="color: #ffd700; font-size: 30px; font-weight: bold;">+</div>
+                    <div style="position: absolute; bottom: 3px; left: 0; width: 100%; text-align: center; color: #ffd700; font-size: 9px; font-weight: bold; background: rgba(0,0,0,0.8); padding: 2px 0;">EQUIP (1/1)</div>
+                </div>
+
+            </div>
             
-            <button id="btn-hub-equip" style="background: #111; color: #ffd700; border: 2px solid #ffd700; padding: 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; text-transform: uppercase;">GERENCIAR EQUIPAMENTO (1/1)</button>
-            
-            <button id="btn-hub-cancelar" style="background: #ff5555; color: #fff; border: 2px solid #aa0000; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; margin-top: 10px;">CANCELAR</button>
+            <button id="btn-hub-cancelar" style="background: #ff5555; color: #fff; border: 2px solid #aa0000; padding: 10px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 12px; width: 100%; max-width: 150px; text-transform: uppercase;">FECHAR HUB</button>
         </div>
     `;
     document.getElementById("tela-jogo").appendChild(m);
     document.getElementById("btn-hub-cancelar").onclick = () => { m.style.display = "none"; };
 }
 
-// Ouvintes de Clique nos Buracos do Tabuleiro (NOVAS BINDINGS)
+// Ouvintes de Clique nos Buracos do Tabuleiro
 window.slotSelecionadoAtual = null; 
 
-// Intercepta clicks da Criatura (agora abrange a área do Equip também) para abrir o Hub
+// Intercepta clicks da Criatura para abrir o NOVO Hub Visual
 document.querySelectorAll('.slot-criatura').forEach(s => s.addEventListener('click', function() { abrirHubModalSlot(this); }));
-
-// Desativamos cliques diretos nos equips (User UX Request: manage from Hub)
-// document.querySelectorAll('.slot-equipamento').forEach(s => s.addEventListener('click', function(e) { e.stopPropagation(); prepararSelecaoDeck('Equipamento', this); }));
 
 // Outras bindings normais (Magias, Ataques, Locais)
 document.querySelectorAll('.slot-mugic-heptagono').forEach(s => s.addEventListener('click', function() { prepararSelecaoDeck('Magia', this); }));
 let btnPA = document.getElementById('pilha-ataques'); if(btnPA) btnPA.addEventListener('click', () => prepararSelecaoDeck('Ataque', btnPA));
 let btnPL = document.getElementById('pilha-locais'); if(btnPL) btnPL.addEventListener('click', () => prepararSelecaoDeck('Local', btnPL));
 
-// Função Mágica do Hub: Liga a Criatura e Acha o Equipamento correspondente por índice
+// Função Mágica do Hub Visual: Carrega o Slot e suas Cartas em miniatura
 window.abrirHubModalSlot = function(creatureSlotElement) {
     let m = document.getElementById("modal-hub-criatura");
     
@@ -2235,23 +2244,56 @@ window.abrirHubModalSlot = function(creatureSlotElement) {
     
     document.getElementById("titulo-hub-criatura").innerText = `GERENCIAR SLOT #${index + 1}`;
     
-    // 💡 A PONTE DO EQUIPAMENTO: Acha o equipamento correspondente pelo MESMO índice conceptually
-    // e o deixa "pronto" na memória para o álbum.
+    // Pega o Slot de Equipamento correspondente
     const equipSlots = document.querySelectorAll('.slot-equipamento');
     const targetEquipSlot = equipSlots[index];
 
-    // Configura o botão de Criatura: Vai pro álbum normal
-    document.getElementById("btn-hub-criatura").onclick = () => {
+    // Acessa as memórias de ID salvas nos quadradinhos do tabuleiro
+    const idCriatura = creatureSlotElement.dataset.cartaId;
+    const idEquip = targetEquipSlot.dataset.cartaId;
+
+    // Acha as cartas reais na sua coleção
+    const cartaCriatura = idCriatura ? window.inventario.find(c => c.id == idCriatura) : null;
+    const cartaEquip = idEquip ? window.inventario.find(c => c.id == idEquip) : null;
+
+    // Função Interna Mágica para Popular as Miniaturas
+    const populateMiniature = (miniElement, carta, type) => {
+        const emptyVisual = miniElement.querySelector('.empty-visual');
+        const corAccent = type === 'Criatura' ? '#4CAF50' : '#ffd700';
+
+        if (carta) {
+            // Se tem carta, esconde o "+" e pinta a miniatura com o Zoom!
+            if(emptyVisual) emptyVisual.style.display = 'none';
+            miniElement.style.backgroundImage = `url('${carta.img}')`;
+            
+            // Re-aplica o Zoom que tínhamos no interceptador
+            if (type === "Criatura") {
+                miniElement.style.backgroundSize = '180%'; miniElement.style.backgroundPosition = 'center 15%';
+            } else {
+                miniElement.style.backgroundSize = '160%'; miniElement.style.backgroundPosition = 'center 20%';
+            }
+            miniElement.style.borderColor = corAccent;
+        } else {
+            // Se não tem carta, mostra o "+" e zera o visual
+            if(emptyVisual) emptyVisual.style.display = 'block';
+            miniElement.style.backgroundImage = 'none';
+            miniElement.style.borderColor = "#333"; // Borda desativada
+        }
+    };
+
+    // Popula as duas Miniaturas no Modal
+    populateMiniature(document.getElementById("mini-hub-criatura"), cartaCriatura, 'Criatura');
+    populateMiniature(document.getElementById("mini-hub-equip"), cartaEquip, 'Equipamento');
+    
+    // Configura os Clinks nas Miniaturas para irem pro Álbum
+    document.getElementById("mini-hub-criatura").onclick = () => {
         m.style.display = "none";
-        prepararSelecaoDeck('Criatura', creatureSlotElement);
+        prepararSelecaoDeck('Criatura', creatureSlotElement); // Vai pro Álbum da Criatura
     };
     
-    // Configura o botão de Equipamento: Vai pro álbum mas foca no slot de equip "invisível"
-    document.getElementById("btn-hub-equip").onclick = () => {
+    document.getElementById("mini-hub-equip").onclick = () => {
         m.style.display = "none";
-        // Em breve: abriremos o modal de EDIÇÃO DOS 3 EQUIPAMENTOS (igual a pilhas) aqui!
-        // Por enquanto, te manda direto pro álbum para selecionar O equipamento desse slot conceptually.
-        prepararSelecaoDeck('Equipamento', targetEquipSlot);
+        prepararSelecaoDeck('Equipamento', targetEquipSlot); // Vai pro Álbum do Equipamento
     };
 
     m.style.display = "flex";
