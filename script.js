@@ -2688,38 +2688,7 @@ if (evtSeletorSlot) {
         window.carregarDeckDaNuvem(slotId);
     });
 }
-// ==========================================
-// 🛡️ BLINDAGEM DE CLIQUE (UX FIX)
-// ==========================================
-// Roda assim que o HTML da página termina de carregar
-document.addEventListener("DOMContentLoaded", () => {
-    // Procura o input do nome do deck pelo placeholder
-    let inputNomeDeck = document.querySelector('input[placeholder*="Nome do Deck"]');
-    
-    if (inputNomeDeck) {
-        // Aplica estilos pesados para garantir área de clique e sobreposição
-        inputNomeDeck.style.cssText = `
-            display: block !important;
-            width: 100% !important;
-            height: 45px !important;
-            padding: 10px 15px !important;
-            background: rgba(0,0,0,0.8) !important;
-            color: #fff !important;
-            border: 2px solid #00ffff !important;
-            border-radius: 6px !important;
-            box-shadow: 0 0 15px rgba(0,255,255,0.4) !important;
-            font-family: monospace !important;
-            font-size: 13px !important;
-            font-weight: bold !important;
-            outline: none !important;
-            caret-color: #ff3300 !important;
-            position: relative !important;
-            z-index: 9999 !important; /* Força pra cima de tudo! */
-            cursor: text !important;
-            box-sizing: border-box !important;
-        `;
-    }
-});
+
 
 
 
