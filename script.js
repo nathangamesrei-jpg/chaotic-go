@@ -2607,15 +2607,26 @@ window.carregarDeckDaNuvem = function(slotId) {
                 slot.dataset.cartaId = idCarta;
             };
 
+            // 2. Restaura Imagens Individuais (Corrigido para driblar o Firebase!)
             setTimeout(() => {
                 let slotsCriatura = document.querySelectorAll('.slot-criatura');
-                if (deckData.criaturas) deckData.criaturas.forEach((id, i) => { if(slotsCriatura[i]) carimbarSlot(slotsCriatura[i], id, "Criatura"); });
+                slotsCriatura.forEach((slot, i) => {
+                    // Pega pelo índice (funciona tanto se o Firebase devolver Lista quanto Objeto)
+                    let id = deckData.criaturas ? deckData.criaturas[i] : null;
+                    if (id) carimbarSlot(slot, id, "Criatura");
+                });
 
                 let slotsEquip = document.querySelectorAll('.slot-equipamento');
-                if (deckData.equipamentos) deckData.equipamentos.forEach((id, i) => { if(slotsEquip[i]) carimbarSlot(slotsEquip[i], id, "Equipamento"); });
+                slotsEquip.forEach((slot, i) => {
+                    let id = deckData.equipamentos ? deckData.equipamentos[i] : null;
+                    if (id) carimbarSlot(slot, id, "Equipamento");
+                });
 
                 let slotsMugic = document.querySelectorAll('.slot-mugic-heptagono');
-                if (deckData.mugics) deckData.mugics.forEach((id, i) => { if(slotsMugic[i]) carimbarSlot(slotsMugic[i], id, "Magia"); });
+                slotsMugic.forEach((slot, i) => {
+                    let id = deckData.mugics ? deckData.mugics[i] : null;
+                    if (id) carimbarSlot(slot, id, "Magia");
+                });
             }, 50);
 
             if (deckData.locais && deckData.locais.length > 0) {
