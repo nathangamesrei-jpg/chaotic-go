@@ -322,20 +322,41 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
     // ==========================================
     if (window.slotSelecionadoAtual !== null) {
         let slot = window.slotSelecionadoAtual;
-        
-        // 🐛 O BUG ESTAVA AQUI! Removemos a busca por 'tipo' para não quebrar.
-        // Busca apenas pelo NOME da carta no inventário:
         let cartaSelecionada = window.inventario.find(c => c.nome === nome);
-
-        // Se der algum erro muito louco e não achar a carta, aborta para não quebrar o jogo
         if (!cartaSelecionada) return;
 
-        // 1. PRIMEIRA TRAVA: Quantidade da Carta
-        let jaNoDeck = document.querySelectorAll(`[style*="${img}"]`);
-        let qtdTentativa = jaNoDeck.length + (slot.style.backgroundImage.includes(img) ? 0 : 1); 
+        // Função local para mandar avisos que duram 4 segundos direto no painel
+        let avisoDeck = document.getElementById('aviso-deck');
+        let mostrarAviso = (msg) => {
+            if(avisoDeck) {
+                avisoDeck.innerText = msg;
+                setTimeout(() => avisoDeck.innerText = "", 4000); 
+            } else {
+                mostrarMensagemScanner(msg);
+            }
+        };
+
+        let nomeDaCarta = cartaSelecionada.nome;
+
+        // 1. PRIMEIRA TRAVA: Quantidade da Carta (AGORA LÊ AS PILHAS TAMBÉM!)
+        let qtdDOM = document.querySelectorAll(`[data-carta-nome="${nomeDaCarta}"]`).length;
+        let qtdPilhas = 0;
         
-        if (qtdTentativa > cartaSelecionada.quantidade) {
-            mostrarMensagemScanner("QUANTIDADE MÁXIMA DESSA CARTA NO DECK JÁ UTILIZADA!");
+        // Vasculha as pilhas para ver se a carta tá escondida lá dentro
+        document.querySelectorAll('.pilha-cartas').forEach(p => {
+            if(p.dataset.cartas) {
+                let arr = JSON.parse(p.dataset.cartas);
+                qtdPilhas += arr.filter(n => n === nomeDaCarta).length;
+            }
+        });
+        
+        // Desconta 1 se você estiver clicando no mesmo buraco que já tem essa carta
+        if (slot.dataset.cartaNome === nomeDaCarta) qtdDOM--; 
+        
+        let qtdTotalNoDeck = qtdDOM + qtdPilhas;
+
+        if (qtdTotalNoDeck >= cartaSelecionada.quantidade) {
+            mostrarAviso(`QUANTIDADE MÁXIMA DE "${nomeDaCarta.toUpperCase()}" ATINGIDA!`);
             
             document.getElementById('tela-album').style.display = 'none';
             document.getElementById('tela-decks').style.display = 'flex';
@@ -346,7 +367,7 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
             return; // 🛑 PARA TUDO! A CARTA NÃO ENTRA!
         }
 
-        // 2. SEGUNDA TRAVA: Custo de Ataque (SÓ se for a pilha de ataque)
+        // 2. SEGUNDA TRAVA: Custo de Ataque (MATEMÁTICA CORRIGIDA)
         if (slot.id === 'pilha-ataques') {
             let contadorCusto = slot.querySelector('.contador-custo');
             if (contadorCusto) {
@@ -355,8 +376,10 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
                 let custoAtual = parseInt(partes[0]);
                 let custoMax = parseInt(partes[1]);
                 
-                if (custoAtual >= custoMax && custoDaCarta > 0) {
-                    mostrarMensagemScanner("CUSTO MÁXIMO (20 pts) BATIDO! Somente cartas de custo 0 aceitas.");
+                // NOVO: Se a SOMA estourar o limite, bloqueia!
+                if ((custoAtual + custoDaCarta) > custoMax) {
+                    let pontosLivres = custoMax - custoAtual;
+                    mostrarAviso(`CUSTO ESTOURADO! Você só tem mais ${pontosLivres} pontos livres.`);
                     
                     document.getElementById('tela-album').style.display = 'none';
                     document.getElementById('tela-decks').style.display = 'flex';
@@ -375,6 +398,7 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
             slot.style.backgroundSize = 'cover';
             slot.style.backgroundPosition = 'center';
             slot.innerHTML = ''; 
+            slot.dataset.cartaNome = nomeDaCarta; // Salva a "memória" do nome no quadrado
         } else {
             let contador = slot.querySelector('.contador-cartas');
             if(contador) {
@@ -387,6 +411,11 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
                     contador.innerText = `${atual}/${max}`;
                     contador.style.color = "#00ffff"; 
                     
+                    // Salva a "memória" do nome dentro da Pilha Invisível
+                    let cartasNaPilha = slot.dataset.cartas ? JSON.parse(slot.dataset.cartas) : [];
+                    cartasNaPilha.push(nomeDaCarta);
+                    slot.dataset.cartas = JSON.stringify(cartasNaPilha);
+
                     if (slot.id === 'pilha-ataques') {
                          let contadorCusto = slot.querySelector('.contador-custo');
                          let custoDaCarta = parseInt(cartaSelecionada.custo) || 0;
@@ -398,6 +427,12 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
                          if (custoAtual > custoMax) contadorCusto.style.color = "#ff5555"; 
                          else contadorCusto.style.color = "#00ffff";
                     }
+                } else {
+                     mostrarAviso("ESTA PILHA JÁ ESTÁ CHEIA!");
+                     document.getElementById('tela-album').style.display = 'none';
+                     document.getElementById('tela-decks').style.display = 'flex';
+                     window.slotSelecionadoAtual = null;
+                     return;
                 }
             }
         }
