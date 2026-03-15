@@ -2674,18 +2674,10 @@ let evtSeletorSlot = Array.from(document.querySelectorAll('#tela-decks select'))
 
 if (evtSeletorModo) {
     evtSeletorModo.addEventListener('change', (e) => { 
-        // Verifica se foi o usuário que clicou (e.isTrusted) 
-        // para não entrar em loop infinito quando o código muda o modo sozinho!
+        // Se foi o usuário que clicou (evita o loop do Firebase)
         if (e && e.isTrusted) {
             window.limparTabuleiroDeck();
-            
-            // 💡 O NOVO PULO DO GATO: Se mudou o modo, manda recarregar o Slot atual da nuvem!
-            if (evtSeletorSlot) {
-                let slotAtual = evtSeletorSlot.value.toLowerCase().replace(/salvar no /g, '').replace(/ /g, '_');
-                window.carregarDeckDaNuvem(slotAtual);
-            } else {
-                mostrarMensagemScanner("MODO ALTERADO. TABULEIRO LIMPO!");
-            }
+            mostrarMensagemScanner("NOVO MODO. TABULEIRO LIMPO!");
         }
     });
 }
