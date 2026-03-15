@@ -322,6 +322,8 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
     // ==========================================
     if (window.slotSelecionadoAtual !== null) {
         let slot = window.slotSelecionadoAtual;
+        // 💡 NOVA LÓGICA: Procura a carta exata que você clicou no seu inventário
+        let cartaSelecionada = window.inventario.find(c => c.nome === nome);
 
         // SE FOR UM SLOT DE IMAGEM (Criatura, Equipamento, Magia)
         if (!slot.classList.contains('pilha-cartas')) {
@@ -334,7 +336,7 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
         else {
             let contador = slot.querySelector('.contador-cartas');
             if(contador) {
-                // Truque visual: Pega o número atual e soma 1
+                // Atualiza a quantidade de cartas (0/20 -> 1/20)
                 let valores = contador.innerText.split('/');
                 let atual = parseInt(valores[0]);
                 let max = parseInt(valores[1]);
@@ -343,6 +345,30 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
                     atual++;
                     contador.innerText = `${atual}/${max}`;
                     contador.style.color = "#00ffff"; // Fica ciano
+                    
+                    // 💡 NOVA LÓGICA DO CUSTO DE ATAQUE:
+                    if (slot.id === 'pilha-ataques') {
+                        let contadorCusto = slot.querySelector('.contador-custo');
+                        if (contadorCusto && cartaSelecionada) {
+                            // Pega o custo da carta (se não tiver a propriedade, assume que custa 0)
+                            let custoDaCarta = parseInt(cartaSelecionada.custo) || 0;
+                            
+                            // Separa a string "Custo: 0/20" para fazer a matemática
+                            let partes = contadorCusto.innerText.replace('Custo: ', '').split('/');
+                            let custoAtual = parseInt(partes[0]);
+                            let custoMax = parseInt(partes[1]);
+                            
+                            custoAtual += custoDaCarta; // Soma o custo novo!
+                            contadorCusto.innerText = `Custo: ${custoAtual}/${custoMax}`;
+                            
+                            // Se passar de 20 pontos de ataque, fica vermelho pra avisar que quebrou a regra!
+                            if (custoAtual > custoMax) {
+                                contadorCusto.style.color = "#ff5555"; 
+                            } else {
+                                contadorCusto.style.color = "#00ffff";
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -356,13 +382,14 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
         let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
         if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
 
-        // RESETA O FILTRO DO ÁLBUM PARA "TODAS"
+        // RESETA O FILTRO DO ÁLBUM
         let selectTipo = document.getElementById('filtro-tipo');
         if(selectTipo) { selectTipo.value = "Todas"; selectTipo.dispatchEvent(new Event('change')); }
 
-        return; // 🛑 PARA A FUNÇÃO AQUI (Não abre a tela preta de status)
+        return; // 🛑 PARA A FUNÇÃO AQUI
     }
     // ==========================================
+   
 
     tipoDeCartaAtual = tipo;
     document.getElementById("imagem-detalhe").src = img;
@@ -1224,15 +1251,19 @@ window.verCartaAlbum = function(id) {
     cartaVisualizadaId = id; 
     abrirDetalheCarta(carta.nome, carta.tribo, carta.img, "album");
     
-    if (carta.tipoCarta === "Local") {
+    // 💡 BLINDAGEM: Apenas Criaturas tentam carregar os stats (Coragem, Poder, etc)
+    if (carta.tipoCarta !== "Criatura") {
         document.getElementById("camada-stats").style.display = "none";
     } else {
         document.getElementById("camada-stats").style.display = "block";
-        document.getElementById("stat-coragem").innerText = carta.stats.c;
-        document.getElementById("stat-poder").innerText = carta.stats.p;
-        document.getElementById("stat-sabedoria").innerText = carta.stats.s;
-        document.getElementById("stat-velocidade").innerText = carta.stats.v;
-        document.getElementById("stat-energia").innerText = carta.stats.e;
+        // Preenche os status (com " || '-'" para evitar crash se vier vazio da nuvem)
+        if(carta.stats) {
+            document.getElementById("stat-coragem").innerText = carta.stats.c || "-";
+            document.getElementById("stat-poder").innerText = carta.stats.p || "-";
+            document.getElementById("stat-sabedoria").innerText = carta.stats.s || "-";
+            document.getElementById("stat-velocidade").innerText = carta.stats.v || "-";
+            document.getElementById("stat-energia").innerText = carta.stats.e || "-";
+        }
     }
 }
 
