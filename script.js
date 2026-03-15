@@ -346,49 +346,107 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
                     contador.innerText = `${atual}/${max}`;
                     contador.style.color = "#00ffff"; // Fica ciano
                     
-                    // 💡 NOVA LÓGICA DO CUSTO DE ATAQUE:
+                    // ==========================================
+    // 🃏 INTERCEPTADOR DE MONTAGEM DE DECK
+    // ==========================================
+    if (window.slotSelecionadoAtual !== null) {
+        let slot = window.slotSelecionadoAtual;
+        let cartaSelecionada = window.inventario.find(c => c.nome === nome && c.tipoCarta === tipo);
+
+        // 1. PRIMEIRA TRAVA: Quantidade da Carta
+        // Precisamos somar temporariamente o que estamos tentando adicionar
+        let jaNoDeck = document.querySelectorAll(`[style*="${img}"]`);
+        let qtdTentativa = jaNoDeck.length + (slot.style.backgroundImage.includes(img) ? 0 : 1); 
+        
+        if (cartaSelecionada && qtdTentativa > cartaSelecionada.quantidade) {
+            mostrarMensagemScanner("QUANTIDADE MÁXIMA DESSA CARTA NO DECK JÁ UTILIZADA!");
+            
+            // FECHA O ÁLBUM E VOLTA PRA OFICINA MESMO ASSIM
+            document.getElementById('tela-album').style.display = 'none';
+            document.getElementById('tela-decks').style.display = 'flex';
+            window.slotSelecionadoAtual = null;
+            let selectTipo = document.getElementById('filtro-tipo');
+            if(selectTipo) { selectTipo.value = "Todas"; selectTipo.dispatchEvent(new Event('change')); }
+            
+            return; // 🛑 PARA TUDO! A CARTA NÃO ENTRA!
+        }
+
+        // 2. SEGUNDA TRAVA: Custo de Ataque (SÓ se for a pilha de ataque)
+        if (slot.id === 'pilha-ataques') {
+            let contadorCusto = slot.querySelector('.contador-custo');
+            if (contadorCusto && cartaSelecionada) {
+                let custoDaCarta = parseInt(cartaSelecionada.custo) || 0;
+                let partes = contadorCusto.innerText.replace('Custo: ', '').split('/');
+                let custoAtual = parseInt(partes[0]);
+                let custoMax = parseInt(partes[1]);
+                
+                if (custoAtual >= custoMax && custoDaCarta > 0) {
+                    mostrarMensagemScanner("CUSTO MÁXIMO (20 pts) BATIDO! Somente cartas de custo 0 aceitas.");
+                    
+                    document.getElementById('tela-album').style.display = 'none';
+                    document.getElementById('tela-decks').style.display = 'flex';
+                    window.slotSelecionadoAtual = null;
+                    let selectTipo = document.getElementById('filtro-tipo');
+                    if(selectTipo) { selectTipo.value = "Todas"; selectTipo.dispatchEvent(new Event('change')); }
+                    
+                    return; // 🛑 PARA TUDO! A CARTA NÃO ENTRA!
+                }
+            }
+        }
+
+        // 3. PASSOU PELAS TRAVAS? AGORA SIM, APLICA AS MUDANÇAS!
+        
+        // SE FOR UM SLOT DE IMAGEM (Criatura, Equipamento, Magia)
+        if (!slot.classList.contains('pilha-cartas')) {
+            slot.style.backgroundImage = `url('${img}')`; 
+            slot.style.backgroundSize = 'cover';
+            slot.style.backgroundPosition = 'center';
+            slot.innerHTML = ''; // Limpa qualquer emoji/texto dentro do slot
+        } 
+        // SE FOR UMA PILHA (Ataques ou Locais)
+        else {
+            let contador = slot.querySelector('.contador-cartas');
+            if(contador) {
+                let valores = contador.innerText.split('/');
+                let atual = parseInt(valores[0]);
+                let max = parseInt(valores[1]);
+                
+                if (atual < max) {
+                    atual++; // Sobe a quantidade (0/20 -> 1/20)
+                    contador.innerText = `${atual}/${max}`;
+                    contador.style.color = "#00ffff"; 
+                    
+                    // Se for ataque, aplica a soma real do custo que já validamos antes!
                     if (slot.id === 'pilha-ataques') {
-                        let contadorCusto = slot.querySelector('.contador-custo');
-                        if (contadorCusto && cartaSelecionada) {
-                            // Pega o custo da carta (se não tiver a propriedade, assume que custa 0)
-                            let custoDaCarta = parseInt(cartaSelecionada.custo) || 0;
-                            
-                            // Separa a string "Custo: 0/20" para fazer a matemática
-                            let partes = contadorCusto.innerText.replace('Custo: ', '').split('/');
-                            let custoAtual = parseInt(partes[0]);
-                            let custoMax = parseInt(partes[1]);
-                            
-                            custoAtual += custoDaCarta; // Soma o custo novo!
-                            contadorCusto.innerText = `Custo: ${custoAtual}/${custoMax}`;
-                            
-                            // Se passar de 20 pontos de ataque, fica vermelho pra avisar que quebrou a regra!
-                            if (custoAtual > custoMax) {
-                                contadorCusto.style.color = "#ff5555"; 
-                            } else {
-                                contadorCusto.style.color = "#00ffff";
-                            }
-                        }
+                         let contadorCusto = slot.querySelector('.contador-custo');
+                         let custoDaCarta = parseInt(cartaSelecionada.custo) || 0;
+                         let partes = contadorCusto.innerText.replace('Custo: ', '').split('/');
+                         let custoAtual = parseInt(partes[0]) + custoDaCarta;
+                         let custoMax = parseInt(partes[1]);
+                         
+                         contadorCusto.innerText = `Custo: ${custoAtual}/${custoMax}`;
+                         if (custoAtual > custoMax) contadorCusto.style.color = "#ff5555"; 
+                         else contadorCusto.style.color = "#00ffff";
                     }
                 }
             }
         }
 
-        // FECHA O ÁLBUM E VOLTA PRA OFICINA
+        // 4. FINALIZAÇÃO E LIMPEZA
         document.getElementById('tela-album').style.display = 'none';
         document.getElementById('tela-decks').style.display = 'flex';
         
-        // LIMPA A MEMÓRIA DO SCANNER E RESTAURA O TÍTULO
         window.slotSelecionadoAtual = null;
         let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
         if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
 
-        // RESETA O FILTRO DO ÁLBUM
         let selectTipo = document.getElementById('filtro-tipo');
         if(selectTipo) { selectTipo.value = "Todas"; selectTipo.dispatchEvent(new Event('change')); }
 
-        return; // 🛑 PARA A FUNÇÃO AQUI
+        return; // 🛑 FINAL DO INTERCEPTADOR!
     }
     // ==========================================
+    
    
 
     tipoDeCartaAtual = tipo;
