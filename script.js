@@ -322,13 +322,19 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
     // ==========================================
     if (window.slotSelecionadoAtual !== null) {
         let slot = window.slotSelecionadoAtual;
-        let cartaSelecionada = window.inventario.find(c => c.nome === nome && c.tipoCarta === tipo);
+        
+        // 🐛 O BUG ESTAVA AQUI! Removemos a busca por 'tipo' para não quebrar.
+        // Busca apenas pelo NOME da carta no inventário:
+        let cartaSelecionada = window.inventario.find(c => c.nome === nome);
+
+        // Se der algum erro muito louco e não achar a carta, aborta para não quebrar o jogo
+        if (!cartaSelecionada) return;
 
         // 1. PRIMEIRA TRAVA: Quantidade da Carta
         let jaNoDeck = document.querySelectorAll(`[style*="${img}"]`);
         let qtdTentativa = jaNoDeck.length + (slot.style.backgroundImage.includes(img) ? 0 : 1); 
         
-        if (cartaSelecionada && qtdTentativa > cartaSelecionada.quantidade) {
+        if (qtdTentativa > cartaSelecionada.quantidade) {
             mostrarMensagemScanner("QUANTIDADE MÁXIMA DESSA CARTA NO DECK JÁ UTILIZADA!");
             
             document.getElementById('tela-album').style.display = 'none';
@@ -343,7 +349,7 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
         // 2. SEGUNDA TRAVA: Custo de Ataque (SÓ se for a pilha de ataque)
         if (slot.id === 'pilha-ataques') {
             let contadorCusto = slot.querySelector('.contador-custo');
-            if (contadorCusto && cartaSelecionada) {
+            if (contadorCusto) {
                 let custoDaCarta = parseInt(cartaSelecionada.custo) || 0;
                 let partes = contadorCusto.innerText.replace('Custo: ', '').split('/');
                 let custoAtual = parseInt(partes[0]);
@@ -444,7 +450,6 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
     document.getElementById("painel-botoes-fisicos").style.display = "none";
     document.getElementById("painel-viagem").style.display = "flex";
 };
-
 document.getElementById("btn-acao-dir").onclick = function() {
     if (tipoDeCartaAtual === "local") { 
         tocarSFX('viajar'); 
