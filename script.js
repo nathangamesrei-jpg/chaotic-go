@@ -322,46 +322,15 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
     // ==========================================
     if (window.slotSelecionadoAtual !== null) {
         let slot = window.slotSelecionadoAtual;
-        // 💡 NOVA LÓGICA: Procura a carta exata que você clicou no seu inventário
-        let cartaSelecionada = window.inventario.find(c => c.nome === nome);
-
-        // SE FOR UM SLOT DE IMAGEM (Criatura, Equipamento, Magia)
-        if (!slot.classList.contains('pilha-cartas')) {
-            slot.style.backgroundImage = `url('${img}')`; 
-            slot.style.backgroundSize = 'cover';
-            slot.style.backgroundPosition = 'center';
-            slot.innerHTML = ''; // Limpa qualquer emoji/texto dentro do slot
-        } 
-        // SE FOR UMA PILHA (Ataques ou Locais)
-        else {
-            let contador = slot.querySelector('.contador-cartas');
-            if(contador) {
-                // Atualiza a quantidade de cartas (0/20 -> 1/20)
-                let valores = contador.innerText.split('/');
-                let atual = parseInt(valores[0]);
-                let max = parseInt(valores[1]);
-                
-                if (atual < max) {
-                    atual++;
-                    contador.innerText = `${atual}/${max}`;
-                    contador.style.color = "#00ffff"; // Fica ciano
-                    
-                    // ==========================================
-    // 🃏 INTERCEPTADOR DE MONTAGEM DE DECK
-    // ==========================================
-    if (window.slotSelecionadoAtual !== null) {
-        let slot = window.slotSelecionadoAtual;
         let cartaSelecionada = window.inventario.find(c => c.nome === nome && c.tipoCarta === tipo);
 
         // 1. PRIMEIRA TRAVA: Quantidade da Carta
-        // Precisamos somar temporariamente o que estamos tentando adicionar
         let jaNoDeck = document.querySelectorAll(`[style*="${img}"]`);
         let qtdTentativa = jaNoDeck.length + (slot.style.backgroundImage.includes(img) ? 0 : 1); 
         
         if (cartaSelecionada && qtdTentativa > cartaSelecionada.quantidade) {
             mostrarMensagemScanner("QUANTIDADE MÁXIMA DESSA CARTA NO DECK JÁ UTILIZADA!");
             
-            // FECHA O ÁLBUM E VOLTA PRA OFICINA MESMO ASSIM
             document.getElementById('tela-album').style.display = 'none';
             document.getElementById('tela-decks').style.display = 'flex';
             window.slotSelecionadoAtual = null;
@@ -395,16 +364,12 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
         }
 
         // 3. PASSOU PELAS TRAVAS? AGORA SIM, APLICA AS MUDANÇAS!
-        
-        // SE FOR UM SLOT DE IMAGEM (Criatura, Equipamento, Magia)
         if (!slot.classList.contains('pilha-cartas')) {
             slot.style.backgroundImage = `url('${img}')`; 
             slot.style.backgroundSize = 'cover';
             slot.style.backgroundPosition = 'center';
-            slot.innerHTML = ''; // Limpa qualquer emoji/texto dentro do slot
-        } 
-        // SE FOR UMA PILHA (Ataques ou Locais)
-        else {
+            slot.innerHTML = ''; 
+        } else {
             let contador = slot.querySelector('.contador-cartas');
             if(contador) {
                 let valores = contador.innerText.split('/');
@@ -412,11 +377,10 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
                 let max = parseInt(valores[1]);
                 
                 if (atual < max) {
-                    atual++; // Sobe a quantidade (0/20 -> 1/20)
+                    atual++; 
                     contador.innerText = `${atual}/${max}`;
                     contador.style.color = "#00ffff"; 
                     
-                    // Se for ataque, aplica a soma real do custo que já validamos antes!
                     if (slot.id === 'pilha-ataques') {
                          let contadorCusto = slot.querySelector('.contador-custo');
                          let custoDaCarta = parseInt(cartaSelecionada.custo) || 0;
@@ -446,6 +410,40 @@ window.abrirDetalheCarta = function(nome, tribo, img, tipo = "local") {
         return; // 🛑 FINAL DO INTERCEPTADOR!
     }
     // ==========================================
+
+    // Lógica normal de inspeção (se não estiver montando deck)
+    tipoDeCartaAtual = tipo;
+    document.getElementById("imagem-detalhe").src = img;
+    
+    let btnEsq = document.getElementById("btn-acao-esq"); 
+    let btnDir = document.getElementById("btn-acao-dir"); 
+
+    if (tipo === "local") {
+        localParaViagem = nome;
+        imgLocalParaViagem = img;
+        triboLocalParaViagem = tribo;
+        document.getElementById("camada-stats").style.display = "none";
+        btnEsq.innerText = "VOLTAR";
+        btnDir.innerText = "VIAJAR";
+    } else if (tipo === "monstro") {
+        btnEsq.innerText = "DELETAR";
+        btnDir.innerText = "GUARDAR";
+    } else if (tipo === "album" || tipo === "inspecao_troca") {
+        btnEsq.innerText = "EXCLUIR"; 
+        btnDir.innerText = "VOLTAR"; 
+        if(tipo === "inspecao_troca") btnEsq.style.display = "none";
+        else btnEsq.style.display = "block";
+    }
+
+    document.getElementById("tela-locais").style.display = "none";
+    document.getElementById("tela-album").style.display = "none";
+    document.getElementById("tela-perfil").style.display = "none";
+    if(document.getElementById("tela-social")) document.getElementById("tela-social").style.display = "none"; 
+    
+    document.getElementById("tela-detalhe-carta").style.display = "flex";
+    document.getElementById("painel-botoes-fisicos").style.display = "none";
+    document.getElementById("painel-viagem").style.display = "flex";
+};
     
    
 
