@@ -355,9 +355,9 @@ document.getElementById("btn-acao-dir").onclick = function() {
         mudarMusicaFundo('mapa'); 
         iniciarGPS(); 
     } else if (tipoDeCartaAtual === "monstro") {
-        let novaCaptura = {
+       let novaCaptura = {
             id: Date.now(), nome: monstroAtual.nome, tribo: monstroAtual.tribo || "Azul", tipoCarta: "Criatura", 
-            tipo: monstroAtual.tipo || "Subordinado", // 🛠️ FIX: Agora o Scanner salva se é Mago, Guerreiro, etc!
+            tipo: monstroAtual.tipoClasse || "Subordinado", // 🛠️ FIX: Agora o Scanner lê a palavra 'tipoClasse' do seu BD!
             img: monstroAtual.cartaBlank, favorito: false, quantidade: 1,
             stats: {
                 c: document.getElementById("stat-coragem").innerText, p: document.getElementById("stat-poder").innerText,
@@ -2506,12 +2506,15 @@ window.interceptarMontagemDeck = function(idCarta) {
    // REGRA B: Criaturas (Limites por Tipo da Criatura, Limite de Líder e Tribo)
     if (cartaSelecionada.tipoCarta === "Criatura") {
         // 💡 O Leitor Inteligente: Busca a classe verdadeira mesmo em cartas antigas bugadas!
-        let tipoBruto = cartaSelecionada.tipo;
-        if (!tipoBruto && typeof MONSTROS !== 'undefined') {
-            let cartaBase = MONSTROS.find(m => m.nome === cartaSelecionada.nome);
-            if (cartaBase) tipoBruto = cartaBase.tipo;
-        }
-        tipoBruto = tipoBruto || "Subordinado"; // Se ainda não achar nada, aí sim vira subordinado
+        // 💡 FIX: O Juiz consulta o banco de dados oficial (MONSTROS) para garantir a classe de cartas antigas!
+        let tipoBruto = cartaSelecionada.tipo || cartaSelecionada.tipoClasse;
+        if (typeof MONSTROS !== 'undefined') {
+            let cartaOriginal = MONSTROS.find(m => m.nome === cartaSelecionada.nome);
+            if (cartaOriginal && cartaOriginal.tipoClasse) {
+                tipoBruto = cartaOriginal.tipoClasse; // Agora ele lê a propriedade certinha do seu BD!
+            }
+        }
+        tipoBruto = tipoBruto || "Subordinado"; // Se não achar de jeito nenhum, vira Subordinado.
         
         let tipoNormalizado = tipoBruto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         
