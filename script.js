@@ -2689,32 +2689,4 @@ if (evtSeletorSlot) {
     });
 }
 
-// ==========================================
-// 🛡️ BLINDAGEM DE CLIQUE DEFINITIVA (UX FIX)
-// ==========================================
-setTimeout(() => {
-    let inputNomeDeck = document.querySelector('input[placeholder*="Nome do Deck"], input[placeholder*="NOME DO DECK"]');
-    let seletorModo = document.getElementById("seletor-modo-deck");
-    
-    // 1. A MÁGICA REAL: Puxar a CAIXA MÃE inteira pra frente de tudo!
-    if (inputNomeDeck && inputNomeDeck.parentElement) {
-        inputNomeDeck.parentElement.style.setProperty('position', 'relative', 'important');
-        inputNomeDeck.parentElement.style.setProperty('z-index', '99998', 'important');
-        inputNomeDeck.parentElement.style.setProperty('pointer-events', 'auto', 'important');
-    }
 
-    // 2. Garante que o campo de Nome funcione
-    if (inputNomeDeck) {
-        inputNomeDeck.style.setProperty('position', 'relative', 'important');
-        inputNomeDeck.style.setProperty('z-index', '99999', 'important');
-        inputNomeDeck.style.setProperty('pointer-events', 'auto', 'important');
-    }
-    
-    // 3. Garante que a caixinha de Modo abra a lista
-    if (seletorModo) {
-        seletorModo.style.setProperty('position', 'relative', 'important');
-        seletorModo.style.setProperty('z-index', '99999', 'important');
-        seletorModo.style.setProperty('pointer-events', 'auto', 'important');
-        seletorModo.style.setProperty('cursor', 'pointer', 'important');
-    }
-}, 500);
