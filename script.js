@@ -371,7 +371,7 @@ document.getElementById("btn-acao-dir").onclick = function() {
     } else if (tipoDeCartaAtual === "album") {
         document.getElementById("tela-detalhe-carta").style.display = "none";
         document.getElementById("painel-viagem").style.display = "none";
-        abrirAlbum();
+        ;
     } else if (tipoDeCartaAtual === "inspecao_troca") {
         document.getElementById("tela-detalhe-carta").style.display = "none";
         document.getElementById("painel-viagem").style.display = "none";
@@ -406,7 +406,7 @@ window.excluirCartaConfirmada = function() {
     salvarAlbumNaNuvem(); 
     document.getElementById("tela-detalhe-carta").style.display = "none";
     document.getElementById("painel-viagem").style.display = "none";
-    abrirAlbum(); 
+    ; 
 }
 
 function voltarAoRadar() {
@@ -1094,13 +1094,17 @@ if (btnSairRadar) {
 // ==========================================
 
 function abrirAlbum() {
-    document.getElementById("tela-menu").style.display = "none";
-    let telaAlbum = document.getElementById("tela-album");
-    if(telaAlbum) {
-        telaAlbum.style.display = "flex";
-        modoMenu = false;
-        renderizarListaAlbum(); 
-    }
+    document.getElementById("tela-menu").style.display = "none";
+    let telaAlbum = document.getElementById("tela-album");
+    if(telaAlbum) {
+        telaAlbum.style.display = "flex";
+        
+        // CORREÇÃO: Religa os botões físicos que foram apagados na inspeção!
+        document.getElementById("painel-botoes-fisicos").style.display = "flex";
+        
+        modoMenu = false;
+        renderizarListaAlbum(); 
+    }
 }
 
 document.getElementById("filtro-nome").addEventListener("input", renderizarListaAlbum);
