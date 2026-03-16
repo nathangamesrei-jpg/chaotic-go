@@ -2530,12 +2530,12 @@ window.interceptarMontagemDeck = function(idCarta) {
         });
 
         // B.1 Limite de cópias da mesma carta de acordo com o Tipo
-        let qtdMesmaCriatura = criaturasNoDeck.filter(c => c.id == idCarta).length;
-        if (qtdMesmaCriatura >= limitePerCard) {
-            mostrarAviso(`REGRA: MÁXIMO DE ${limitePerCard} CÓPIA(S) PARA ESTA CARTA!`);
-            fecharEVoltar(); return;
-        }
-
+        // 🛠️ FIX: Agora conta pelo NOME da carta, já que criaturas têm IDs únicos!
+        let qtdMesmaCriatura = criaturasNoDeck.filter(c => c.nome === cartaSelecionada.nome).length;
+        if (qtdMesmaCriatura >= limitePerCard) {
+            mostrarAviso(`REGRA: MÁXIMO DE ${limitePerCard} CÓPIA(S) DE "${cartaSelecionada.nome.toUpperCase()}"!`);
+            fecharEVoltar(); return;
+        }
         // B.2 Regras Absolutas de LÍDER
         if (isLider) {
             let temLider = criaturasNoDeck.some(c => {
