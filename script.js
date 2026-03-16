@@ -2473,19 +2473,36 @@ window.interceptarMontagemDeck = function(idCarta) {
     // 🚨 REGRAS OFICIAIS DE DECKBUILDING
     // ==========================================
 
-    // REGRA A: Magias (Max 2 cópias da mesma magia no deck inteiro)
-    if (cartaSelecionada.tipoCarta === "Magia") {
-        let magiasAtuais = 0;
-        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => {
-            if (s !== slot && s.dataset.cartaId == idCarta) magiasAtuais++;
-        });
-        if (magiasAtuais >= 2) {
-            mostrarAviso("REGRA: MÁXIMO DE 2 CÓPIAS DESTA MAGIA NO DECK!");
-            fecharEVoltar(); return;
+    // REGRA A: Magias (Max 2 cópias, a menos que o efeito exija limite menor)
+    if (cartaSelecionada.tipoCarta === "Magia") {
+        let magiasAtuais = 0;
+        // Olha se a carta tem limite próprio no BD, se não, usa o padrão 2.
+        let maxMagia = cartaSelecionada.limiteDeck !== undefined ? cartaSelecionada.limiteDeck : 2; 
+        
+        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => {
+            if (s !== slot && s.dataset.cartaId == idCarta) magiasAtuais++;
+        });
+        if (magiasAtuais >= maxMagia) {
+            mostrarAviso(`REGRA: MÁXIMO DE ${maxMagia} CÓPIA(S) DESTA MAGIA NO DECK!`);
+            fecharEVoltar(); return;
+        }
+    }
+
+    // REGRA DE EQUIPAMENTOS: Não há limite natural, a menos que a carta especifique!
+    if (cartaSelecionada.tipoCarta === "Equipamento") {
+        if (cartaSelecionada.limiteDeck !== undefined) {
+            let equipsAtuais = 0;
+            document.querySelectorAll('.slot-equipamento').forEach(s => {
+                if (s !== slot && s.dataset.cartaId == idCarta) equipsAtuais++;
+            });
+            if (equipsAtuais >= cartaSelecionada.limiteDeck) {
+                mostrarAviso(`REGRA: EFEITO LIMITA A ${cartaSelecionada.limiteDeck} CÓPIA(S) DESTE EQUIPAMENTO!`);
+                fecharEVoltar(); return;
+            }
         }
     }
 
-    // REGRA B: Criaturas (Limites por Tipo da Criatura, Limite de Líder e Tribo)
+   // REGRA B: Criaturas (Limites por Tipo da Criatura, Limite de Líder e Tribo)
     if (cartaSelecionada.tipoCarta === "Criatura") {
         // 💡 O Leitor Inteligente: Ignora acentos, maiúsculas e plurais!
         let tipoBruto = cartaSelecionada.tipo || "Subordinado"; 
@@ -2497,6 +2514,11 @@ window.interceptarMontagemDeck = function(idCarta) {
         if (tipoNormalizado.includes("lider")) { limitePerCard = 1; isLider = true; }
         else if (tipoNormalizado.includes("mago")) limitePerCard = 2;
         else if (tipoNormalizado.includes("guerreiro")) limitePerCard = 2;
+
+        // 🛠️ NOVA REGRA: Se a carta tiver um limite próprio no BD, ele esmaga as regras de classe!
+        if (cartaSelecionada.limiteDeck !== undefined) {
+            limitePerCard = cartaSelecionada.limiteDeck;
+        }
 
         // Coleta as criaturas que já estão no deck (ignorando o slot atual)
         let criaturasNoDeck = [];
@@ -2510,7 +2532,7 @@ window.interceptarMontagemDeck = function(idCarta) {
         // B.1 Limite de cópias da mesma carta de acordo com o Tipo
         let qtdMesmaCriatura = criaturasNoDeck.filter(c => c.id == idCarta).length;
         if (qtdMesmaCriatura >= limitePerCard) {
-            mostrarAviso(`REGRA: MÁXIMO DE ${limitePerCard} CÓPIA(S) PARA O TIPO ${tipoBruto.toUpperCase()}!`);
+            mostrarAviso(`REGRA: MÁXIMO DE ${limitePerCard} CÓPIA(S) PARA ESTA CARTA!`);
             fecharEVoltar(); return;
         }
 
@@ -2549,7 +2571,6 @@ window.interceptarMontagemDeck = function(idCarta) {
             }
         }
     }
-
     // REGRA C: Custo de Ataques (Matemática Automática)
     if (slot.id === 'pilha-ataques') {
         let contadorCusto = slot.querySelector('.contador-custo');
@@ -2654,31 +2675,55 @@ if (btnSalvarDeck) {
 
         let deckData = { nome: nomeDeck, modo: modo, criaturas: [], equipamentos: [], mugics: [], ataques: [], locais: [] };
 
-        // 🐛 BUG DA CARTA FANTASMA CORRIGIDO: 
-        // Agora o Scanner salva a ordem exata (0 a 5) de todos os slots, mesmo se estiverem invisíveis!
-        document.querySelectorAll('.slot-criatura').forEach(s => { deckData.criaturas.push(s.dataset.cartaId || null); });
-        document.querySelectorAll('.slot-equipamento').forEach(s => { deckData.equipamentos.push(s.dataset.cartaId || null); });
-        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => { deckData.mugics.push(s.dataset.cartaId || null); });
+        // 🐛 BUG DA CARTA FANTASMA CORRIGIDO: 
+        // Ignora os slots que estão invisíveis (escondidos) pela mudança de modo!
+        document.querySelectorAll('.slot-criatura').forEach(s => { 
+            let invisivel = s.closest('.linha-2')?.classList.contains('escondido') || s.closest('.linha-3')?.classList.contains('escondido');
+            deckData.criaturas.push(invisivel ? null : (s.dataset.cartaId || null)); 
+        });
+        document.querySelectorAll('.slot-equipamento').forEach(s => { 
+            let invisivel = s.closest('.linha-2')?.classList.contains('escondido') || s.closest('.linha-3')?.classList.contains('escondido');
+            deckData.equipamentos.push(invisivel ? null : (s.dataset.cartaId || null)); 
+        });
+        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => { 
+            deckData.mugics.push(s.classList.contains('escondido') ? null : (s.dataset.cartaId || null)); 
+        });
 
-        let pAtaques = document.getElementById('pilha-ataques');
-        if(pAtaques && pAtaques.dataset.cartas) deckData.ataques = JSON.parse(pAtaques.dataset.cartas);
-        let pLocais = document.getElementById('pilha-locais');
-        if(pLocais && pLocais.dataset.cartas) deckData.locais = JSON.parse(pLocais.dataset.cartas);
+        let pAtaques = document.getElementById('pilha-ataques');
+        if(pAtaques && pAtaques.dataset.cartas) deckData.ataques = JSON.parse(pAtaques.dataset.cartas);
+        let pLocais = document.getElementById('pilha-locais');
+        if(pLocais && pLocais.dataset.cartas) deckData.locais = JSON.parse(pLocais.dataset.cartas);
 
-        if (deckData.criaturas.every(c => c === null)) {
-            let avisoDeck = document.getElementById('aviso-deck');
-            if(avisoDeck) { avisoDeck.innerText = "DECK VAZIO! ADICIONE CRIATURAS."; setTimeout(() => avisoDeck.innerText = "", 4000); }
-            return;
-        }
+        // ⚖️ JUIZ DE BATALHA: Checa se o deck está legalizado para a Arena!
+        let custoTotalAtaques = 0;
+        deckData.ataques.forEach(id => {
+            let carta = window.inventario.find(c => c.id == id);
+            if(carta) custoTotalAtaques += (parseInt(carta.custo) || 0);
+        });
+        
+        // Verifica se tem 20 ataques, se a soma do custo é 20, e se tem 10 locais.
+        deckData.validoParaBatalha = (deckData.ataques.length === 20 && custoTotalAtaques === 20 && deckData.locais.length === 10);
 
-        mostrarMensagemScanner("SALVANDO DECK...");
-        // 🔥 Salva usando o idFogo (Modo + Slot)
-        set(ref(db, 'jogadores/' + uid + '/decks/' + idFogo), deckData).then(() => {
-            mostrarMensagemScanner("DECK SALVO COM SUCESSO! ☁️✅");
-            tocarSFX('notificacao');
-            btnSalvarDeck.style.background = "#fff"; setTimeout(() => btnSalvarDeck.style.background = "#4CAF50", 300);
-        }).catch(err => { mostrarMensagemScanner("ERRO AO SALVAR NA NUVEM!"); });
-    });
+        if (deckData.criaturas.every(c => c === null)) {
+            let avisoDeck = document.getElementById('aviso-deck');
+            if(avisoDeck) { avisoDeck.innerText = "DECK VAZIO! ADICIONE CRIATURAS."; setTimeout(() => avisoDeck.innerText = "", 4000); }
+            return;
+        }
+
+        // Mensagem dinâmica avisando o status do deck
+        if(deckData.validoParaBatalha) {
+            mostrarMensagemScanner("SALVANDO DECK PRONTO PARA BATALHA! ⚔️");
+        } else {
+            mostrarMensagemScanner("SALVANDO DECK INCOMPLETO... 🚧");
+        }
+
+        // 🔥 Salva usando o idFogo (Modo + Slot)
+        set(ref(db, 'jogadores/' + uid + '/decks/' + idFogo), deckData).then(() => {
+            mostrarMensagemScanner("DECK SALVO COM SUCESSO! ☁️✅");
+            tocarSFX('notificacao');
+            btnSalvarDeck.style.background = "#fff"; setTimeout(() => btnSalvarDeck.style.background = "#4CAF50", 300);
+        }).catch(err => { mostrarMensagemScanner("ERRO AO SALVAR NA NUVEM!"); });
+    });
 }
 
 // 📥 SISTEMA DE CARREGAR DA NUVEM
