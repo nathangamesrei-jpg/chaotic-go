@@ -862,8 +862,7 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
         return triboOK && elementoOK;
     });
 
-    // Segurança: Se não existir nenhum monstro no jogo com essa regra, spawna todos para o mapa não quebrar vazio
-    if (listaFiltrada.length === 0) listaFiltrada = MONSTROS; 
+
 
     let agora = new Date();
     // CORREÇÃO: Transforma o nome do local e a hora em um NÚMERO REAL para a matemática não dar zero
@@ -895,17 +894,17 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
             } else if (roletaTipo < 0.3) {
                 // 10% de chance de ser um Símbolo Mugic
                 criarMarcadorItem(lat + offLat, lon + offLon, 'mugic');
-            } else {
-                // 70% de chance de ser Criatura (O código original do monstro)
-                let indexMonstro = Math.floor(sementeRandom(sementeUnica) * listaFiltrada.length);
-                const sorteado = listaFiltrada[indexMonstro];
-                criarMarcadorMonstro(lat + offLat, lon + offLon, sorteado, false);
-            }
+            } else if (listaFiltrada.length > 0) {
+                // 70% de chance de ser Criatura, MAS SÓ SPAWNA se existir alguma criatura compatível com o local!
+                let indexMonstro = Math.floor(sementeRandom(sementeUnica) * listaFiltrada.length);
+                const sorteado = listaFiltrada[indexMonstro];
+                criarMarcadorMonstro(lat + offLat, lon + offLon, sorteado, false);
+            }
         }
     }
 
     // 2. SPAWN PASSIVO (Estilo "Caminhada" - Só para você)
-    if (forcarPassivo) {
+    if (forcarPassivo && listaFiltrada.length > 0) {
         let sorteioRaridade = Math.random();
         let listaRaridade = listaFiltrada.filter(m => m.raridade >= sorteioRaridade);
         const sorteadoPassivo = listaRaridade.length > 0 ? listaRaridade[Math.floor(Math.random() * listaRaridade.length)] : listaFiltrada[0];
