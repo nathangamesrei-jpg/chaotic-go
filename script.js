@@ -1989,12 +1989,18 @@ window.abrirOficinaDecks = function() {
     
     if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
 
-    // 💡 GATILHO DE CARREGAMENTO AUTOMÁTICO: Ao abrir a tela, puxa o Slot 1!
+    // 💡 GATILHO DE ABERTURA: Lê o MODO e o SLOT para carregar a pasta certa!
+    let seletorModo = document.getElementById("seletor-modo-deck");
     let seletorSlot = Array.from(document.querySelectorAll('#tela-decks select')).find(s => s.innerHTML.includes('Slot'));
-    if (seletorSlot) {
+    
+    if (seletorSlot && seletorModo) {
+        let modo = seletorModo.value;
         let slotId = seletorSlot.value.toLowerCase().replace(/salvar no /g, '').replace(/ /g, '_');
+        
+        let idFogo = modo + "_" + slotId; // Cria a pasta secreta (ex: "6x6_slot_1")
+        
         if (typeof window.carregarDeckDaNuvem === "function") {
-            window.carregarDeckDaNuvem(slotId);
+            window.carregarDeckDaNuvem(idFogo);
         }
     }
 };
@@ -2551,6 +2557,9 @@ if (btnSalvarDeck) {
         let slotEscolhido = selectSlot ? selectSlot.value : "slot_1";
         let slotId = slotEscolhido.toLowerCase().replace(/salvar no /g, '').replace(/ /g, '_');
 
+        // 🔥 A MÁGICA: O Firebase agora guarda o Modo + Slot (ex: "1x1_slot_1")
+        let idFogo = modo + "_" + slotId;
+
         let deckData = { nome: nomeDeck, modo: modo, criaturas: [], equipamentos: [], mugics: [], ataques: [], locais: [] };
 
         // 🐛 BUG DA CARTA FANTASMA CORRIGIDO: 
@@ -2571,7 +2580,8 @@ if (btnSalvarDeck) {
         }
 
         mostrarMensagemScanner("SALVANDO DECK...");
-        set(ref(db, 'jogadores/' + uid + '/decks/' + slotId), deckData).then(() => {
+        // 🔥 Salva usando o idFogo (Modo + Slot)
+        set(ref(db, 'jogadores/' + uid + '/decks/' + idFogo), deckData).then(() => {
             mostrarMensagemScanner("DECK SALVO COM SUCESSO! ☁️✅");
             tocarSFX('notificacao');
             btnSalvarDeck.style.background = "#fff"; setTimeout(() => btnSalvarDeck.style.background = "#4CAF50", 300);
@@ -2580,10 +2590,11 @@ if (btnSalvarDeck) {
 }
 
 // 📥 SISTEMA DE CARREGAR DA NUVEM
-window.carregarDeckDaNuvem = function(slotId) {
+window.carregarDeckDaNuvem = function(idFogo) { // Agora recebe o ID combinado
     mostrarMensagemScanner("CARREGANDO DECK...");
-    get(ref(db, 'jogadores/' + uid + '/decks/' + slotId)).then((snapshot) => {
-        window.limparTabuleiroDeck();
+    get(ref(db, 'jogadores/' + uid + '/decks/' + idFogo)).then((snapshot) => {
+        window.limparTabuleiroDeck(); // 🔥 Sempre limpa a mesa antes! Se o slot for vazio, a mesa já fica pronta!
+        
         if (snapshot.exists()) {
             let deckData = snapshot.val();
             let inputNome = document.querySelector('input[placeholder*="Nome do Deck"]');
@@ -2672,19 +2683,25 @@ window.carregarDeckDaNuvem = function(slotId) {
 let evtSeletorModo = document.getElementById("seletor-modo-deck");
 let evtSeletorSlot = Array.from(document.querySelectorAll('#tela-decks select')).find(s => s.innerHTML.includes('Slot'));
 
+// Função que combina o Modo e o Slot pra achar a pasta certa!
+function dispararCargaDaNuvem() {
+    if (evtSeletorModo && evtSeletorSlot) {
+        let modo = evtSeletorModo.value;
+        let slotId = evtSeletorSlot.value.toLowerCase().replace(/salvar no /g, '').replace(/ /g, '_');
+        let idFogo = modo + "_" + slotId;
+        window.carregarDeckDaNuvem(idFogo);
+    }
+}
+
 if (evtSeletorModo) {
     evtSeletorModo.addEventListener('change', (e) => { 
-        // 🔥 Apenas muda a estética (mostra/esconde buracos). NÃO APAGA MAIS AS CARTAS!
-        if (e && e.isTrusted) {
-            mostrarMensagemScanner("MODO DE VISUALIZAÇÃO ALTERADO!");
-        }
+        if (e && e.isTrusted) dispararCargaDaNuvem(); 
     });
 }
 
 if (evtSeletorSlot) {
-    evtSeletorSlot.addEventListener('change', () => {
-        let slotId = evtSeletorSlot.value.toLowerCase().replace(/salvar no /g, '').replace(/ /g, '_');
-        window.carregarDeckDaNuvem(slotId);
+    evtSeletorSlot.addEventListener('change', (e) => {
+        if (e && e.isTrusted) dispararCargaDaNuvem();
     });
 }
 
