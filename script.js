@@ -1044,10 +1044,10 @@ window.iniciarGPS = function() {
         console.error("Erro no GPS: ", err);
         mostrarMensagemScanner("SINAL DE GPS FRACO!");
     }, {
-        enableHighAccuracy: true, 
-        maximumAge: 10000, 
-        timeout: 10000 
-    });
+        enableHighAccuracy: true, 
+        maximumAge: 10000, 
+        timeout: 30000 // 🛠️ FIX: Aumentamos a paciência do radar para 30 segundos!
+    });
 };
 
 function escanearLocalAtual() {
