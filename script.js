@@ -2689,7 +2689,36 @@ if (evtSeletorSlot) {
     });
 }
 
-
+// ==========================================
+// 🛡️ BLINDAGEM DE CLIQUE DO NOME DO DECK (UX FIX)
+// ==========================================
+// Roda assim que o Scanner liga, acha o campo no HTML e injeta a blindagem!
+setTimeout(() => {
+    let inputNomeDeck = document.querySelector('input[placeholder*="Nome do Deck"], input[placeholder*="NOME DO DECK"]');
+    
+    if (inputNomeDeck) {
+        inputNomeDeck.style.cssText = `
+            display: block !important;
+            width: 100% !important;
+            height: 45px !important;
+            padding: 10px 15px !important;
+            background: rgba(0,0,0,0.8) !important;
+            color: #fff !important;
+            border: 2px solid #00ffff !important;
+            border-radius: 6px !important;
+            box-shadow: 0 0 15px rgba(0,255,255,0.4) !important;
+            font-family: monospace !important;
+            font-size: 13px !important;
+            font-weight: bold !important;
+            outline: none !important;
+            caret-color: #ff3300 !important;
+            position: relative !important;
+            z-index: 9999 !important; /* A MÁGICA: Força pra cima de tudo! */
+            cursor: text !important;
+            box-sizing: border-box !important;
+        `;
+    }
+}, 500); // Dá meio segundo pro HTML carregar antes de aplicar
 
 
 
