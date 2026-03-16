@@ -2690,40 +2690,31 @@ if (evtSeletorSlot) {
 }
 
 // ==========================================
-// 🛡️ BLINDAGEM DE CLIQUE SEGURA (UX FIX)
+// 🛡️ BLINDAGEM DE CLIQUE DEFINITIVA (UX FIX)
 // ==========================================
 setTimeout(() => {
     let inputNomeDeck = document.querySelector('input[placeholder*="Nome do Deck"], input[placeholder*="NOME DO DECK"]');
     let seletorModo = document.getElementById("seletor-modo-deck");
     
-    // 1. DESFAZ O ESTRAGO: Tiramos a regra que bagunçou as camadas invisíveis!
+    // 1. A MÁGICA REAL: Puxar a CAIXA MÃE inteira pra frente de tudo!
     if (inputNomeDeck && inputNomeDeck.parentElement) {
-        inputNomeDeck.parentElement.style.display = ""; 
+        inputNomeDeck.parentElement.style.setProperty('position', 'relative', 'important');
+        inputNomeDeck.parentElement.style.setProperty('z-index', '99998', 'important');
+        inputNomeDeck.parentElement.style.setProperty('pointer-events', 'auto', 'important');
     }
 
-    // 2. Aumenta a área de clique do Nome e joga pra frente, SEM quebrar o layout
+    // 2. Garante que o campo de Nome funcione
     if (inputNomeDeck) {
-        inputNomeDeck.style.cssText = `
-            position: relative !important;
-            z-index: 9999 !important; /* Fura qualquer camada invisível */
-            pointer-events: auto !important; /* Força o clique */
-            padding: 10px !important; /* Deixa "gordinho" por dentro pra ser fácil de apertar */
-            background: rgba(0,0,0,0.8) !important;
-            color: #fff !important;
-            border: 2px solid #00ffff !important;
-            border-radius: 6px !important;
-            outline: none !important;
-        `;
+        inputNomeDeck.style.setProperty('position', 'relative', 'important');
+        inputNomeDeck.style.setProperty('z-index', '99999', 'important');
+        inputNomeDeck.style.setProperty('pointer-events', 'auto', 'important');
     }
     
-    // 3. Garante que a caixinha de Modo fique clicável e na frente de tudo
+    // 3. Garante que a caixinha de Modo abra a lista
     if (seletorModo) {
-        seletorModo.style.cssText = `
-            position: relative !important;
-            z-index: 9999 !important; /* Fura qualquer camada invisível */
-            pointer-events: auto !important; /* Força o clique */
-            cursor: pointer !important;
-        `;
+        seletorModo.style.setProperty('position', 'relative', 'important');
+        seletorModo.style.setProperty('z-index', '99999', 'important');
+        seletorModo.style.setProperty('pointer-events', 'auto', 'important');
+        seletorModo.style.setProperty('cursor', 'pointer', 'important');
     }
 }, 500);
-
