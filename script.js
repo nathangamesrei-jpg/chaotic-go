@@ -855,12 +855,35 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
     let triboRegra = regrasLocal ? regrasLocal.triboNativa : "Qualquer";
     let elementoRegra = regrasLocal ? (regrasLocal.elementoNativo || null) : null;
 
-    // 2. O FILTRO INTELIGENTE: Checa Tribo E Elemento ao mesmo tempo!
-    let listaFiltrada = MONSTROS.filter(m => {
-        let triboOK = (triboRegra === "Qualquer" || m.tribo === triboRegra);
-        let elementoOK = (!elementoRegra || (m.elementos && m.elementos.includes(elementoRegra)));
-        return triboOK && elementoOK;
-    });
+    // 2. O FILTRO INTELIGENTE E RARIDADE: Checa o Bioma e já coloca bilhetes pela Raridade Padrão!
+    let listaFiltrada = [];
+    if (typeof MONSTROS !== 'undefined') {
+        MONSTROS.forEach(m => {
+            let triboOK = (triboRegra === "Qualquer" || m.tribo === triboRegra);
+            let elementoOK = (!elementoRegra || (m.elementos && m.elementos.includes(elementoRegra)));
+            
+            if (triboOK && elementoOK) {
+                // Multiplica a raridade (ex: 0.8) por 10 para virar quantidade de bilhetes (8 bilhetes)
+                let qtdBilhetes = Math.max(1, Math.floor((m.raridade || 0.5) * 10));
+                for (let i = 0; i < qtdBilhetes; i++) {
+                    listaFiltrada.push(m);
+                }
+            }
+        });
+    }
+
+    // 🚀 3. SISTEMA DE NINHO (BOOST DE SPAWN): Injeta bilhetes extras SE for um evento/ninho!
+    if (regrasLocal && regrasLocal.boostSpawn) {
+        regrasLocal.boostSpawn.forEach(boost => {
+            let monstroBoost = MONSTROS.find(m => m.nome === boost.nome);
+            if (monstroBoost) {
+                // Coloca várias cópias do monstro na listaFiltrada dependendo do "peso"
+                for (let i = 0; i < boost.peso; i++) {
+                    listaFiltrada.push(monstroBoost);
+                }
+            }
+        });
+    }
 
 
 
@@ -904,12 +927,12 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
     }
 
     // 2. SPAWN PASSIVO (Estilo "Caminhada" - Só para você)
-    if (forcarPassivo && listaFiltrada.length > 0) {
-        let sorteioRaridade = Math.random();
-        let listaRaridade = listaFiltrada.filter(m => m.raridade >= sorteioRaridade);
-        const sorteadoPassivo = listaRaridade.length > 0 ? listaRaridade[Math.floor(Math.random() * listaRaridade.length)] : listaFiltrada[0];
+    // Só vai piscar monstro na sua tela se o local tiver monstros nativos!
+    if (forcarPassivo && listaFiltrada.length > 0) {
+        // 💡 FIX: A Urna (listaFiltrada) já está com os bilhetes certos de raridade! É só sortear um!
+        const sorteadoPassivo = listaFiltrada[Math.floor(Math.random() * listaFiltrada.length)];
 
-        // Aparece colado em você (aprox. 30 metros)
+        // Aparece colado em você (aprox. 30 metros)
         let offLat = (Math.random() - 0.5) * 0.0003;
         let offLon = (Math.random() - 0.5) * 0.0003;
         
