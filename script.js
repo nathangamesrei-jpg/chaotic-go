@@ -2473,7 +2473,7 @@ function prepararSelecaoDeck(tipoDesejado, elementoSlot) {
     if(selectTipo) { selectTipo.value = tipoDesejado; selectTipo.dispatchEvent(new Event('change')); }
 }
 
-// 🛡️ O JUIZ: Trava de Segurança usando ID ÚNICO
+// 🛡️ O JUIZ: Trava de Segurança com REGRAS OFICIAIS DE TORNEIO
 window.interceptarMontagemDeck = function(idCarta) {
     let slot = window.slotSelecionadoAtual;
     let cartaSelecionada = window.inventario.find(c => c.id === idCarta);
@@ -2483,6 +2483,7 @@ window.interceptarMontagemDeck = function(idCarta) {
     let mostrarAviso = (msg) => {
         if(avisoDeck) { avisoDeck.innerText = msg; setTimeout(() => avisoDeck.innerText = "", 4000); } 
         else mostrarMensagemScanner(msg);
+        tocarSFX('notificacao'); // Toca o som pra avisar o bloqueio
     };
 
     let fecharEVoltar = () => {
@@ -2495,7 +2496,7 @@ window.interceptarMontagemDeck = function(idCarta) {
         if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
     };
 
-    // 1. CHECA QUANTIDADE POR ID ÚNICO (O "CPF" DA CARTA)
+    // 1. CHECA INVENTÁRIO FÍSICO (O jogador tem cartas suficientes na coleção?)
     let qtdNoDOM = document.querySelectorAll(`[data-carta-id="${idCarta}"]`).length;
     let qtdPilhas = 0;
     document.querySelectorAll('.pilha-cartas').forEach(p => {
@@ -2508,11 +2509,92 @@ window.interceptarMontagemDeck = function(idCarta) {
 
     let qtdTotal = qtdNoDOM + qtdPilhas;
     if (qtdTotal >= (cartaSelecionada.quantidade || 1)) {
-        mostrarAviso(`LIMITE DESTA CARTA ESPECÍFICA NO DECK ATINGIDO!`);
+        mostrarAviso(`INVENTÁRIO: VOCÊ SÓ POSSUI ${cartaSelecionada.quantidade || 1} CÓPIA(S) DESTA CARTA!`);
         fecharEVoltar(); return;
     }
 
-    // 2. CHECA CUSTO DE ATAQUE
+    // ==========================================
+    // 🚨 REGRAS OFICIAIS DE DECKBUILDING
+    // ==========================================
+
+    // REGRA A: Magias (Max 2 cópias da mesma magia no deck inteiro)
+    if (cartaSelecionada.tipoCarta === "Magia") {
+        let magiasAtuais = 0;
+        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => {
+            if (s !== slot && s.dataset.cartaId == idCarta) magiasAtuais++;
+        });
+        if (magiasAtuais >= 2) {
+            mostrarAviso("REGRA: MÁXIMO DE 2 CÓPIAS DESTA MAGIA NO DECK!");
+            fecharEVoltar(); return;
+        }
+    }
+
+    // REGRA B: Criaturas (Limites por Tipo da Criatura, Limite de Líder e Tribo)
+    if (cartaSelecionada.tipoCarta === "Criatura") {
+        // 💡 O Leitor Inteligente: Ignora acentos, maiúsculas e plurais!
+        let tipoBruto = cartaSelecionada.tipo || "Subordinado"; 
+        let tipoNormalizado = tipoBruto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        
+        let limitePerCard = 3; // Padrão é 3 (Subordinado/Outros)
+        let isLider = false;
+
+        if (tipoNormalizado.includes("lider")) { limitePerCard = 1; isLider = true; }
+        else if (tipoNormalizado.includes("mago")) limitePerCard = 2;
+        else if (tipoNormalizado.includes("guerreiro")) limitePerCard = 2;
+
+        // Coleta as criaturas que já estão no deck (ignorando o slot atual)
+        let criaturasNoDeck = [];
+        document.querySelectorAll('.slot-criatura').forEach(s => {
+            if (s !== slot && s.dataset.cartaId) {
+                let cDeck = window.inventario.find(c => c.id == s.dataset.cartaId);
+                if (cDeck) criaturasNoDeck.push(cDeck);
+            }
+        });
+
+        // B.1 Limite de cópias da mesma carta de acordo com o Tipo
+        let qtdMesmaCriatura = criaturasNoDeck.filter(c => c.id == idCarta).length;
+        if (qtdMesmaCriatura >= limitePerCard) {
+            mostrarAviso(`REGRA: MÁXIMO DE ${limitePerCard} CÓPIA(S) PARA O TIPO ${tipoBruto.toUpperCase()}!`);
+            fecharEVoltar(); return;
+        }
+
+        // B.2 Regras Absolutas de LÍDER
+        if (isLider) {
+            let temLider = criaturasNoDeck.some(c => {
+                let t = (c.tipo || "Subordinado").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return t.includes("lider");
+            });
+            if (temLider) {
+                mostrarAviso("REGRA: APENAS 1 LÍDER PERMITIDO POR DECK!");
+                fecharEVoltar(); return;
+            }
+            
+            // Verifica se você não tá colocando um líder de cor diferente das tropas que já estão lá
+            let subordinados = criaturasNoDeck.filter(c => {
+                let t = (c.tipo || "Subordinado").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return !t.includes("lider");
+            });
+            let conflitoTribo = subordinados.find(sub => sub.tribo !== cartaSelecionada.tribo);
+            if (conflitoTribo) {
+                mostrarAviso(`REGRA: LÍDER ${cartaSelecionada.tribo.toUpperCase()} NÃO PODE LIDERAR TROPAS ${conflitoTribo.tribo.toUpperCase()}!`);
+                fecharEVoltar(); return;
+            }
+        }
+
+        // B.3 Regras Absolutas de TROPAS (Não-líderes)
+        if (!isLider) {
+            let liderNoDeck = criaturasNoDeck.find(c => {
+                let t = (c.tipo || "Subordinado").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return t.includes("lider");
+            });
+            if (liderNoDeck && liderNoDeck.tribo !== cartaSelecionada.tribo) {
+                mostrarAviso(`REGRA: TROPAS DEVEM SER DA TRIBO DO LÍDER (${liderNoDeck.tribo.toUpperCase()})!`);
+                fecharEVoltar(); return;
+            }
+        }
+    }
+
+    // REGRA C: Custo de Ataques (Matemática Automática)
     if (slot.id === 'pilha-ataques') {
         let contadorCusto = slot.querySelector('.contador-custo');
         if (contadorCusto) {
@@ -2522,13 +2604,16 @@ window.interceptarMontagemDeck = function(idCarta) {
             let custoMax = parseInt(partes[1]);
 
             if ((custoAtual + custoDaCarta) > custoMax) {
-                mostrarAviso(`CUSTO ESTOURADO! Você só tem ${custoMax - custoAtual} pontos livres.`);
+                mostrarAviso(`CUSTO ESTOURADO! VOCÊ SÓ TEM ${custoMax - custoAtual} PONTOS DE ATAQUE LIVRES.`);
                 fecharEVoltar(); return;
             }
         }
     }
 
-    // 3. APLICA A CARTA E O ZOOM
+    // ==========================================
+    // FIM DAS REGRAS. SE PASSOU, APLICA A CARTA!
+    // ==========================================
+
     if (!slot.classList.contains('pilha-cartas')) {
         slot.style.backgroundImage = `url('${cartaSelecionada.img}')`;
         if (cartaSelecionada.tipoCarta === "Criatura") {
