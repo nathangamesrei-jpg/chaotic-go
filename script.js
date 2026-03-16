@@ -1184,21 +1184,71 @@ window.verCartaAlbum = function(id) {
 
     abrirDetalheCarta(carta.nome, carta.tribo, carta.img, "album");
     
-    // Mostra os Stats corretos dependendo se é criatura ou não
-    if (carta.tipoCarta !== "Criatura") {
-        document.getElementById("camada-stats").style.display = "none";
-    } else {
-        document.getElementById("camada-stats").style.display = "block";
-        if(carta.stats) {
-            document.getElementById("stat-coragem").innerText = carta.stats.c || "-";
-            document.getElementById("stat-poder").innerText = carta.stats.p || "-";
-            document.getElementById("stat-sabedoria").innerText = carta.stats.s || "-";
-            document.getElementById("stat-velocidade").innerText = carta.stats.v || "-";
-            document.getElementById("stat-energia").innerText = carta.stats.e || "-";
+    // REGRA B: Criaturas (Limites por Tipo da Criatura, Limite de Líder e Tribo)
+    if (cartaSelecionada.tipoCarta === "Criatura") {
+        // 💡 O Leitor Inteligente: Ignora acentos, maiúsculas e plurais!
+        let tipoBruto = cartaSelecionada.tipo || "Subordinado"; 
+        let tipoNormalizado = tipoBruto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        
+        let limitePerCard = 3; // Padrão é 3 (Subordinado/Outros)
+        let isLider = false;
+
+        if (tipoNormalizado.includes("lider")) { limitePerCard = 1; isLider = true; }
+        else if (tipoNormalizado.includes("mago")) limitePerCard = 2;
+        else if (tipoNormalizado.includes("guerreiro")) limitePerCard = 2;
+
+        // Coleta as criaturas que já estão no deck (ignorando o slot atual)
+        let criaturasNoDeck = [];
+        document.querySelectorAll('.slot-criatura').forEach(s => {
+            if (s !== slot && s.dataset.cartaId) {
+                let cDeck = window.inventario.find(c => c.id == s.dataset.cartaId);
+                if (cDeck) criaturasNoDeck.push(cDeck);
+            }
+        });
+
+        // B.1 Limite de cópias da mesma carta de acordo com o Tipo
+        let qtdMesmaCriatura = criaturasNoDeck.filter(c => c.id == idCarta).length;
+        if (qtdMesmaCriatura >= limitePerCard) {
+            mostrarAviso(`REGRA: MÁXIMO DE ${limitePerCard} CÓPIA(S) PARA O TIPO ${tipoBruto.toUpperCase()}!`);
+            fecharEVoltar(); return;
+        }
+
+        // B.2 Regras Absolutas de LÍDER
+        if (isLider) {
+            let temLider = criaturasNoDeck.some(c => {
+                let t = (c.tipo || "Subordinado").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return t.includes("lider");
+            });
+            if (temLider) {
+                mostrarAviso("REGRA: APENAS 1 LÍDER PERMITIDO POR DECK!");
+                fecharEVoltar(); return;
+            }
+            
+            // Verifica se você não tá colocando um líder de cor diferente das tropas que já estão lá
+            let subordinados = criaturasNoDeck.filter(c => {
+                let t = (c.tipo || "Subordinado").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return !t.includes("lider");
+            });
+            let conflitoTribo = subordinados.find(sub => sub.tribo !== cartaSelecionada.tribo);
+            if (conflitoTribo) {
+                mostrarAviso(`REGRA: LÍDER ${cartaSelecionada.tribo.toUpperCase()} NÃO PODE LIDERAR TROPAS ${conflitoTribo.tribo.toUpperCase()}!`);
+                fecharEVoltar(); return;
+            }
+        }
+
+        // B.3 Regras Absolutas de TROPAS (Não-líderes)
+        if (!isLider) {
+            let liderNoDeck = criaturasNoDeck.find(c => {
+                let t = (c.tipo || "Subordinado").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                return t.includes("lider");
+            });
+            if (liderNoDeck && liderNoDeck.tribo !== cartaSelecionada.tribo) {
+                mostrarAviso(`REGRA: TROPAS DEVEM SER DA TRIBO DO LÍDER (${liderNoDeck.tribo.toUpperCase()})!`);
+                fecharEVoltar(); return;
+            }
         }
     }
-};
-
+}
 let btnVoltarAlbum = document.getElementById('btn-voltar-album');
 if(btnVoltarAlbum) {
     btnVoltarAlbum.onclick = () => {
