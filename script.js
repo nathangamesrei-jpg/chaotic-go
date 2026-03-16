@@ -1093,6 +1093,7 @@ if (btnSairRadar) {
 // 6. SISTEMA DE MENU E ÁLBUM
 // ==========================================
 
+
 function abrirAlbum() {
     document.getElementById("tela-menu").style.display = "none";
     let telaAlbum = document.getElementById("tela-album");
@@ -1163,7 +1164,7 @@ window.toggleFavorito = function(id, event) {
     let carta = inventario.find(c => c.id === id);
     if(carta) {
         carta.favorito = !carta.favorito;
-        salvarAlbumNaNuvem(); 
+        salvarAlbumNaNuvem(); // Correção: Aqui ainda estava localStorage
         renderizarListaAlbum(); 
     }
 }
@@ -1183,7 +1184,7 @@ window.verCartaAlbum = function(id) {
 
     abrirDetalheCarta(carta.nome, carta.tribo, carta.img, "album");
     
-    // 🔥 AQUI VOLTAM OS STATUS ORIGINAIS E SOME A REGRA B BUGADA! 🔥
+    // 🔥 CORREÇÃO: Limpamos a Regra B intrusa e voltamos o código que mostra os status da carta!
     if (carta.tipoCarta !== "Criatura") {
         document.getElementById("camada-stats").style.display = "none";
     } else {
@@ -1196,7 +1197,7 @@ window.verCartaAlbum = function(id) {
             document.getElementById("stat-energia").innerText = carta.stats.e || "-";
         }
     }
-}
+};
 
 let btnVoltarAlbum = document.getElementById('btn-voltar-album');
 if(btnVoltarAlbum) {
