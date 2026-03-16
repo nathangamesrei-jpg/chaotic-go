@@ -368,11 +368,11 @@ document.getElementById("btn-acao-dir").onclick = function() {
         salvarAlbumNaNuvem();
         mostrarMensagemScanner("CARTA ARMAZENADA NO ÁLBUM!");
         voltarAoRadar();
-    } else if (tipoDeCartaAtual === "album") {
-        document.getElementById("tela-detalhe-carta").style.display = "none";
-        document.getElementById("painel-viagem").style.display = "none";
-        ;
-    } else if (tipoDeCartaAtual === "inspecao_troca") {
+   } else if (tipoDeCartaAtual === "album") {
+        document.getElementById("tela-detalhe-carta").style.display = "none";
+        document.getElementById("painel-viagem").style.display = "none";
+        abrirAlbum(); // 🛠️ CORREÇÃO AQUI: Estava faltando chamar o Álbum de volta!
+    } else if (tipoDeCartaAtual === "inspecao_troca") {
         document.getElementById("tela-detalhe-carta").style.display = "none";
         document.getElementById("painel-viagem").style.display = "none";
         if(document.getElementById("tela-social")) document.getElementById("tela-social").style.display = "flex";
@@ -403,10 +403,10 @@ window.excluirCartaConfirmada = function() {
     } else {
         inventario = inventario.filter(c => c.id !== cartaVisualizadaId); mostrarMensagemScanner("CARTA EXCLUÍDA!");
     }
-    salvarAlbumNaNuvem(); 
-    document.getElementById("tela-detalhe-carta").style.display = "none";
-    document.getElementById("painel-viagem").style.display = "none";
-    ; 
+   salvarAlbumNaNuvem(); 
+    document.getElementById("tela-detalhe-carta").style.display = "none";
+    document.getElementById("painel-viagem").style.display = "none";
+    abrirAlbum(); // 🛠️ CORREÇÃO AQUI TAMBÉM: Retorna ao álbum após excluir a carta!
 }
 
 function voltarAoRadar() {
