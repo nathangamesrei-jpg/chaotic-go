@@ -280,7 +280,7 @@ function mostrarMensagemScanner(texto) {
         cx.style.top = "15px";
         cx.style.left = "50%";
         cx.style.transform = "translateX(-50%)";
-        cx.style.zIndex = "9999";
+        cx.style.zIndex = "999999";
         cx.style.background = "rgba(0, 0, 0, 0.8)";
         cx.style.padding = "5px 15px";
         cx.style.borderRadius = "5px";
@@ -2674,10 +2674,9 @@ let evtSeletorSlot = Array.from(document.querySelectorAll('#tela-decks select'))
 
 if (evtSeletorModo) {
     evtSeletorModo.addEventListener('change', (e) => { 
-        // Se foi o usuário que clicou (evita o loop do Firebase)
+        // 🔥 Apenas muda a estética (mostra/esconde buracos). NÃO APAGA MAIS AS CARTAS!
         if (e && e.isTrusted) {
-            window.limparTabuleiroDeck();
-            mostrarMensagemScanner("NOVO MODO. TABULEIRO LIMPO!");
+            mostrarMensagemScanner("MODO DE VISUALIZAÇÃO ALTERADO!");
         }
     });
 }
