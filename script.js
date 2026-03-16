@@ -905,9 +905,9 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
         for (let i = 0; i < 50; i++) {
             let sementeUnica = sementeBase + (i * 150); 
             
-            // Multiplicador 0.05 garante espalhamento de ±2.5km
-            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.05;
-            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.05;
+            // 🛠️ FIX: Multiplicador 0.003 garante espalhamento focado no bairro (aprox. 300 metros)
+            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.003;
+            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.003;
             
             let roletaTipo = sementeRandom(sementeUnica + 400); // Rola de 0.0 a 1.0
             
