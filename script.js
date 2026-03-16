@@ -1248,7 +1248,7 @@ window.verCartaAlbum = function(id) {
             }
         }
     }
-
+}
 let btnVoltarAlbum = document.getElementById('btn-voltar-album');
 if(btnVoltarAlbum) {
     btnVoltarAlbum.onclick = () => {
@@ -2840,4 +2840,3 @@ if (evtSeletorSlot) {
         if (e && e.isTrusted) dispararCargaDaNuvem();
     });
 }
-
