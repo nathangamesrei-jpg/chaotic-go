@@ -2690,36 +2690,59 @@ if (evtSeletorSlot) {
 }
 
 // ==========================================
-// 🛡️ BLINDAGEM DE CLIQUE DO NOME DO DECK (UX FIX)
+// 🛡️ BLINDAGEM DE CLIQUE DO NOME E MODO (UX FIX)
 // ==========================================
-// Roda assim que o Scanner liga, acha o campo no HTML e injeta a blindagem!
 setTimeout(() => {
     let inputNomeDeck = document.querySelector('input[placeholder*="Nome do Deck"], input[placeholder*="NOME DO DECK"]');
+    let seletorModo = document.getElementById("seletor-modo-deck");
     
+    // 1. Organiza a "caixa" onde os dois moram para um não esmagar o outro
+    if (inputNomeDeck && inputNomeDeck.parentElement) {
+        inputNomeDeck.parentElement.style.display = "flex";
+        inputNomeDeck.parentElement.style.gap = "10px";
+        inputNomeDeck.parentElement.style.alignItems = "center";
+        inputNomeDeck.parentElement.style.position = "relative";
+        inputNomeDeck.parentElement.style.zIndex = "9999";
+    }
+
+    // 2. Arruma o Campo de Nome (Cresce, mas respeita o espaço do vizinho)
     if (inputNomeDeck) {
         inputNomeDeck.style.cssText = `
-            display: block !important;
-            width: 100% !important;
-            height: 45px !important;
-            padding: 10px 15px !important;
-            background: rgba(0,0,0,0.8) !important;
+            flex: 1 !important; /* Cresce o máximo que der sem esmagar */
+            width: auto !important; /* Tira o rolo compressor de 100% */
+            height: 35px !important;
+            padding: 5px 10px !important;
+            background: #000 !important;
             color: #fff !important;
             border: 2px solid #00ffff !important;
             border-radius: 6px !important;
-            box-shadow: 0 0 15px rgba(0,255,255,0.4) !important;
             font-family: monospace !important;
             font-size: 13px !important;
-            font-weight: bold !important;
-            outline: none !important;
-            caret-color: #ff3300 !important;
             position: relative !important;
-            z-index: 9999 !important; /* A MÁGICA: Força pra cima de tudo! */
+            z-index: 9999 !important;
             cursor: text !important;
-            box-sizing: border-box !important;
+            pointer-events: auto !important; /* Força o clique a funcionar */
         `;
     }
-}, 500); // Dá meio segundo pro HTML carregar antes de aplicar
-
+    
+    // 3. Arruma a Caixinha de Modo para ela não sumir
+    if (seletorModo) {
+        seletorModo.style.cssText = `
+            height: 35px !important;
+            padding: 0 5px !important;
+            background: #000 !important;
+            color: #00ffff !important;
+            border: 2px solid #00ffff !important;
+            border-radius: 6px !important;
+            font-family: monospace !important;
+            font-weight: bold !important;
+            position: relative !important;
+            z-index: 9999 !important;
+            cursor: pointer !important;
+            pointer-events: auto !important; /* Força o clique a funcionar */
+        `;
+    }
+}, 500);
 
 
 
