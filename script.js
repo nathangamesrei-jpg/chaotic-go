@@ -2690,59 +2690,40 @@ if (evtSeletorSlot) {
 }
 
 // ==========================================
-// 🛡️ BLINDAGEM DE CLIQUE DO NOME E MODO (UX FIX)
+// 🛡️ BLINDAGEM DE CLIQUE SEGURA (UX FIX)
 // ==========================================
 setTimeout(() => {
     let inputNomeDeck = document.querySelector('input[placeholder*="Nome do Deck"], input[placeholder*="NOME DO DECK"]');
     let seletorModo = document.getElementById("seletor-modo-deck");
     
-    // 1. Organiza a "caixa" onde os dois moram para um não esmagar o outro
+    // 1. DESFAZ O ESTRAGO: Tiramos a regra que bagunçou as camadas invisíveis!
     if (inputNomeDeck && inputNomeDeck.parentElement) {
-        inputNomeDeck.parentElement.style.display = "flex";
-        inputNomeDeck.parentElement.style.gap = "10px";
-        inputNomeDeck.parentElement.style.alignItems = "center";
-        inputNomeDeck.parentElement.style.position = "relative";
-        inputNomeDeck.parentElement.style.zIndex = "9999";
+        inputNomeDeck.parentElement.style.display = ""; 
     }
 
-    // 2. Arruma o Campo de Nome (Cresce, mas respeita o espaço do vizinho)
+    // 2. Aumenta a área de clique do Nome e joga pra frente, SEM quebrar o layout
     if (inputNomeDeck) {
         inputNomeDeck.style.cssText = `
-            flex: 1 !important; /* Cresce o máximo que der sem esmagar */
-            width: auto !important; /* Tira o rolo compressor de 100% */
-            height: 35px !important;
-            padding: 5px 10px !important;
-            background: #000 !important;
+            position: relative !important;
+            z-index: 9999 !important; /* Fura qualquer camada invisível */
+            pointer-events: auto !important; /* Força o clique */
+            padding: 10px !important; /* Deixa "gordinho" por dentro pra ser fácil de apertar */
+            background: rgba(0,0,0,0.8) !important;
             color: #fff !important;
             border: 2px solid #00ffff !important;
             border-radius: 6px !important;
-            font-family: monospace !important;
-            font-size: 13px !important;
-            position: relative !important;
-            z-index: 9999 !important;
-            cursor: text !important;
-            pointer-events: auto !important; /* Força o clique a funcionar */
+            outline: none !important;
         `;
     }
     
-    // 3. Arruma a Caixinha de Modo para ela não sumir
+    // 3. Garante que a caixinha de Modo fique clicável e na frente de tudo
     if (seletorModo) {
         seletorModo.style.cssText = `
-            height: 35px !important;
-            padding: 0 5px !important;
-            background: #000 !important;
-            color: #00ffff !important;
-            border: 2px solid #00ffff !important;
-            border-radius: 6px !important;
-            font-family: monospace !important;
-            font-weight: bold !important;
             position: relative !important;
-            z-index: 9999 !important;
+            z-index: 9999 !important; /* Fura qualquer camada invisível */
+            pointer-events: auto !important; /* Força o clique */
             cursor: pointer !important;
-            pointer-events: auto !important; /* Força o clique a funcionar */
         `;
     }
 }, 500);
-
-
 
