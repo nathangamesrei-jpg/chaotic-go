@@ -1093,7 +1093,6 @@ if (btnSairRadar) {
 // 6. SISTEMA DE MENU E ÁLBUM
 // ==========================================
 
-
 function abrirAlbum() {
     document.getElementById("tela-menu").style.display = "none";
     let telaAlbum = document.getElementById("tela-album");
@@ -1164,7 +1163,7 @@ window.toggleFavorito = function(id, event) {
     let carta = inventario.find(c => c.id === id);
     if(carta) {
         carta.favorito = !carta.favorito;
-        salvarAlbumNaNuvem(); // Correção: Aqui ainda estava localStorage
+        salvarAlbumNaNuvem(); 
         renderizarListaAlbum(); 
     }
 }
@@ -1184,7 +1183,7 @@ window.verCartaAlbum = function(id) {
 
     abrirDetalheCarta(carta.nome, carta.tribo, carta.img, "album");
     
-    // 🔥 CORREÇÃO: Limpamos a Regra B intrusa e voltamos o código que mostra os status da carta!
+    // 🔥 AQUI VOLTAM OS STATUS ORIGINAIS E SOME A REGRA B BUGADA! 🔥
     if (carta.tipoCarta !== "Criatura") {
         document.getElementById("camada-stats").style.display = "none";
     } else {
@@ -1197,26 +1196,29 @@ window.verCartaAlbum = function(id) {
             document.getElementById("stat-energia").innerText = carta.stats.e || "-";
         }
     }
-};
+}
 
 let btnVoltarAlbum = document.getElementById('btn-voltar-album');
 if(btnVoltarAlbum) {
-    btnVoltarAlbum.onclick = () => {
-        // Se estava escolhendo carta pro Deck, cancela e volta pra Oficina
-        if (window.slotSelecionadoAtual !== null) {
-            window.slotSelecionadoAtual = null; // Limpa a memória
-            document.getElementById('tela-album').style.display = 'none';
-            document.getElementById('tela-decks').style.display = 'flex';
+    btnVoltarAlbum.onclick = () => {
+        // Se estava escolhendo carta pro Deck, cancela e volta pra Oficina
+        if (window.slotSelecionadoAtual !== null) {
+            window.slotSelecionadoAtual = null; // Limpa a memória
+            document.getElementById('tela-album').style.display = 'none';
+            document.getElementById('tela-decks').style.display = 'flex';
+            
+            let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
+            if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
+        } 
+        // Se era só uma visita normal ao álbum, volta pro Menu Principal
+        else {
+            document.getElementById('tela-album').style.display = 'none';
+            document.getElementById('tela-menu').style.display = 'flex';
             
-            let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
-            if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
-        } 
-        // Se era só uma visita normal ao álbum, volta pro Menu Principal
-        else {
-            document.getElementById('tela-album').style.display = 'none';
-            document.getElementById('tela-menu').style.display = 'flex';
-        }
-    };
+            // CORREÇÃO AQUI: Religa os botões do menu!
+            modoMenu = true; 
+        }
+    };
 }
 
 // ==========================================
