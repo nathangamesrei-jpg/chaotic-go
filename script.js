@@ -355,9 +355,10 @@ document.getElementById("btn-acao-dir").onclick = function() {
         mudarMusicaFundo('mapa'); 
         iniciarGPS(); 
     } else if (tipoDeCartaAtual === "monstro") {
-        let novaCaptura = {
-            id: Date.now(), nome: monstroAtual.nome, tribo: monstroAtual.tribo || "Azul", tipoCarta: "Criatura", 
-            img: monstroAtual.cartaBlank, favorito: false, quantidade: 1,
+        let novaCaptura = {
+            id: Date.now(), nome: monstroAtual.nome, tribo: monstroAtual.tribo || "Azul", tipoCarta: "Criatura", 
+            tipo: monstroAtual.tipo || "Subordinado", // 🛠️ FIX: Agora o Scanner salva se é Mago, Guerreiro, etc!
+            img: monstroAtual.cartaBlank, favorito: false, quantidade: 1,
             stats: {
                 c: document.getElementById("stat-coragem").innerText, p: document.getElementById("stat-poder").innerText,
                 s: document.getElementById("stat-sabedoria").innerText, v: document.getElementById("stat-velocidade").innerText,
@@ -2503,10 +2504,16 @@ window.interceptarMontagemDeck = function(idCarta) {
     }
 
    // REGRA B: Criaturas (Limites por Tipo da Criatura, Limite de Líder e Tribo)
-    if (cartaSelecionada.tipoCarta === "Criatura") {
-        // 💡 O Leitor Inteligente: Ignora acentos, maiúsculas e plurais!
-        let tipoBruto = cartaSelecionada.tipo || "Subordinado"; 
-        let tipoNormalizado = tipoBruto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (cartaSelecionada.tipoCarta === "Criatura") {
+        // 💡 O Leitor Inteligente: Busca a classe verdadeira mesmo em cartas antigas bugadas!
+        let tipoBruto = cartaSelecionada.tipo;
+        if (!tipoBruto && typeof MONSTROS !== 'undefined') {
+            let cartaBase = MONSTROS.find(m => m.nome === cartaSelecionada.nome);
+            if (cartaBase) tipoBruto = cartaBase.tipo;
+        }
+        tipoBruto = tipoBruto || "Subordinado"; // Se ainda não achar nada, aí sim vira subordinado
+        
+        let tipoNormalizado = tipoBruto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         
         let limitePerCard = 3; // Padrão é 3 (Subordinado/Outros)
         let isLider = false;
