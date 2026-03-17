@@ -901,13 +901,13 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
         marcadoresMonstros.forEach(m => mapaScanner.removeLayer(m));
         marcadoresMonstros = [];
 
-        // RECALIBRADO: 50 itens num raio de aproximadamente 5km (multiplier 0.05).
-        for (let i = 0; i < 50; i++) {
+        // 🛠️ FIX: Reduzido para 15 itens no mapa, para não poluir a tela (Vibe Pokémon GO).
+        for (let i = 0; i < 15; i++) {
             let sementeUnica = sementeBase + (i * 150); 
             
-            // 🛠️ FIX: Multiplicador 0.003 garante espalhamento focado no bairro (aprox. 300 metros)
-            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.003;
-            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.003;
+            // 🛠️ FIX: Multiplicador 0.008 espalha os itens de forma realista (aprox. 800m a 1km)
+            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.008;
+            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.008;
             
             let roletaTipo = sementeRandom(sementeUnica + 400); // Rola de 0.0 a 1.0
             
