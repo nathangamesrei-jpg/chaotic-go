@@ -992,10 +992,13 @@ window.iniciarGPS = function() {
     }
 
     watchID = navigator.geolocation.watchPosition((pos) => {
-        let lat = pos.coords.latitude; 
-        let lon = pos.coords.longitude;
+        let lat = pos.coords.latitude; 
+        let lon = pos.coords.longitude;
 
-        document.getElementById("texto-carregando").style.display = "none";
+        // 📡 TRANSMITINDO SINAL PARA A NUVEM: Avisa seus amigos exatamente onde você está!
+        update(ref(db, 'jogadores/' + uid + '/posicao'), { lat: lat, lon: lon, local: localParaViagem, online: Date.now() });
+
+        document.getElementById("texto-carregando").style.display = "none";
         document.getElementById("meu-mapa").style.display = "block";
         document.getElementById("btn-sair-radar").style.display = "block";
 
@@ -1040,11 +1043,47 @@ window.iniciarGPS = function() {
 
             marcadorJogador = L.marker([lat, lon], { icon: divIconSeta }).addTo(mapaScanner);
             
-            spawnMonstrosNaArea(lat, lon, false);
-            ultimaLatSpawn = lat;
-            ultimaLonSpawn = lon;
+spawnMonstrosNaArea(lat, lon, false);
+            ultimaLatSpawn = lat;
+            ultimaLonSpawn = lon;
+            
+            // 🛰️ LIGANDO O RASTREADOR DE ALIADOS NO MAPA!
+            if (typeof window.rastrearAmigos === "undefined") {
+                window.marcadoresAmigos = {}; // Cofre para guardar as fotinhas deles
+                window.rastrearAmigos = function() {
+                    amigos.forEach(amigo => {
+                        onValue(ref(db, 'jogadores/' + amigo.uid + '/posicao'), (snap) => {
+                            if (!snap.exists()) return;
+                            let posAmigo = snap.val();
+                            
+                            // Se o amigo mudou de mapa ou desligou o radar (sinal mais velho que 5 minutos) -> SOME DO MAPA!
+                            if (posAmigo.local !== localParaViagem || (Date.now() - posAmigo.online > 300000)) {
+                                if (window.marcadoresAmigos[amigo.uid]) {
+                                    mapaScanner.removeLayer(window.marcadoresAmigos[amigo.uid]);
+                                    delete window.marcadoresAmigos[amigo.uid];
+                                }
+                                return;
+                            }
+                            
+                            // Se ele está no mesmo mapa e ativo, DESENHA O AVATAR DELE!
+                            if (!window.marcadoresAmigos[amigo.uid]) {
+                                let avatarAmigo = amigo.avatar.startsWith("http") || amigo.avatar.startsWith("data:") 
+                                    ? `<div style="width:35px; height:35px; background-image:url('${amigo.avatar}'); background-size:cover; border-radius:50%; border:2px solid #ffd700; box-shadow: 0 0 15px #ffd700;"></div>`
+                                    : `<div style="width:35px; height:35px; background:#111; color:#ffd700; display:flex; align-items:center; justify-content:center; border-radius:50%; border:2px solid #ffd700; font-size:18px;">${amigo.avatar}</div>`;
+                                
+                                let iconeAmigo = L.divIcon({ html: avatarAmigo, className: '', iconSize: [35,35], iconAnchor: [17,17] });
+                                window.marcadoresAmigos[amigo.uid] = L.marker([posAmigo.lat, posAmigo.lon], { icon: iconeAmigo }).addTo(mapaScanner);
+                            } else {
+                                // Se ele já está desenhado, só empurra ele pra onde ele andou!
+                                window.marcadoresAmigos[amigo.uid].setLatLng([posAmigo.lat, posAmigo.lon]);
+                            }
+                        });
+                    });
+                };
+                window.rastrearAmigos(); // Liga o drone!
+            }
 
-        } else {
+        } else {
             marcadorJogador.setLatLng([lat, lon]);
             circuloRadar.setLatLng([lat, lon]);
             
@@ -1105,12 +1144,15 @@ function escanearLocalAtual() {
 let btnSairRadar = document.getElementById("btn-sair-radar");
 if (btnSairRadar) {
     btnSairRadar.onclick = () => {
-        if (typeof watchID !== 'undefined' && watchID !== null) {
-            navigator.geolocation.clearWatch(watchID);
-            console.log("Sinal de GPS encerrado pelo Scanner.");
-        }
-        location.reload();
-    };
+        if (typeof watchID !== 'undefined' && watchID !== null) {
+            navigator.geolocation.clearWatch(watchID);
+            console.log("Sinal de GPS encerrado pelo Scanner.");
+            
+            // 📡 AVISA A NUVEM QUE VOCÊ SAIU DO RADAR (Pra você sumir do mapa dos seus amigos)
+            update(ref(db, 'jogadores/' + uid + '/posicao'), { online: 0 });
+        }
+        location.reload();
+    };
 }
 
 // ==========================================
