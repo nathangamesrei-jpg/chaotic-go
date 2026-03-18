@@ -317,104 +317,90 @@
                     </div>
 </div> </div> </div> 
                 
-           /* ========================================= */
-/* ⚔️ TABULEIRO OFICIAL DO DROME (6x6) ⚔️ */
-/* ========================================= */
-/* --- 🛠️ FUSÃO TOTAL: Visual & Layout --- */
+           <div id="tela-batalha" style="display: none; width: 100%; height: 100%; flex-direction: column; background: #222; position: relative; overflow: hidden;">
+                
+                <button id="btn-sair-drome" style="position: absolute; top: 5px; right: 5px; z-index: 200; background: #e53935; color: white; border: none; padding: 5px 15px; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 10px;">SAIR</button>
 
-.arena-drome-container {
-    width: 100%; height: 100%;
-    background: #1a1a1a;
-    display: flex; flex-direction: column;
-    justify-content: space-between;
-    padding: 5px; box-sizing: border-box;
-    overflow: hidden;
-}
+                <div class="arena-drome-container">
+                    
+                    <div class="metade-tabuleiro lado-oponente">
+                        <div class="zona-lateral">
+                            <div class="box-deck local" style="font-size: 6px;">LOCAL ATIVO<br>(JOGADOR)</div>
+                            <div class="box-deck local" style="background:#2e7d32">DECK<br>LOCAIS</div>
+                            <div class="box-deck local" style="border-style:dashed">DESCARTE</div>
+                        </div>
+                        
+                        <div class="zona-central centralizada"> 
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha op-c1" id="op-c1"></div><div class="slot-carta-batalha op-c2" id="op-c2"></div><div class="slot-carta-batalha op-c3" id="op-c3"></div>
+                            </div>
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha op-c4" id="op-c4"></div><div class="slot-carta-batalha op-c5" id="op-c5"></div>
+                            </div>
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha op-c6" id="op-c6"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="zona-lateral">
+                            <div class="coluna-mugics">
+                                <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
+                                <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
+                            </div>
+                            <div class="box-deck ataque" style="background:#c62828; color:white; border-color:#fff; font-size:12px; font-weight:bold; height: 12%;">3</div>
+                            <div class="box-deck ataque" style="background:#b71c1c">DECK<br>ATAQUE</div>
+                        </div>
+                    </div>
 
-.metade-tabuleiro {
-    display: flex; justify-content: space-between;
-    width: 100%; height: 40%;
-}
+                    <div style="width: 100%; height: 2px; background: rgba(255,255,255,0.2); margin: 5px 0;"></div>
 
-/* Magia pura: Vira o lado do oponente de cabeça para baixo! */
-.lado-oponente { transform: rotate(180deg); }
+                    <div class="metade-tabuleiro">
+                        <div class="zona-lateral">
+                            <div class="box-deck local" style="font-size: 6px;">LOCAL ATIVO<br>(OPONENTE)</div>
+                            <div class="box-deck local" style="background:#2e7d32">DECK<br>LOCAIS</div>
+                            <div class="box-deck local" style="border-style:dashed">DESCARTE</div>
+                        </div>
+                        
+                        <div class="zona-central centralizada"> 
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha jog-c6" id="jog-c6"></div>
+                            </div>
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha jog-c4" id="jog-c4"></div><div class="slot-carta-batalha jog-c5" id="jog-c5"></div>
+                            </div>
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha jog-c1" id="jog-c1"></div><div class="slot-carta-batalha jog-c2" id="jog-c2"></div><div class="slot-carta-batalha jog-c3" id="jog-c3"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="zona-lateral">
+                            <div class="coluna-mugics">
+                                <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
+                                <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
+                            </div>
+                            <div class="box-deck ataque" style="background:#c62828; color:white; border-color:#fff; font-size:12px; font-weight:bold; height: 12%;">3</div>
+                            <div class="box-deck ataque" style="background:#b71c1c">DECK<br>ATAQUE</div>
+                        </div>
+                    </div>
 
-/* Zonas Laterais (Decks e Mugics) */
-.zona-lateral {
-    width: 25%;
-    display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-}
+                    <div class="mao-jogador">
+                        <div class="carta-mao">ATAQUE 1</div>
+                        <div class="carta-mao">ATAQUE 2</div>
+                        <div class="carta-mao">ATAQUE 3</div>
+                    </div>
 
-.box-deck {
-    width: 100%; height: 30%;
-    border: 2px solid #555; background: #000;
-    color: #fff; font-size: 6px;
-    display: flex; align-items: center; justify-content: center;
-    text-align: center; border-radius: 4px; box-sizing: border-box;
-}
+                </div>
+            </div>
 
-.box-deck.local { border-color: #4CAF50; }
-.box-deck.ataque { border-color: #ff5555; }
-
-/* 🛠️ RESTAURANDO O VISUAL LINDO DOS MUGICS */
-.coluna-mugics {
-    display: flex; flex-direction: column; gap: 2px;
-    background: transparent; /* Fundo transparente */
-    padding: 2px;
-}
-
-/* Heptágono Oficial Neon */
-.hex-mugic {
-    width: 16px; height: 16px;
-    background: #00ffff; /* CorNeon da borda */
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
-    display: flex; align-items: center; justify-content: center;
-    transform: none; /* Remove rotação torta antiga */
-}
-
-/* O furo escuro do Mugic */
-.hex-mugic::after {
-    content: '';
-    width: 12px; height: 12px;
-    background: #111;
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
-}
-
-/* Zona Central (Pirâmide Centralizada e Espelhada 1-2-3) */
-.zona-central.centralizada {
-    flex: 1; /* Ocupa espaço central */
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* Centraliza verticalmente */
-    align-items: center; /* Centraliza horizontalmente */
-    gap: 10px; /* Espaço entre fileiras */
-}
-
-/* Centraliza as cartas dentro de cada fileira */
-.linha-formacao-batalha { 
-    display: flex; 
-    justify-content: center; /* Centraliza cartas na fileira */
-    gap: 10px; /* Espaço entre cartas */
-}
-
-.slot-carta-batalha {
-    width: 36px; height: 50px; background: #111; border: 1px solid #4CAF50; border-radius: 3px;
-    position: relative; background-size: cover; background-position: center;
-}
-
-/* Área da Mão de Cartas - Reduzida */
-.mao-jogador {
-    height: 14%;
-    display: flex; justify-content: center; gap: 8px; align-items: flex-end;
-    border-top: 1px dashed #555; padding-top: 3px;
-}
-
-.carta-mao {
-    width: 40px; height: 56px; background: #000; border: 2px solid #ff5555; border-radius: 5px;
-    color: white; font-size: 7px;
-    display: flex; align-items: center; justify-content: center;
-    text-align: center; box-sizing: border-box; background-size: cover; background-position: center;
-}
+            <div class="painel-botoes" id="painel-botoes-fisicos">
+                <div class="linha-botoes"><button class="btn-direcional" id="btn-cima">▲</button></div>
+                <div class="linha-botoes linha-meio">
+                    <button class="btn-direcional" id="btn-esq">◀</button>
+                    <button class="btn-escanear" id="btn-escanear">SCAN</button>
+                    <button class="btn-direcional" id="btn-dir">▶</button>
+                </div>
+                <div class="linha-botoes"><button class="btn-direcional" id="btn-baixo">▼</button></div>
+            </div>
 
         <div class="painel-acao-viagem" id="painel-viagem" style="display: none;">
             <button class="botao-voltar-viagem" id="btn-acao-esq">VOLTAR</button>
