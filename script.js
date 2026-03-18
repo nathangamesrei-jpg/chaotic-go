@@ -2041,9 +2041,12 @@ apps.forEach((app, index) => {
                 renderizarCarrosselLocais(); 
             } else if (index === 1) {
                 abrirAlbum();
-            } else if (index === 2) {
-                mostrarMensagemScanner("Drome em manutenção..."); 
-            } else if (index === 3) {
+            } else if (index === 2) {
+                // ⚔️ ABRE O TABULEIRO DO DROME!
+                document.getElementById("tela-menu").style.display = "none";
+                document.getElementById("tela-batalha").style.display = "flex";
+                modoMenu = false;
+            } else if (index === 3) {
                 abrirSocial();
             } else if (index === 4) {
                 abrirPerfil();
@@ -2221,10 +2224,13 @@ document.getElementById("btn-escanear").onclick = function() {
             modoMenu = false;
             renderizarCarrosselLocais(); 
         } else if (indexSelecionado === 1) {
-            abrirAlbum();
-        } else if (indexSelecionado === 2) {
-            mostrarMensagemScanner("Drome em manutenção...");
-        } else if (indexSelecionado === 3) {
+            abrirAlbum();
+        } else if (indexSelecionado === 2) {
+            // ⚔️ ABRE O TABULEIRO DO DROME PELO BOTÃO SCAN!
+            document.getElementById("tela-menu").style.display = "none";
+            document.getElementById("tela-batalha").style.display = "flex";
+            modoMenu = false;
+        } else if (indexSelecionado === 3) {
             abrirSocial();
         } else if (indexSelecionado === 4) {
             abrirPerfil();
@@ -2915,4 +2921,13 @@ if (evtSeletorSlot) {
     evtSeletorSlot.addEventListener('change', (e) => {
         if (e && e.isTrusted) dispararCargaDaNuvem();
     });
+}
+// Fecha a tela do Drome e volta pro Menu
+let btnSairDrome = document.getElementById("btn-sair-drome");
+if (btnSairDrome) {
+    btnSairDrome.onclick = () => {
+        document.getElementById("tela-batalha").style.display = "none";
+        document.getElementById("tela-menu").style.display = "flex";
+        modoMenu = true;
+    };
 }
