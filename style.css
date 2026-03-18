@@ -997,11 +997,13 @@ html, body {
 /* ========================================= */
 /* ⚔️ TABULEIRO OFICIAL DO DROME (6x6) ⚔️ */
 /* ========================================= */
+/* --- 🛠️ FUSÃO TOTAL: Visual & Layout --- */
 
 .arena-drome-container {
     width: 100%; height: 100%;
     background: #1a1a1a;
     display: flex; flex-direction: column;
+    justify-content: space-between;
     padding: 5px; box-sizing: border-box;
     overflow: hidden;
 }
@@ -1031,31 +1033,44 @@ html, body {
 .box-deck.local { border-color: #4CAF50; }
 .box-deck.ataque { border-color: #ff5555; }
 
+/* 🛠️ RESTAURANDO O VISUAL LINDO DOS MUGICS */
 .coluna-mugics {
-    display: flex; flex-direction: column; gap: 1px;
-    background: rgba(0, 255, 255, 0.1); padding: 2px; border-radius: 6px; border: 1px solid #00ffff;
+    display: flex; flex-direction: column; gap: 2px;
+    background: transparent; /* Fundo transparente */
+    padding: 2px;
 }
 
+/* Heptágono Oficial Neon */
 .hex-mugic {
-    width: 12px; height: 12px; background: #000; border: 1px solid #00ffff;
-    transform: rotate(30deg);
+    width: 16px; height: 16px;
+    background: #00ffff; /* CorNeon da borda */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+    display: flex; align-items: center; justify-content: center;
+    transform: none; /* Remove rotação torta antiga */
 }
 
-/* Zona Central (Pirâmide Centralizada) */
-/* 🛠️ NOVA CLASSE: Centraliza o contêiner central */
+/* O furo escuro do Mugic */
+.hex-mugic::after {
+    content: '';
+    width: 12px; height: 12px;
+    background: #111;
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+}
+
+/* Zona Central (Pirâmide Centralizada e Espelhada 1-2-3) */
 .zona-central.centralizada {
-    flex: 1; /* Ocupa o espaço central */
+    flex: 1; /* Ocupa espaço central */
     display: flex;
     flex-direction: column;
     justify-content: center; /* Centraliza verticalmente */
     align-items: center; /* Centraliza horizontalmente */
-    gap: 10px; /* Espaço entre as fileiras de criaturas */
+    gap: 10px; /* Espaço entre fileiras */
 }
 
 /* Centraliza as cartas dentro de cada fileira */
 .linha-formacao-batalha { 
     display: flex; 
-    justify-content: center; /* 🛠️ FIX: Centraliza as cartas na fileira */
+    justify-content: center; /* Centraliza cartas na fileira */
     gap: 10px; /* Espaço entre cartas */
 }
 
