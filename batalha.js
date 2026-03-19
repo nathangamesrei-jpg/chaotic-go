@@ -2,8 +2,7 @@
 // MOTOR DA MINI-CARTA (DROME)
 // ==========================================
 function desenharMiniCarta(criaturaObj) {
-    // Valores padrão (Carta Vazia)
-    let nome = "Vazio";
+    let nome = "";
     let img = "";
     let hpAtual = 0;
     let contadores = 0;
@@ -13,10 +12,9 @@ function desenharMiniCarta(criaturaObj) {
     let pct = 0;
     let corHp = '#444';
 
-    // Se tiver criatura, substitui os dados
     if (criaturaObj) {
         nome = criaturaObj.nome;
-        img = criaturaObj.cartaBlank; // Puxa a arte grande da carta
+        img = criaturaObj.cartaBlank; 
         
         let hpMax = criaturaObj.hpMax || criaturaObj.statsMax?.energia || 0;
         hpAtual = criaturaObj.hpAtual !== undefined ? criaturaObj.hpAtual : hpMax;
@@ -28,48 +26,48 @@ function desenharMiniCarta(criaturaObj) {
         v = criaturaObj.velocidade || criaturaObj.statsMax?.velocidade || 0;
         elems = criaturaObj.elementos || [];
         
-        // Cor da bolinha da Tribo
         const triboColors = {'Azul': '#29b6f6', 'Vermelho': '#ef5350', 'Amarelo': '#ffee58', 'Verde': '#66bb6a', 'Ciano': '#00bcd4', 'Cinza': '#9e9e9e'};
         corTribo = triboColors[criaturaObj.tribo] || '#9e9e9e';
 
-        // Lógica da barra de vida
         pct = Math.max(0, Math.min(100, (hpAtual / hpMax) * 100));
         corHp = 'lime';
         if (pct <= 50) corHp = 'orange';
         if (pct <= 20) corHp = 'red';
     }
 
-    // Gera os heptágonos no topo
     let heptagonos = '';
     for (let i = 0; i < contadores; i++) {
         heptagonos += `<div class="mini-contador"></div>`;
     }
 
-    // Retorna o HTML idêntico ao design pedido
     return `
         <div class="mini-card-wrapper">
             <div class="mini-counters-container">${heptagonos}</div>
             <div class="mini-card-body">
                 <div class="mini-top-row">
-                    <div class="mini-art" style="${img ? `background-image: url('${img}');` : ''}">${!img ? '🛡️' : ''}</div>
+                    <div class="mini-art" style="${img ? `background-image: url('${img}');` : ''}"></div>
                     <div class="mini-hp-bar">
                         <div class="mini-hp-fill" style="height: ${pct}%; background-color: ${corHp};"></div>
-                        <span class="mini-hp-text">${hpAtual}</span>
+                        <span class="mini-hp-text">${hpAtual > 0 ? hpAtual : ''}</span>
                     </div>
                 </div>
-                <div class="mini-stats-band">
-                    <div class="mini-stat-item"><span>❤️</span><b>${c}</b></div>
-                    <div class="mini-stat-item"><span>⚡</span><b>${p}</b></div>
-                    <div class="mini-stat-item"><span>👁️</span><b>${s}</b></div>
-                    <div class="mini-stat-item"><span>💨</span><b>${v}</b></div>
-                    <div class="mini-elements-box">
+                
+                <div class="mini-stats-container">
+                    <div class="mini-stats-band">
+                        <div class="mini-stat-item"><span>❤️</span><b>${criaturaObj ? c : ''}</b></div>
+                        <div class="mini-stat-item"><span>⚡</span><b>${criaturaObj ? p : ''}</b></div>
+                        <div class="mini-stat-item"><span>👁️</span><b>${criaturaObj ? s : ''}</b></div>
+                        <div class="mini-stat-item"><span>💨</span><b>${criaturaObj ? v : ''}</b></div>
+                    </div>
+                    <div class="mini-elements-band">
                         <div class="mini-el ${elems.includes('Fogo') ? 'fogo' : ''}"></div>
                         <div class="mini-el ${elems.includes('Ar') ? 'ar' : ''}"></div>
                         <div class="mini-el ${elems.includes('Terra') ? 'terra' : ''}"></div>
                         <div class="mini-el ${elems.includes('Agua') ? 'agua' : ''}"></div>
                     </div>
                 </div>
-                <div class="mini-name-band">${nome}</div>
+
+                <div class="mini-name-band" style="color: ${criaturaObj ? '#000' : 'transparent'}">${criaturaObj ? nome : '-'}</div>
                 ${criaturaObj ? `<div class="mini-tribe-badge" style="background-color: ${corTribo}; border: 1px solid #fff;"></div>` : ''}
             </div>
         </div>
@@ -77,23 +75,28 @@ function desenharMiniCarta(criaturaObj) {
 }
 
 // --------------------------------------------------
-// TESTE PRÁTICO: Preenchendo todos os slots
+// TESTE PRÁTICO CORRIGIDO (Oponente também preenchido)
 // --------------------------------------------------
 const johnesTeste = {
     nome: "Johnes",
     tribo: "Azul",
     fichasHabilidade: 2,
     elementos: ["Terra"],
-    cartaBlank: "cartas/criaturas/azul/johnes.jpg", // Arte oficial
+    cartaBlank: "cartas/criaturas/azul/johnes.jpg",
     statsMax: { coragem: 50, poder: 40, sabedoria: 60, velocidade: 30, energia: 45 }
 };
 
 setTimeout(() => {
-    // Coloca o Johnes na linha de frente (Meio)
-    document.getElementById('jog-c2').innerHTML = desenharMiniCarta(johnesTeste);
+    // 1. Coloca o Johnes no seu slot do meio
+    const slotC2 = document.getElementById('jog-c2');
+    if(slotC2) slotC2.innerHTML = desenharMiniCarta(johnesTeste);
     
-    // Preenche o resto com o molde vazio para você ver como fica!
-    const slotsVazios = ['jog-c1', 'jog-c3', 'jog-c4', 'jog-c5', 'jog-c6'];
+    // 2. Preenche todos os outros slots (Jogador E Oponente) com a carta cinza vazia!
+    const slotsVazios = [
+        'jog-c1', 'jog-c3', 'jog-c4', 'jog-c5', 'jog-c6',
+        'op-c1', 'op-c2', 'op-c3', 'op-c4', 'op-c5', 'op-c6'
+    ];
+    
     slotsVazios.forEach(id => {
         const el = document.getElementById(id);
         if(el) el.innerHTML = desenharMiniCarta(null);
