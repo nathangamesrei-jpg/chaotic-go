@@ -1239,13 +1239,21 @@ html, body {
 }
 
 /* Linha de Status e Elementos */
-.mini-stats-band {
-    display: flex;
+/* Área Branca dos Status e Elementos */
+.mini-stats-container {
     background: #fff;
     border-radius: 3px;
-    padding: 1px 2px;
-    align-items: center;
-    justify-content: space-between;
+    display: flex;
+    flex-direction: column;
+    margin-top: 2px;
+}
+
+/* Linha de Cima: Atributos */
+.mini-stats-band {
+    display: flex;
+    justify-content: space-around;
+    padding: 2px;
+    border-bottom: 1px dotted #ccc;
 }
 
 .mini-stat-item {
@@ -1258,29 +1266,30 @@ html, body {
 .mini-stat-item span { font-size: 6px; }
 .mini-stat-item b { font-size: 8px; color: #000; }
 
-.mini-elements-box {
+/* Linha de Baixo: Elementos */
+.mini-elements-band {
     display: flex;
-    gap: 2px;
-    padding-left: 3px;
-    border-left: 1px solid #ccc;
+    justify-content: center;
+    gap: 4px;
+    padding: 2px;
 }
 
-.mini-el { width: 6px; height: 6px; border-radius: 50%; background: #ccc; }
+.mini-el { width: 6px; height: 6px; border-radius: 50%; background: #ddd; }
 .mini-el.fogo { background: #ff3333; }
 .mini-el.ar { background: #fff; border: 1px solid #aaa; box-sizing: border-box; }
 .mini-el.terra { background: #4caf50; }
 .mini-el.agua { background: #03a9f4; }
 
-/* Linha do Nome */
+/* Nome do Jogador (Formato Pílula) */
 .mini-name-band {
     background: #fff;
     color: #000;
     text-align: center;
     font-size: 8px;
     font-weight: 900;
-    border-radius: 3px;
+    border-radius: 10px; /* Deixa arredondado igual a imagem */
     margin-top: 3px;
-    padding: 2px 0;
+    padding: 2px 4px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1289,10 +1298,11 @@ html, body {
 /* Bolinha da Tribo */
 .mini-tribe-badge {
     position: absolute;
-    bottom: -3px;
+    bottom: -1px;
     right: -3px;
     width: 14px;
     height: 14px;
     border-radius: 50%;
     z-index: 5;
+    box-shadow: 0 0 2px rgba(0,0,0,0.5);
 }
