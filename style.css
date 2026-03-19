@@ -1118,13 +1118,13 @@ html, body {
 }
 
 .slot-carta-batalha {
-    width: 88px;  /* Aumentamos bastante a largura */
-    height: 110px; /* Aumentamos a altura */
+    width: 80px;  /* Diminuímos a largura de 88px */
+    height: 100px; /* Diminuímos a altura de 110px */
     background: transparent;
     border: none;
     box-shadow: none;
     border-radius: 0;
-    overflow: visible; /* Importante para os contadores no topo */
+    overflow: visible;
 }
 
 /* Área da Mão de Cartas */
@@ -1149,7 +1149,7 @@ html, body {
     background-position: center;
 }
 /* =========================================
-   14. ESTILOS DA MINI-CARTA (NOVO LAYOUT DROME PRO)
+   14. ESTILOS DA MINI-CARTA (DROME PRO 2.0)
    ========================================= */
 .mini-card-wrapper {
     position: relative;
@@ -1157,34 +1157,16 @@ html, body {
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end; /* Empurra pra baixo para o heptágono caber no topo */
+    box-sizing: border-box;
 }
 
-/* Heptágonos (Contadores) no topo */
-.mini-counters-container {
-    position: absolute;
-    top: -4px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    gap: 2px;
-    z-index: 10;
-}
-
-.mini-contador {
-    width: 10px; height: 10px;
-    background: #fff;
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
-    box-shadow: 0 0 2px #000;
-}
-
-/* Corpo da Carta (Cinza Escuro Padrão) */
+/* Corpo da Carta (Cinza Padrão Vazio) */
 .mini-card-body {
     background: #2a2a2a;
     border: 1px solid #777;
     border-radius: 5px;
     width: 100%;
-    height: calc(100% - 6px);
+    height: 100%;
     display: flex;
     flex-direction: column;
     padding: 2px;
@@ -1193,7 +1175,7 @@ html, body {
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-/* ---- 🔥 Classes de COR da TRIBO nas BORDAS ---- */
+/* Classes de COR da TRIBO nas BORDAS */
 .mini-card-body.tribo-azul { border-color: #29b6f6; box-shadow: 0 0 5px rgba(41,182,246,0.5); }
 .mini-card-body.tribo-vermelho { border-color: #ef5350; box-shadow: 0 0 5px rgba(239,83,80,0.5); }
 .mini-card-body.tribo-amarelo { border-color: #ffee58; box-shadow: 0 0 5px rgba(255,238,88,0.5); }
@@ -1201,42 +1183,40 @@ html, body {
 .mini-card-body.tribo-ciano { border-color: #00bcd4; box-shadow: 0 0 5px rgba(0,188,212,0.5); }
 .mini-card-body.tribo-cinza { border-color: #9e9e9e; box-shadow: 0 0 5px rgba(158,158,158,0.5); }
 
-/* Linha Superior: Foco 100% na Arte */
+/* Foco na Arte (Estilo Decks) */
 .mini-top-row {
     flex: 1;
     width: 100%;
     overflow: hidden;
     margin-bottom: 2px;
 }
-
 .mini-art {
     width: 100%;
     height: 100%;
     border: 1px solid #555;
     border-radius: 3px;
     background-size: cover;
-    background-position: top center; /* Foca no rosto da criatura */
+    background-position: top center; /* Foca no rosto */
     background-color: #333;
 }
 
-/* Nova Barra de HP Horizontal (Fica no meio da carta) */
+/* Barra de HP Horizontal Calibrada */
 .mini-hp-row {
     width: 100%;
-    height: 8px;
+    height: 9px; /* Aumentamos um tiquinho */
     border: 1px solid #777;
     border-radius: 10px;
     background: #111;
     position: relative;
     overflow: hidden;
     margin-bottom: 2px;
+    box-sizing: border-box;
 }
-
 .mini-hp-fill {
     height: 100%;
-    width: 0%; /* Alterado via JS */
+    width: 0%; /* Altera via JS */
     transition: width 0.3s, background-color 0.3s;
 }
-
 .mini-hp-text {
     position: absolute;
     top: 50%; left: 50%;
@@ -1244,10 +1224,10 @@ html, body {
     color: #fff;
     font-size: 7px;
     font-weight: bold;
-    text-shadow: 1px 1px 0 #000;
+    text-shadow: 1px 1px 1px #000, -1px -1px 1px #000; /* Melhoramos a leitura */
 }
 
-/* Área Branca dos Status e Elementos */
+/* Área dos Status (Fundo Branco) */
 .mini-stats-container {
     background: #fff;
     border-radius: 3px;
@@ -1255,34 +1235,124 @@ html, body {
     flex-direction: column;
 }
 
-/* Linha de Cima: Atributos */
+/* Atributos (C,P,S,V) */
 .mini-stats-band {
     display: flex;
     justify-content: space-around;
     padding: 2px;
     border-bottom: 1px dotted #ccc;
 }
-
 .mini-stat-item {
     display: flex;
-    align-items: center; /* Deixa ícone e número lado a lado para economizar espaço */
+    align-items: center;
     gap: 1px;
     line-height: 1;
 }
-
 .mini-stat-item span { font-size: 6px; }
 .mini-stat-item b { font-size: 8px; color: #000; font-family: 'Arial Black', sans-serif;}
 
-/* Linha de Baixo: Elementos */
+/* Elementos (Embaixo dos Atributos) */
 .mini-elements-band {
     display: flex;
     justify-content: center;
     gap: 5px;
     padding: 2px;
 }
-
 .mini-el { width: 6px; height: 6px; border-radius: 50%; background: #ddd; }
 .mini-el.fogo { background: #ff3333; }
 .mini-el.ar { background: #fff; border: 1px solid #aaa; box-sizing: border-box; }
 .mini-el.terra { background: #4caf50; }
 .mini-el.agua { background: #03a9f4; }
+
+/* Heptágonos no topo removidos: (.mini-counters-container, .mini-contador) */
+
+/* =========================================
+   15. SISTEMA DE CONTADOR INTELIGENTE (DROME)
+   ========================================= */
+
+/* O Botão do Contador Inteligente */
+.btn-total-fichas {
+    width: 100%;
+    background: #1a1a1a;
+    border: 2px solid #555;
+    color: #4CAF50;
+    border-radius: 8px;
+    padding: 8px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.2s, border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.btn-total-fichas:hover {
+    background: #2a2a2a;
+    border-color: #4CAF50;
+}
+
+.mini-contador-heptagono {
+    width: 14px; height: 14px;
+    background: #fff;
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+    box-shadow: 0 0 2px #000;
+}
+
+.total-number {
+    font-size: 16px;
+    font-family: 'Arial Black', sans-serif;
+    color: #fff;
+}
+
+/* O Modal de Detalhes (Filtro e Conteúdo) */
+.modal-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 10, 15, 0.95);
+    z-index: 500;
+    justify-content: center; align-items: center;
+    backdrop-filter: blur(5px);
+    border-radius: 10px;
+    padding: 20px; box-sizing: border-box;
+    display: flex; /* Começa visível para teste */
+}
+
+.modal-content-fichas {
+    background: #111;
+    border: 2px solid #4CAF50;
+    border-radius: 10px;
+    width: 90%; max-width: 320px;
+    max-height: 80%;
+    padding: 15px; box-sizing: border-box;
+    overflow-y: auto;
+    position: relative;
+}
+
+.modal-content-fichas h3 { color: #4CAF50; text-align: center; margin-top: 0; margin-bottom: 15px; font-size: 16px; text-transform: uppercase; }
+
+.fechar-modal-fichas { position: absolute; top: 8px; right: 12px; font-size: 20px; color: #ff5555; cursor: pointer; }
+
+/* Item na lista do modal */
+.criatura-fichas-item {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.criatura-fichas-item.sem-fichas { border-color: #555; opacity: 0.6; }
+
+.criatura-fichas-art { width: 30px; height: 30px; border-radius: 5px; background-size: cover; background-position: center; border: 1px solid #777; }
+
+.criatura-fichas-info { flex: 1; text-align: left; }
+.criatura-fichas-nome { color: #fff; font-size: 12px; font-weight: bold; }
+.criatura-fichas-tribo { color: #4CAF50; font-size: 10px; }
+
+.criatura-fichas-valor { font-size: 20px; font-family: 'Arial Black', sans-serif; color: #4CAF50; }
+.criatura-fichas-item.sem-fichas .criatura-fichas-valor { color: #999; }
