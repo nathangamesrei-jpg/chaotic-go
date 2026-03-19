@@ -1149,4 +1149,143 @@ html, body {
     background-size: cover;
     background-position: center;
 }
+/* =========================================
+   14. ESTILOS DA MINI-CARTA (BATALHA NO DROME)
+   ========================================= */
+.mini-carta-batalha {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: #111;
+    position: relative;
+    border-radius: 4px;
+    overflow: visible; /* Permite que os heptágonos fiquem para fora no topo */
+}
 
+/* Heptágonos (Contadores) no topo */
+.mini-counters-box {
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 2px;
+    z-index: 10;
+}
+
+.mini-contador {
+    width: 12px;
+    height: 12px;
+    background: #fff; /* Cor do contador neutro */
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+    box-shadow: 0 0 2px rgba(0,0,0,0.8);
+}
+
+/* Parte do Meio: Arte + Barra de Vida */
+.mini-meio {
+    display: flex;
+    flex: 1;
+    padding: 3px;
+    gap: 3px;
+    overflow: hidden;
+}
+
+.mini-arte {
+    flex: 1;
+    background-size: cover;
+    background-position: center;
+    border-radius: 3px;
+    border: 1px solid #444;
+}
+
+.mini-hp-bar {
+    width: 10px;
+    border: 1px solid #aaa;
+    border-radius: 3px;
+    background: #000;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    position: relative;
+}
+
+.mini-hp-fill {
+    width: 100%;
+    background: lime; /* Muda via JS (lime, orange, red) */
+    transition: height 0.3s, background-color 0.3s;
+    border-radius: 0 0 2px 2px;
+}
+
+.mini-hp-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 8px;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px black, -1px -1px 1px black;
+    writing-mode: vertical-rl; /* Deixa o texto em pé se precisar */
+}
+
+/* Parte de Baixo: Status, Elementos e Nome */
+.mini-base {
+    background: #fff;
+    color: #000;
+    border-radius: 0 0 4px 4px;
+    display: flex;
+    flex-direction: column;
+}
+
+.mini-status-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 4px;
+    border-bottom: 1px solid #ccc;
+    font-size: 8px;
+    font-weight: 900;
+    font-family: Arial, sans-serif;
+}
+
+.mini-icones-status {
+    display: flex;
+    gap: 4px;
+}
+
+.mini-elementos {
+    display: flex;
+    gap: 2px;
+}
+
+.mini-el {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ccc; /* Cinza se não tiver o elemento */
+}
+.mini-el.fogo { background: #ff5555; }
+.mini-el.ar { background: #fff; border: 1px solid #ccc; }
+.mini-el.terra { background: #8bc34a; }
+.mini-el.agua { background: #29b6f6; }
+
+.mini-nome-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    position: relative;
+    font-size: 8px;
+    font-weight: 900;
+    font-family: Arial, sans-serif;
+    letter-spacing: 0.5px;
+}
+
+.mini-tribo-circle {
+    position: absolute;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid #000;
+}
