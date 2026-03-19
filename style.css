@@ -1149,3 +1149,7 @@ html, body {
     background-size: cover;
     background-position: center;
 }
+/* 🔥 INVERTE A ORDEM DAS CARTAS DO JOGADOR (3-2-1) */
+.lado-jogador .linha-formacao-batalha {
+    flex-direction: row-reverse;
+}
