@@ -1,79 +1,101 @@
-// Função que "desenha" a mini-carta dentro de um slot
+// ==========================================
+// MOTOR DA MINI-CARTA (DROME)
+// ==========================================
 function desenharMiniCarta(criaturaObj) {
-    // Se não tiver criatura no objeto, retorna vazio
-    if (!criaturaObj) return '';
+    // Valores padrão (Carta Vazia)
+    let nome = "Vazio";
+    let img = "";
+    let hpAtual = 0;
+    let contadores = 0;
+    let c = 0, p = 0, s = 0, v = 0;
+    let elems = [];
+    let corTribo = "transparent";
+    let pct = 0;
+    let corHp = '#444';
 
-    // 1. Calcula a porcentagem de vida para a barra
-    const hpPorcentagem = Math.max(0, Math.min(100, (criaturaObj.hpAtual / criaturaObj.hpMax) * 100));
-    
-    // 2. Define a cor da barra de vida
-    let corHp = 'lime';
-    if (hpPorcentagem <= 50) corHp = 'orange';
-    if (hpPorcentagem <= 20) corHp = 'red';
+    // Se tiver criatura, substitui os dados
+    if (criaturaObj) {
+        nome = criaturaObj.nome;
+        img = criaturaObj.cartaBlank; // Puxa a arte grande da carta
+        
+        let hpMax = criaturaObj.hpMax || criaturaObj.statsMax?.energia || 0;
+        hpAtual = criaturaObj.hpAtual !== undefined ? criaturaObj.hpAtual : hpMax;
+        contadores = criaturaObj.contadores !== undefined ? criaturaObj.contadores : (criaturaObj.fichasHabilidade || 0);
+        
+        c = criaturaObj.coragem || criaturaObj.statsMax?.coragem || 0;
+        p = criaturaObj.poder || criaturaObj.statsMax?.poder || 0;
+        s = criaturaObj.sabedoria || criaturaObj.statsMax?.sabedoria || 0;
+        v = criaturaObj.velocidade || criaturaObj.statsMax?.velocidade || 0;
+        elems = criaturaObj.elementos || [];
+        
+        // Cor da bolinha da Tribo
+        const triboColors = {'Azul': '#29b6f6', 'Vermelho': '#ef5350', 'Amarelo': '#ffee58', 'Verde': '#66bb6a', 'Ciano': '#00bcd4', 'Cinza': '#9e9e9e'};
+        corTribo = triboColors[criaturaObj.tribo] || '#9e9e9e';
 
-    // 3. Gera os heptágonos (Contadores) dinamicamente
-    let contadoresHTML = '';
-    for (let i = 0; i < criaturaObj.contadores; i++) {
-        contadoresHTML += `<div class="mini-contador"></div>`;
+        // Lógica da barra de vida
+        pct = Math.max(0, Math.min(100, (hpAtual / hpMax) * 100));
+        corHp = 'lime';
+        if (pct <= 50) corHp = 'orange';
+        if (pct <= 20) corHp = 'red';
     }
 
-    // 4. Monta o HTML final da carta combinando tudo
+    // Gera os heptágonos no topo
+    let heptagonos = '';
+    for (let i = 0; i < contadores; i++) {
+        heptagonos += `<div class="mini-contador"></div>`;
+    }
+
+    // Retorna o HTML idêntico ao design pedido
     return `
-        <div class="mini-carta-batalha">
-            <div class="mini-counters-box">
-                ${contadoresHTML}
-            </div>
-
-            <div class="mini-meio">
-                <div class="mini-arte" style="background-image: url('${criaturaObj.imagem}')"></div>
-                <div class="mini-hp-bar">
-                    <div class="mini-hp-fill" style="height: ${hpPorcentagem}%; background-color: ${corHp};"></div>
-                    <div class="mini-hp-text">${criaturaObj.hpAtual}</div>
-                </div>
-            </div>
-
-            <div class="mini-base">
-                <div class="mini-status-row">
-                    <div class="mini-icones-status">
-                        <span>❤️ ${criaturaObj.coragem}</span>
-                        <span>⚡ ${criaturaObj.poder}</span>
-                        <span>👁️ ${criaturaObj.sabedoria}</span>
-                        <span>💨 ${criaturaObj.velocidade}</span>
-                    </div>
-                    <div class="mini-elementos">
-                        <div class="mini-el ${criaturaObj.elementos.includes('Fogo') ? 'fogo' : ''}"></div>
-                        <div class="mini-el ${criaturaObj.elementos.includes('Ar') ? 'ar' : ''}"></div>
-                        <div class="mini-el ${criaturaObj.elementos.includes('Terra') ? 'terra' : ''}"></div>
-                        <div class="mini-el ${criaturaObj.elementos.includes('Agua') ? 'agua' : ''}"></div>
+        <div class="mini-card-wrapper">
+            <div class="mini-counters-container">${heptagonos}</div>
+            <div class="mini-card-body">
+                <div class="mini-top-row">
+                    <div class="mini-art" style="${img ? `background-image: url('${img}');` : ''}">${!img ? '🛡️' : ''}</div>
+                    <div class="mini-hp-bar">
+                        <div class="mini-hp-fill" style="height: ${pct}%; background-color: ${corHp};"></div>
+                        <span class="mini-hp-text">${hpAtual}</span>
                     </div>
                 </div>
-                <div class="mini-nome-row">
-                    <span>${criaturaObj.nome}</span>
-                    <div class="mini-tribo-circle" style="background-color: ${criaturaObj.corTribo}"></div>
+                <div class="mini-stats-band">
+                    <div class="mini-stat-item"><span>❤️</span><b>${c}</b></div>
+                    <div class="mini-stat-item"><span>⚡</span><b>${p}</b></div>
+                    <div class="mini-stat-item"><span>👁️</span><b>${s}</b></div>
+                    <div class="mini-stat-item"><span>💨</span><b>${v}</b></div>
+                    <div class="mini-elements-box">
+                        <div class="mini-el ${elems.includes('Fogo') ? 'fogo' : ''}"></div>
+                        <div class="mini-el ${elems.includes('Ar') ? 'ar' : ''}"></div>
+                        <div class="mini-el ${elems.includes('Terra') ? 'terra' : ''}"></div>
+                        <div class="mini-el ${elems.includes('Agua') ? 'agua' : ''}"></div>
+                    </div>
                 </div>
+                <div class="mini-name-band">${nome}</div>
+                ${criaturaObj ? `<div class="mini-tribe-badge" style="background-color: ${corTribo}; border: 1px solid #fff;"></div>` : ''}
             </div>
         </div>
     `;
 }
-// 2. Criando o Johnes para o teste (Adaptado da sua database)
+
+// --------------------------------------------------
+// TESTE PRÁTICO: Preenchendo todos os slots
+// --------------------------------------------------
 const johnesTeste = {
     nome: "Johnes",
-    imagem: "cartas/icones/johnes_perfil.png", // Usando a arte de perfil dele
-    hpMax: 45,      // Puxado de statsMax.energia
-    hpAtual: 45,    // Vida cheia no início
-    contadores: 2,  // Puxado de fichasHabilidade
-    coragem: 50, 
-    poder: 40, 
-    sabedoria: 60, 
-    velocidade: 30, 
-    elementos: ["Terra"], 
-    corTribo: '#29b6f6' // Código de cor para a Tribo Azul
+    tribo: "Azul",
+    fichasHabilidade: 2,
+    elementos: ["Terra"],
+    cartaBlank: "cartas/criaturas/azul/johnes.jpg", // Arte oficial
+    statsMax: { coragem: 50, poder: 40, sabedoria: 60, velocidade: 30, energia: 45 }
 };
 
-// 3. Injetando no slot 1 do Jogador
 setTimeout(() => {
-    const slotC1 = document.getElementById('jog-c1');
-    if(slotC1) {
-        slotC1.innerHTML = desenharMiniCarta(johnesTeste);
-    }
+    // Coloca o Johnes na linha de frente (Meio)
+    document.getElementById('jog-c2').innerHTML = desenharMiniCarta(johnesTeste);
+    
+    // Preenche o resto com o molde vazio para você ver como fica!
+    const slotsVazios = ['jog-c1', 'jog-c3', 'jog-c4', 'jog-c5', 'jog-c6'];
+    slotsVazios.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.innerHTML = desenharMiniCarta(null);
+    });
 }, 500);
