@@ -55,3 +55,25 @@ function desenharMiniCarta(criaturaObj) {
         </div>
     `;
 }
+// 2. Criando o Johnes para o teste (Adaptado da sua database)
+const johnesTeste = {
+    nome: "Johnes",
+    imagem: "cartas/icones/johnes_perfil.png", // Usando a arte de perfil dele
+    hpMax: 45,      // Puxado de statsMax.energia
+    hpAtual: 45,    // Vida cheia no início
+    contadores: 2,  // Puxado de fichasHabilidade
+    coragem: 50, 
+    poder: 40, 
+    sabedoria: 60, 
+    velocidade: 30, 
+    elementos: ["Terra"], 
+    corTribo: '#29b6f6' // Código de cor para a Tribo Azul
+};
+
+// 3. Injetando no slot 1 do Jogador
+setTimeout(() => {
+    const slotC1 = document.getElementById('jog-c1');
+    if(slotC1) {
+        slotC1.innerHTML = desenharMiniCarta(johnesTeste);
+    }
+}, 500);
