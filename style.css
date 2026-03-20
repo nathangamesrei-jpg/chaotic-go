@@ -1155,7 +1155,7 @@ div.box-deck.local:first-of-type {
     background-position: center;
 }
 /* =========================================
-   14. ESTILOS DA MINI-CARTA (DROME PRO 2.0)
+   14. ESTILOS DA MINI-CARTA (DROME PRO 2.0 - CORRIGIDO)
    ========================================= */
 .mini-card-wrapper {
     position: relative;
@@ -1195,17 +1195,101 @@ div.box-deck.local:first-of-type {
     width: 100%;
     overflow: hidden;
     margin-bottom: 2px;
+    display: flex; /* Garante que a imagem não vai sumir/encolher */
 }
+
 /* Foco da Arte Ajustado (Tira o nome do topo) */
 .mini-art {
     width: 100%;
     height: 100%;
     border: 1px solid #555;
     border-radius: 3px;
-    background-size: 140%; /* Dá um leve zoom */
-    background-position: center 25%; /* Empurra a imagem para cima, escondendo o nome */
+    background-size: 150%; /* Zoom extra pra esconder o nome */
+    background-position: center 35%; /* Empurra a imagem focando no rosto */
     background-color: #333;
 }
+
+/* Barra de HP Horizontal Calibrada */
+.mini-hp-row {
+    width: 100%;
+    height: 10px; 
+    border: 1px solid #777;
+    border-radius: 10px;
+    background: #111;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2px;
+    box-sizing: border-box;
+}
+.mini-hp-fill {
+    height: 100%;
+    width: 0%; 
+    transition: width 0.3s, background-color 0.3s;
+}
+.mini-hp-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    color: #fff;
+    font-size: 8px;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px #000, -1px -1px 1px #000;
+}
+
+/* Área dos Status (Fundo Branco) */
+.mini-stats-container {
+    background: #fff;
+    border-radius: 3px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+/* Atributos (C,P,S,V) FORÇADOS A FICAR NA HORIZONTAL */
+.mini-stats-band {
+    display: flex !important;
+    flex-direction: row !important; /* Salva-vidas: Impede de ficar vertical */
+    justify-content: space-around;
+    align-items: center;
+    padding: 2px;
+    border-bottom: 1px dotted #ccc;
+    width: 100%;
+    box-sizing: border-box;
+}
+.mini-stat-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 1px;
+    line-height: 1;
+}
+.mini-stat-item span { font-size: 6px; }
+.mini-stat-item b { font-size: 7px; color: #000; font-family: 'Arial Black', sans-serif;}
+
+/* Elementos Detalhados (Orbes com Emojis) */
+.mini-elements-band {
+    display: flex !important;
+    flex-direction: row !important; /* Força na horizontal */
+    justify-content: center;
+    gap: 4px;
+    padding: 2px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.mini-el { 
+    width: 10px; height: 10px; /* Um pouco maior pra caber o emoji */
+    border-radius: 50%; background: #ddd; 
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7px; /* Tamanho do emoji */
+}
+.mini-el.fogo { background: #ff3333; box-shadow: 0 0 3px #ff3333; }
+.mini-el.ar { background: #fff; border: 1px solid #aaa; box-sizing: border-box; box-shadow: 0 0 3px #fff; }
+.mini-el.terra { background: #4caf50; box-shadow: 0 0 3px #4caf50; }
+.mini-el.agua { background: #03a9f4; box-shadow: 0 0 3px #03a9f4; }
+
+/* =========================================
+   15. SISTEMA DE CONTADOR INTELIGENTE
+   ========================================= */
 
 /* Botão de Fichas mais fino e elegante */
 .btn-total-fichas {
@@ -1233,25 +1317,6 @@ div.box-deck.local:first-of-type {
     color: #fff;
 }
 
-/* Elementos Detalhados (Orbes com Emojis) */
-.mini-elements-band {
-    display: flex;
-    justify-content: center;
-    gap: 4px;
-    padding: 2px;
-}
-.mini-el { 
-    width: 10px; height: 10px; /* Um pouco maior pra caber o emoji */
-    border-radius: 50%; background: #ddd; 
-    display: flex; align-items: center; justify-content: center;
-    font-size: 7px; /* Tamanho do emoji */
-}
-.mini-el.fogo { background: #ff3333; box-shadow: 0 0 3px #ff3333; }
-.mini-el.ar { background: #fff; border: 1px solid #aaa; box-sizing: border-box; box-shadow: 0 0 3px #fff; }
-.mini-el.terra { background: #4caf50; box-shadow: 0 0 3px #4caf50; }
-.mini-el.agua { background: #03a9f4; box-shadow: 0 0 3px #03a9f4; }
-
-/* Heptágonos no topo removidos: (.mini-counters-container, .mini-contador) */
 
 /* =========================================
    15. SISTEMA DE CONTADOR INTELIGENTE (DROME)
