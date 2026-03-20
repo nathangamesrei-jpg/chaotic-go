@@ -53,10 +53,10 @@ function desenharMiniCarta(criaturaObj) {
                         <div class="mini-stat-item"><span>💨</span><b>${criaturaObj ? v : ''}</b></div>
                     </div>
                     <div class="mini-elements-band">
-                        <div class="mini-el ${elems.includes('Fogo') ? 'fogo' : ''}"></div>
-                        <div class="mini-el ${elems.includes('Ar') ? 'ar' : ''}"></div>
-                        <div class="mini-el ${elems.includes('Terra') ? 'terra' : ''}"></div>
-                        <div class="mini-el ${elems.includes('Agua') ? 'agua' : ''}"></div>
+                        <div class="mini-el ${elems.includes('Fogo') ? 'fogo' : ''}">${elems.includes('Fogo') ? '🔥' : ''}</div>
+                        <div class="mini-el ${elems.includes('Ar') ? 'ar' : ''}">${elems.includes('Ar') ? '💨' : ''}</div>
+                        <div class="mini-el ${elems.includes('Terra') ? 'terra' : ''}">${elems.includes('Terra') ? '🌿' : ''}</div>
+                        <div class="mini-el ${elems.includes('Agua') ? 'agua' : ''}">${elems.includes('Agua') ? '💧' : ''}</div>
                     </div>
                 </div>
 
@@ -104,36 +104,50 @@ function atualizarTelaBatalha() {
     atualizarContadorFichasHabilidade();
 }
 
-// Calcula o total de contadores e atualiza o botão na lateral
+// Calcula o total de contadores e atualiza os botões nas laterais
 function atualizarContadorFichasHabilidade() {
-    // Insere o elemento HTML do botão na zona lateral, se ainda não existir
-    const zonaLateral = document.querySelector('.lado-jogador .zona-lateral');
-    if(zonaLateral && !document.getElementById('btn-contador-habilidade')) {
-        const btnHTML = `
-            <button class="btn-total-fichas" id="btn-contador-habilidade">
-                <div class="mini-contador-heptagono"></div>
-                <span id="txt-fichas-habilidade">Fichas: </span>
-                <span class="total-number" id="valor-total-fichas">0</span>
-            </button>
-        `;
-        // Insere no topo da zona lateral
-        zonaLateral.insertAdjacentHTML('afterbegin', btnHTML);
-        
-        // Adiciona o evento de clique para abrir o modal
-        document.getElementById('btn-contador-habilidade').addEventListener('click', abrirModalFichas);
+    
+    // Função auxiliar para renderizar o botão em um lado específico
+    function renderizarBotaoFichas(seletorLado, ladoId, totalFichas) {
+        const zonaLateral = document.querySelector(`${seletorLado} .zona-lateral`);
+        if(zonaLateral && !document.getElementById(`btn-contador-${ladoId}`)) {
+            const btnHTML = `
+                <button class="btn-total-fichas" id="btn-contador-${ladoId}">
+                    <div class="mini-contador-heptagono"></div>
+                    <span id="txt-fichas-${ladoId}">Fichas: </span>
+                    <span class="total-number" id="valor-total-${ladoId}">${totalFichas}</span>
+                </button>
+            `;
+            // Insere no topo da zona lateral
+            zonaLateral.insertAdjacentHTML('afterbegin', btnHTML);
+            
+            // Adiciona evento de clique passando de qual lado ele é
+            document.getElementById(`btn-contador-${ladoId}`).addEventListener('click', () => abrirModalFichas(ladoId));
+        } else if (document.getElementById(`valor-total-${ladoId}`)) {
+            // Se já existe, só atualiza o número
+            document.getElementById(`valor-total-${ladoId}`).textContent = totalFichas;
+        }
     }
 
-    // Soma as fichas de todas as criaturas no campo
-    let totalFichas = 0;
-    Object.values(campoJogador).forEach(criatura => {
-        if(criatura && criatura.fichasHabilidade) {
-            totalFichas += criatura.fichasHabilidade;
-        }
+    // Soma as fichas do Jogador
+    let totalJogador = 0;
+    Object.values(campoJogador).forEach(c => {
+        if(c && c.fichasHabilidade) totalJogador += c.fichasHabilidade;
     });
+    renderizarBotaoFichas('.lado-jogador', 'jogador', totalJogador);
 
-    // Atualiza o valor no botão
-    const elValor = document.getElementById('valor-total-fichas');
-    if(elValor) elValor.textContent = totalFichas;
+    // Mock do campo do oponente (Se não existir, criamos para não dar erro)
+    if(!window.campoOponente) {
+        window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
+    }
+
+    // Soma as fichas do Oponente
+    let totalOponente = 0;
+    Object.values(window.campoOponente).forEach(c => {
+        if(c && c.fichasHabilidade) totalOponente += c.fichasHabilidade;
+    });
+    // Renderiza o botão no lado do oponente! (Aquele que fica de ponta cabeça)
+    renderizarBotaoFichas('.lado-oponente', 'oponente', totalOponente);
 }
 
 // --------------------------------------------------
@@ -141,11 +155,15 @@ function atualizarContadorFichasHabilidade() {
 // --------------------------------------------------
 
 // Gera a lista detalhada e abre o modal
-function abrirModalFichas() {
+function abrirModalFichas(ladoId) {
     let listaHTML = '';
     
+    // 🔥 LÓGICA INTELIGENTE: Puxa o campo certo dependendo de qual botão foi clicado
+    const campoAlvo = ladoId === 'oponente' ? window.campoOponente : campoJogador;
+    const tituloModal = ladoId === 'oponente' ? 'FICHAS DO OPONENTE' : 'MINHAS FICHAS';
+    
     // Itera sobre o campo para ver quem tem ficha
-    Object.values(campoJogador).forEach(c => {
+    Object.values(campoAlvo).forEach(c => {
         if(c) {
             const fichas = c.fichasHabilidade || 0;
             const semFichasClass = fichas === 0 ? 'sem-fichas' : '';
@@ -164,14 +182,14 @@ function abrirModalFichas() {
     });
 
     // Se não tiver ninguém no campo
-    if(listaHTML === '') listaHTML = '<p style="color:#aaa; text-align:center;">Sem criaturas em campo.</p>';
+    if(listaHTML === '') listaHTML = '<p style="color:#aaa; text-align:center;">Sem criaturas com fichas no momento.</p>';
 
     // Cria o HTML do modal e insere na tela do Drome
     const modalHTML = `
         <div class="modal-overlay" id="overlay-fichas">
             <div class="modal-content-fichas">
                 <span class="fechar-modal-fichas" id="fechar-modal-fichas">×</span>
-                <h3>DETALHES DE FICHAS</h3>
+                <h3>${tituloModal}</h3>
                 <div class="fichas-lista">
                     ${listaHTML}
                 </div>
@@ -192,7 +210,6 @@ function fecharModalFichas() {
     const el = document.getElementById('overlay-fichas');
     if(el) el.remove();
 }
-
 
 // --------------------------------------------------
 // TESTE PRÁTICO: Rodando a simulação
