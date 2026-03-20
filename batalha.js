@@ -1,5 +1,5 @@
 // ==========================================
-// MOTOR DA MINI-CARTA (DROME PRO 2.0)
+// MOTOR DA MINI-CARTA (DROME PRO 2.1 - ELEMENTOS ESCONDIDOS)
 // ==========================================
 function desenharMiniCarta(criaturaObj) {
     let img = "";
@@ -31,7 +31,12 @@ function desenharMiniCarta(criaturaObj) {
         if (pct <= 20) corHp = 'red';
     }
 
-    // Heptágonos individuais removidos da mini-carta
+    // LÓGICA DE ELEMENTOS PRO: Sempre gera os 4 slots, definindo se estão ativos ou não
+    // Se criaturaObj for nulo (carta vazia), todos os slots ficam inativos automaticamente.
+    const temFogo = elems.includes('Fogo');
+    const temAgua = elems.includes('Agua');
+    const temTerra = elems.includes('Terra');
+    const temAr = elems.includes('Ar');
 
     return `
         <div class="mini-card-wrapper">
@@ -52,15 +57,16 @@ function desenharMiniCarta(criaturaObj) {
                         <div class="mini-stat-item"><span>👁️</span><b>${criaturaObj ? s : ''}</b></div>
                         <div class="mini-stat-item"><span>💨</span><b>${criaturaObj ? v : ''}</b></div>
                     </div>
+
                     <div class="mini-elements-band">
-                        <div class="mini-el ${elems.includes('Fogo') ? 'fogo' : ''}">${elems.includes('Fogo') ? '🔥' : ''}</div>
-                        <div class="mini-el ${elems.includes('Ar') ? 'ar' : ''}">${elems.includes('Ar') ? '☁️' : ''}</div>
-                        <div class="mini-el ${elems.includes('Terra') ? 'terra' : ''}">${elems.includes('Terra') ? '⛰️' : ''}</div>
-                        <div class="mini-el ${elems.includes('Agua') ? 'agua' : ''}">${elems.includes('Agua') ? '🌊' : ''}</div>
+                        <div class="mini-el fogo ${temFogo ? 'ativo' : ''}">🔥</div>
+                        <div class="mini-el ar ${temAr ? 'ativo' : ''}">☁️</div>
+                        <div class="mini-el terra ${temTerra ? 'ativo' : ''}">⛰️</div>
+                        <div class="mini-el agua ${temAgua ? 'ativo' : ''}">🌊</div>
                     </div>
                 </div>
 
-                </div>
+            </div>
         </div>
     `;
 }
