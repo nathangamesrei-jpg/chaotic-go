@@ -115,8 +115,10 @@ function atualizarContadorFichasHabilidade() {
     
     // Função auxiliar para renderizar o botão em um lado específico
     function renderizarBotaoFichas(seletorLado, ladoId, totalFichas) {
-        const zonaLateral = document.querySelector(`${seletorLado} .zona-lateral`);
-        if(zonaLateral && !document.getElementById(`btn-contador-${ladoId}`)) {
+        // Puxamos a nova div específica para as fichas
+        const containerFichas = document.querySelector(`${seletorLado} .container-fichas-js`);
+        
+        if(containerFichas && !document.getElementById(`btn-contador-${ladoId}`)) {
             const btnHTML = `
                 <button class="btn-total-fichas" id="btn-contador-${ladoId}">
                     <div class="mini-contador-heptagono"></div>
@@ -124,8 +126,8 @@ function atualizarContadorFichasHabilidade() {
                     <span class="total-number" id="valor-total-${ladoId}">${totalFichas}</span>
                 </button>
             `;
-            // Insere no topo da zona lateral
-            zonaLateral.insertAdjacentHTML('afterbegin', btnHTML);
+            // Insere dentro do novo container
+            containerFichas.innerHTML = btnHTML;
             
             // Adiciona evento de clique passando de qual lado ele é
             document.getElementById(`btn-contador-${ladoId}`).addEventListener('click', () => abrirModalFichas(ladoId));
