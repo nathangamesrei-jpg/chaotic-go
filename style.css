@@ -1267,6 +1267,7 @@ div.box-deck.local:first-of-type {
 .mini-stat-item b { font-size: 7px; color: #000; font-family: 'Arial Black', sans-serif;}
 
 /* Elementos Detalhados (Orbes com Emojis) */
+/* Elementos Detalhados (Orbes com Emojis) - CORREÇÃO MOBILE */
 .mini-elements-band {
     display: flex !important;
     flex-direction: row !important; /* Força na horizontal */
@@ -1277,10 +1278,12 @@ div.box-deck.local:first-of-type {
     box-sizing: border-box;
 }
 .mini-el { 
-    width: 10px; height: 10px; /* Um pouco maior pra caber o emoji */
+    width: 12px; height: 12px; /* Aumentamos de 10px para 12px */
     border-radius: 50%; background: #ddd; 
     display: flex; align-items: center; justify-content: center;
-    font-size: 7px; /* Tamanho do emoji */
+    font-size: 9px; /* Aumentamos de 7px para 9px (Engana o bloqueio do celular) */
+    line-height: 1;
+    filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.6)); /* Sombra para o emoji ficar forte */
 }
 .mini-el.fogo { background: #ff3333; box-shadow: 0 0 3px #ff3333; }
 .mini-el.ar { background: #fff; border: 1px solid #aaa; box-sizing: border-box; box-shadow: 0 0 3px #fff; }
