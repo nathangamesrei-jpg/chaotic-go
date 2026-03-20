@@ -31,6 +31,8 @@ function desenharMiniCarta(criaturaObj) {
         if (pct <= 20) corHp = 'red';
     }
 
+    // Heptágonos individuais removidos da mini-carta
+
     return `
         <div class="mini-card-wrapper">
             <div class="mini-card-body ${triboClass}">
@@ -51,13 +53,14 @@ function desenharMiniCarta(criaturaObj) {
                         <div class="mini-stat-item"><span>💨</span><b>${criaturaObj ? v : ''}</b></div>
                     </div>
                     <div class="mini-elements-band">
-                        <div class="mini-el ${elems.includes('Fogo') ? 'fogo' : ''}">${elems.includes('Fogo') ? '🔴' : ''}</div>
-                        <div class="mini-el ${elems.includes('Ar') ? 'ar' : ''}">${elems.includes('Ar') ? '⚪' : ''}</div>
-                        <div class="mini-el ${elems.includes('Terra') ? 'terra' : ''}">${elems.includes('Terra') ? '🟢' : ''}</div>
-                        <div class="mini-el ${elems.includes('Agua') ? 'agua' : ''}">${elems.includes('Agua') ? '🔵' : ''}</div>
+                        <div class="mini-el ${elems.includes('Fogo') ? 'fogo' : ''}">${elems.includes('Fogo') ? '🔥' : ''}</div>
+                        <div class="mini-el ${elems.includes('Ar') ? 'ar' : ''}">${elems.includes('Ar') ? '☁️' : ''}</div>
+                        <div class="mini-el ${elems.includes('Terra') ? 'terra' : ''}">${elems.includes('Terra') ? '⛰️' : ''}</div>
+                        <div class="mini-el ${elems.includes('Agua') ? 'agua' : ''}">${elems.includes('Agua') ? '🌊' : ''}</div>
                     </div>
                 </div>
-            </div>
+
+                </div>
         </div>
     `;
 }
