@@ -1266,8 +1266,7 @@ div.box-deck.local:first-of-type {
 .mini-stat-item span { font-size: 6px; }
 .mini-stat-item b { font-size: 7px; color: #000; font-family: 'Arial Black', sans-serif;}
 
-/* Elementos Detalhados (Orbes com Emojis) */
-/* Elementos Detalhados (Orbes com Emojis) - CORREÇÃO MOBILE */
+/* Elementos Detalhados (Apenas os Emojis Livres, Sem Fundo e Sem Borda) */
 .mini-elements-band {
     display: flex !important;
     flex-direction: row !important; /* Força na horizontal */
@@ -1278,17 +1277,18 @@ div.box-deck.local:first-of-type {
     box-sizing: border-box;
 }
 .mini-el { 
-    width: 12px; height: 12px; /* Aumentamos de 10px para 12px */
-    border-radius: 50%; background: #ddd; 
+    width: 12px; height: 12px; 
+    border-radius: 0; /* Remove a bolinha */
+    background: transparent; /* Remove o fundo colorido */
+    box-shadow: none; /* Remove a sombra da bolinha */
     display: flex; align-items: center; justify-content: center;
-    font-size: 9px; /* Aumentamos de 7px para 9px (Engana o bloqueio do celular) */
+    font-size: 11px; /* Tamanho do emoji aumentado para visibilidade */
     line-height: 1;
-    filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.6)); /* Sombra para o emoji ficar forte */
+    filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.6)); /* Sombra apenas no emoji para dar destaque */
 }
-.mini-el.fogo { background: #ff3333; box-shadow: 0 0 3px #ff3333; }
-.mini-el.ar { background: #fff; border: 1px solid #aaa; box-sizing: border-box; box-shadow: 0 0 3px #fff; }
-.mini-el.terra { background: #4caf50; box-shadow: 0 0 3px #4caf50; }
-.mini-el.agua { background: #03a9f4; box-shadow: 0 0 3px #03a9f4; }
+/* Limpamos as cores antigas, pois agora o JS injeta o emoji colorido direto */
+.mini-el.fogo, .mini-el.ar, .mini-el.terra, .mini-el.agua { background: transparent; box-shadow: none; border: none; }
+
 
 /* =========================================
    15. SISTEMA DE CONTADOR INTELIGENTE
