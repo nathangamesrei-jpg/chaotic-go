@@ -1266,29 +1266,45 @@ div.box-deck.local:first-of-type {
 .mini-stat-item span { font-size: 6px; }
 .mini-stat-item b { font-size: 7px; color: #000; font-family: 'Arial Black', sans-serif;}
 
-/* Elementos Detalhados (Apenas os Emojis Livres, Sem Fundo e Sem Borda) */
+/* Banda de Elementos (Sempre mostra os 4, com efeito de ativo/inativo) */
 .mini-elements-band {
     display: flex !important;
     flex-direction: row !important; /* Força na horizontal */
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     padding: 2px;
     width: 100%;
     box-sizing: border-box;
 }
+
+/* Slot Base do Elemento (Visual Padrão Inativo) */
 .mini-el { 
     width: 12px; height: 12px; 
-    border-radius: 0; /* Remove a bolinha */
-    background: transparent; /* Remove o fundo colorido */
-    box-shadow: none; /* Remove a sombra da bolinha */
+    border-radius: 50%; 
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; /* Tamanho do emoji aumentado para visibilidade */
+    font-size: 9px; /* Aumentado para melhor visualização mobile */
     line-height: 1;
-    filter: drop-shadow(0px 1px 1px rgba(0,0,0,0.6)); /* Sombra apenas no emoji para dar destaque */
+    box-sizing: border-box;
+    transition: all 0.2s;
+    
+    /* Configuração do "Slot Vazio" */
+    background: rgba(255, 255, 255, 0.05); /* Fundo sutil */
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Borda quase invisível */
+    color: rgba(255, 255, 255, 0.3); /* Emoji apagado */
+    filter: grayscale(100%); /* Força tudo a ficar cinza */
 }
-/* Limpamos as cores antigas, pois agora o JS injeta o emoji colorido direto */
-.mini-el.fogo, .mini-el.ar, .mini-el.terra, .mini-el.agua { background: transparent; box-shadow: none; border: none; }
 
+/* Classes para os Slots ATIVOS (Coloridos e com Glow) */
+.mini-el.ativo {
+    filter: grayscale(0%);
+    color: rgba(255, 255, 255, 1);
+    background: #111; /* Fundo escuro para dar contraste ao emoji */
+}
+
+.mini-el.ativo.fogo { border-color: #ff3333; box-shadow: 0 0 4px #ff3333; }
+.mini-el.ativo.ar { border-color: #fff; box-shadow: 0 0 4px #fff; }
+.mini-el.ativo.terra { border-color: #4caf50; box-shadow: 0 0 4px #4caf50; }
+.mini-el.ativo.agua { border-color: #03a9f4; box-shadow: 0 0 4px #03a9f4; }
 
 /* =========================================
    15. SISTEMA DE CONTADOR INTELIGENTE
