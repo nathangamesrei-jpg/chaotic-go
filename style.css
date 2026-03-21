@@ -1310,32 +1310,44 @@ div.box-deck.local:first-of-type {
    15. SISTEMA DE CONTADOR INTELIGENTE
    ========================================= */
 
-/* Botão de Fichas mais fino e elegante */
+/* =========================================
+   15. SISTEMA DE CONTADOR INTELIGENTE (AJUSTADO)
+   ========================================= */
+
+/* O Botão do Contador - Diminuindo a fonte global */
 .btn-total-fichas {
-    width: 90%;
+    width: 100%;
     background: #1a1a1a;
     border: 2px solid #555;
     color: #4CAF50;
-    border-radius: 6px;
-    padding: 4px; /* Mais fino */
+    border-radius: 8px;
+    padding: 6px; /* Reduzi um pouco o padding para o botão não ficar alto */
     cursor: pointer;
-    font-size: 9px;
+    font-size: 8px; /* ⬅️ Era 10px, baixamos para 8px */
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px;
+    gap: 5px; /* Reduzi o espaço entre o ícone e o texto */
     transition: background 0.2s, border-color 0.2s;
     box-sizing: border-box;
-    margin: 0 auto;
 }
 
+/* O número dentro do botão */
 .total-number {
-    font-size: 14px;
+    font-size: 12px; /* ⬅️ Era 16px, baixamos para 12px para acompanhar o botão */
     font-family: 'Arial Black', sans-serif;
     color: #fff;
 }
 
+/* O ícone heptágono dentro do botão */
+.mini-contador-heptagono {
+    width: 11px;  /* ⬅️ Diminuímos de 14px para 11px para não estourar a altura */
+    height: 11px;
+    background: #fff;
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+    box-shadow: 0 0 2px #000;
+}
 
 /* =========================================
    15. SISTEMA DE CONTADOR INTELIGENTE (DROME)
