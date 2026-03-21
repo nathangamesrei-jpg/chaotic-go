@@ -1042,10 +1042,10 @@ html, body {
     align-items: center;
 }
 
-/* 🛡️ BLOCO UNIFICADO: Locais e Ataques com o mesmo tamanho */
-.box-deck {
-    width: 90%;
-    height: 70px; /* Definido 70px para ambos ficarem iguais */
+/* 🛡️ UNIFICAÇÃO TOTAL: Decks e Lixo com tamanho de CARTA */
+.box-deck, .box-lixo {
+    width: 65px !important;  /* Tamanho proporcional de carta */
+    height: 90px !important; /* Tamanho proporcional de carta */
     border: 2px solid #ccc;
     background: #111;
     color: #fff;
@@ -1056,22 +1056,46 @@ html, body {
     text-align: center;
     border-radius: 6px;
     box-sizing: border-box;
+    position: relative;
 }
 
-/* Força o Local a ter a borda verde, mas mantém a altura de 70px */
-div.box-deck.local:first-of-type {
-    height: 70px !important; /* ⬅️ Alterado de 85px para 70px para igualar */
-    font-size: 9px !important;
-    border-color: #4CAF50;
-    box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2);
+/* Bordas específicas mantendo o tamanho único */
+.box-deck.local, .local-ativo { 
+    border-color: #4CAF50 !important; 
 }
-
-/* Mantém o Ataque com a borda vermelha e os mesmos 70px */
 .box-deck.ataque { 
-    border-color: #ff5555; 
-    height: 70px !important; 
+    border-color: #ff5555 !important; 
+}
+.box-lixo { 
+    border: 2px dashed #777 !important; 
+    background: rgba(0,0,0,0.5) !important;
 }
 
+/* 🛡️ FICHAS DE HABILIDADE - Correção de Fonte e Espaço */
+.btn-total-fichas {
+    width: 75px !important;    /* Largura fixa para não vazar */
+    height: 28px !important;   /* Altura mais fina */
+    background: #1a1a1a;
+    border: 1px solid #555;
+    color: #4CAF50;
+    border-radius: 4px;
+    padding: 2px 5px !important;
+    font-size: 8px !important; /* Fonte menor para caber o texto */
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;                  /* Aproxima o número do texto */
+    box-sizing: border-box;
+}
+
+.total-number {
+    font-size: 11px !important; /* Número compacto */
+    font-family: 'Arial Black', sans-serif;
+    color: #fff;
+}
+
+/* Coluna de Mugics e Heptágonos */
 .coluna-mugics {
     display: flex;
     flex-direction: column;
@@ -1079,14 +1103,6 @@ div.box-deck.local:first-of-type {
     padding: 6px;
     background: rgba(0,255,255,0.08);
     border-radius: 10px;
-}
-
-.hex-mugic::after {
-    content: '';
-    width: 20px;
-    height: 20px;
-    background: #0a0a0a;
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
 }
 
 .hex-mugic {
@@ -1100,6 +1116,14 @@ div.box-deck.local:first-of-type {
     box-shadow: 0 0 10px #00ffff;
 }
 
+.hex-mugic::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: #0a0a0a;
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+}
+
 /* Zona Central (Pirâmide Centralizada) */
 .zona-central.centralizada {
     flex: 1;
@@ -1107,22 +1131,20 @@ div.box-deck.local:first-of-type {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 2px; /* Cartas quase coladas */
+    gap: 2px;
 }
 
 .linha-formacao-batalha {
     display: flex;
     justify-content: center;
-    gap: 2px; /* Cartas quase coladas */
+    gap: 2px;
 }
 
 .slot-carta-batalha {
-    width: 80px;  /* Diminuímos a largura de 88px */
-    height: 100px; /* Diminuímos a altura de 110px */
+    width: 80px;
+    height: 100px;
     background: transparent;
     border: none;
-    box-shadow: none;
-    border-radius: 0;
     overflow: visible;
 }
 
