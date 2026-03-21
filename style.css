@@ -1042,23 +1042,11 @@ html, body {
     align-items: center;
 }
 
-.box-deck {
-    width: 90%;
-    height: 50px; /* Diminuímos de 70px para 50px */
-    border: 2px solid #ccc;
-    background: #111;
-    color: #fff;
-    font-size: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    border-radius: 6px;
-}
+
 
 /* Força APENAS o Local Ativo a ficar maior e descer um pouco */
 div.box-deck.local:first-of-type {
-    height: 85px !important;
+    height: 95px !important;
     font-size: 9px !important;
     border-color: #4CAF50;
     box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2);
@@ -1083,8 +1071,8 @@ div.box-deck.local:first-of-type {
 }
 
 .box-deck {
-    width: 90%;
-    height: 70px;
+    width: 65px;
+    height: 90px;
     border: 2px solid #ccc;
     background: #111;
     color: #fff;
