@@ -1046,7 +1046,7 @@ html, body {
 
 /* Força APENAS o Local Ativo a ficar maior e descer um pouco */
 div.box-deck.local:first-of-type {
-    height: 95px !important;
+    height: 85px !important;
     font-size: 9px !important;
     border-color: #4CAF50;
     box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2);
