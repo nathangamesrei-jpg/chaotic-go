@@ -1042,14 +1042,9 @@ html, body {
     align-items: center;
 }
 
-/* 🛡️ UNIFICAÇÃO DOS BARALHOS (CARTA VERTICAL) */
-/* Aqui igualamos o Deck Verde, o Deck Vermelho e o Lixo */
-.box-deck.local, 
-.box-deck.ataque-pilha, 
-.box-lixo,
-.local-ativo {
-    width: 65px !important; 
-    height: 90px !important; 
+.box-deck {
+    width: 90%;
+    height: 50px; /* Diminuímos de 70px para 50px */
     border: 2px solid #ccc;
     background: #111;
     color: #fff;
@@ -1059,29 +1054,16 @@ html, body {
     justify-content: center;
     text-align: center;
     border-radius: 6px;
-    box-sizing: border-box;
 }
 
-.box-deck.local, .local-ativo { border-color: #4CAF50 !important; }
-.box-deck.ataque-pilha { border-color: #ff5555 !important; }
-.box-lixo { border: 2px dashed #777 !important; background: rgba(0,0,0,0.5) !important; }
-
-/* 🛡️ CONTADOR DE PONTOS DE ATAQUE (BOTÃO PEQUENO) */
-/* Transformamos o retângulo de "Cont. Ataque" em um botão compacto */
-.box-cont-ataque {
-    width: 75px !important; 
-    height: 25px !important;
-    background: #1a1a1a;
-    border: 1px solid #ff5555;
-    color: #ff5555;
-    border-radius: 4px;
-    font-size: 8px !important;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-sizing: border-box;
+/* Força APENAS o Local Ativo a ficar maior e descer um pouco */
+div.box-deck.local:first-of-type {
+    height: 85px !important;
+    font-size: 9px !important;
+    border-color: #4CAF50;
+    box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2);
 }
+.box-deck.ataque { border-color: #ff5555; }
 
 .coluna-mugics {
     display: flex;
@@ -1090,6 +1072,28 @@ html, body {
     padding: 6px;
     background: rgba(0,255,255,0.08);
     border-radius: 10px;
+}
+
+.hex-mugic::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: #0a0a0a;
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+}
+
+.box-deck {
+    width: 90%;
+    height: 70px;
+    border: 2px solid #ccc;
+    background: #111;
+    color: #fff;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 6px;
 }
 
 .hex-mugic {
@@ -1103,14 +1107,6 @@ html, body {
     box-shadow: 0 0 10px #00ffff;
 }
 
-.hex-mugic::after {
-    content: '';
-    width: 20px;
-    height: 20px;
-    background: #0a0a0a;
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
-}
-
 /* Zona Central (Pirâmide Centralizada) */
 .zona-central.centralizada {
     flex: 1;
@@ -1118,20 +1114,22 @@ html, body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 2px;
+    gap: 2px; /* Cartas quase coladas */
 }
 
 .linha-formacao-batalha {
     display: flex;
     justify-content: center;
-    gap: 2px;
+    gap: 2px; /* Cartas quase coladas */
 }
 
 .slot-carta-batalha {
-    width: 80px;
-    height: 100px;
+    width: 80px;  /* Diminuímos a largura de 88px */
+    height: 100px; /* Diminuímos a altura de 110px */
     background: transparent;
     border: none;
+    box-shadow: none;
+    border-radius: 0;
     overflow: visible;
 }
 
@@ -1155,35 +1153,6 @@ html, body {
     border-radius: 6px;
     background-size: cover;
     background-position: center;
-}
-
-/* =========================================
-   15. SISTEMA DE CONTADOR INTELIGENTE (FICHAS)
-   ========================================= */
-
-/* Ajuste final para o botão de fichas não vazar o número */
-.btn-total-fichas {
-    width: 75px !important;
-    height: 25px !important;
-    background: #1a1a1a;
-    border: 1px solid #555;
-    color: #4CAF50;
-    border-radius: 4px;
-    padding: 2px !important;
-    cursor: pointer;
-    font-size: 8px !important; /* Fonte abaixada */
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    box-sizing: border-box;
-}
-
-.total-number {
-    font-size: 11px !important; /* Número compacto */
-    font-family: 'Arial Black', sans-serif;
-    color: #fff;
 }
 /* =========================================
    14. ESTILOS DA MINI-CARTA (DROME PRO 2.0 - CORRIGIDO)
