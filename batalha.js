@@ -31,8 +31,6 @@ function desenharMiniCarta(criaturaObj) {
         if (pct <= 20) corHp = 'red';
     }
 
-    // LÓGICA DE ELEMENTOS PRO: Sempre gera os 4 slots, definindo se estão ativos ou não
-    // Se criaturaObj for nulo (carta vazia), todos os slots ficam inativos automaticamente.
     const temFogo = elems.includes('Fogo');
     const temAgua = elems.includes('Agua');
     const temTerra = elems.includes('Terra');
@@ -75,7 +73,6 @@ function desenharMiniCarta(criaturaObj) {
 // SISTEMA DE CONTADOR INTELIGENTE
 // ==========================================
 
-// 1. O "Cérebro" do seu tabuleiro (Apenas simulando Johnes no C2 para teste)
 let campoJogador = {
     c1: null,
     c2: {
@@ -84,77 +81,61 @@ let campoJogador = {
         elementos: ["Terra"],
         cartaBlank: "cartas/criaturas/azul/johnes.jpg",
         statsMax: { coragem: 50, poder: 40, sabedoria: 60, velocidade: 30, energia: 45 },
-        hpAtual: 45, // Adicionamos hpAtual explicitamente para a barra de vida funcionar
-        fichasHabilidade: 2 // Contadores atuais
+        hpAtual: 45,
+        fichasHabilidade: 2
     },
     c3: null, c4: null, c5: null, c6: null
 };
 
-// Função para atualizar a tela inteira (incluindo o contador)
 function atualizarTelaBatalha() {
-    // A. Desenha as cartas nos slots
     const slots = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
     slots.forEach(slotId => {
         const el = document.getElementById('jog-' + slotId);
         if(el) el.innerHTML = desenharMiniCarta(campoJogador[slotId]);
     });
 
-    // B. Desenha os slots vazios do oponente (para teste)
     const slotsOp = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
     slotsOp.forEach(slotId => {
         const el = document.getElementById('op-' + slotId);
         if(el) el.innerHTML = desenharMiniCarta(null);
     });
 
-    // C. Calcula e desenha o Contador Inteligente
     atualizarContadorFichasHabilidade();
 }
 
-// Calcula o total de contadores e atualiza os botões nas laterais
 function atualizarContadorFichasHabilidade() {
     
-    // Função auxiliar para renderizar o botão em um lado específico
     function renderizarBotaoFichas(seletorLado, ladoId, totalFichas) {
-        // Puxamos a nova div específica para as fichas
         const containerFichas = document.querySelector(`${seletorLado} .container-fichas-js`);
         
         if(containerFichas && !document.getElementById(`btn-contador-${ladoId}`)) {
             const btnHTML = `
                 <button class="btn-total-fichas" id="btn-contador-${ladoId}">
                     <div class="mini-contador-heptagono"></div>
-                    <span id="txt-fichas-${ladoId}">Fichas: </span>
-                    <span class="total-number" id="valor-total-${ladoId}">${totalFichas}</span>
+                    <span id="txt-fichas-${ladoId}">Fichas: <span class="total-number" id="valor-total-${ladoId}">${totalFichas}</span></span>
                 </button>
             `;
-            // Insere dentro do novo container
             containerFichas.innerHTML = btnHTML;
-            
-            // Adiciona evento de clique passando de qual lado ele é
             document.getElementById(`btn-contador-${ladoId}`).addEventListener('click', () => abrirModalFichas(ladoId));
         } else if (document.getElementById(`valor-total-${ladoId}`)) {
-            // Se já existe, só atualiza o número
             document.getElementById(`valor-total-${ladoId}`).textContent = totalFichas;
         }
     }
 
-    // Soma as fichas do Jogador
     let totalJogador = 0;
     Object.values(campoJogador).forEach(c => {
         if(c && c.fichasHabilidade) totalJogador += c.fichasHabilidade;
     });
     renderizarBotaoFichas('.lado-jogador', 'jogador', totalJogador);
 
-    // Mock do campo do oponente (Se não existir, criamos para não dar erro)
     if(!window.campoOponente) {
         window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     }
 
-    // Soma as fichas do Oponente
     let totalOponente = 0;
     Object.values(window.campoOponente).forEach(c => {
         if(c && c.fichasHabilidade) totalOponente += c.fichasHabilidade;
     });
-    // Renderiza o botão no lado do oponente! (Aquele que fica de ponta cabeça)
     renderizarBotaoFichas('.lado-oponente', 'oponente', totalOponente);
 }
 
@@ -162,15 +143,12 @@ function atualizarContadorFichasHabilidade() {
 // SISTEMA DE MODAL DETALHADO
 // --------------------------------------------------
 
-// Gera a lista detalhada e abre o modal
 function abrirModalFichas(ladoId) {
     let listaHTML = '';
     
-    // 🔥 LÓGICA INTELIGENTE: Puxa o campo certo dependendo de qual botão foi clicado
     const campoAlvo = ladoId === 'oponente' ? window.campoOponente : campoJogador;
     const tituloModal = ladoId === 'oponente' ? 'FICHAS DO OPONENTE' : 'MINHAS FICHAS';
     
-    // Itera sobre o campo para ver quem tem ficha
     Object.values(campoAlvo).forEach(c => {
         if(c) {
             const fichas = c.fichasHabilidade || 0;
@@ -189,10 +167,8 @@ function abrirModalFichas(ladoId) {
         }
     });
 
-    // Se não tiver ninguém no campo
     if(listaHTML === '') listaHTML = '<p style="color:#aaa; text-align:center;">Sem criaturas com fichas no momento.</p>';
 
-    // Cria o HTML do modal e insere na tela do Drome
     const modalHTML = `
         <div class="modal-overlay" id="overlay-fichas">
             <div class="modal-content-fichas">
@@ -207,7 +183,6 @@ function abrirModalFichas(ladoId) {
 
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
 
-    // Eventos para fechar o modal
     document.getElementById('fechar-modal-fichas').addEventListener('click', fecharModalFichas);
     document.getElementById('overlay-fichas').addEventListener('click', function(e) {
         if(e.target === this) fecharModalFichas();
@@ -219,8 +194,4 @@ function fecharModalFichas() {
     if(el) el.remove();
 }
 
-// --------------------------------------------------
-// TESTE PRÁTICO: Rodando a simulação
-// --------------------------------------------------
-// O setTimeout garante que o HTML carregou
 setTimeout(atualizarTelaBatalha, 500);
