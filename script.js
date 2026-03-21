@@ -16,7 +16,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-
+window._firebaseDB = db;
 // Verifica Segurança: O jogador está logado?
 const uid = localStorage.getItem("chaoticUID");
 if (!uid) {
@@ -2044,7 +2044,7 @@ apps.forEach((app, index) => {
             } else if (index === 2) {
                 // ⚔️ ABRE O TABULEIRO DO DROME!
                 document.getElementById("tela-menu").style.display = "none";
-                document.getElementById("tela-batalha").style.display = "flex";
+                window.abrirEntradaDrome();
                 modoMenu = false;
             } else if (index === 3) {
                 abrirSocial();
@@ -2228,7 +2228,7 @@ document.getElementById("btn-escanear").onclick = function() {
         } else if (indexSelecionado === 2) {
             // ⚔️ ABRE O TABULEIRO DO DROME PELO BOTÃO SCAN!
             document.getElementById("tela-menu").style.display = "none";
-            document.getElementById("tela-batalha").style.display = "flex";
+            window.abrirEntradaDrome();
             modoMenu = false;
         } else if (indexSelecionado === 3) {
             abrirSocial();
