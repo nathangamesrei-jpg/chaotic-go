@@ -1042,13 +1042,9 @@ html, body {
     align-items: center;
 }
 
-/* 🛡️ PILHAS DE CARTAS (Tamanho Unificado: 65x90) */
-.box-deck.local, 
-.box-deck.ataque, 
-.box-lixo,
-.local-ativo {
-    width: 65px !important;  
-    height: 90px !important; 
+.box-deck {
+    width: 90%;
+    height: 50px; /* Diminuímos de 70px para 50px */
     border: 2px solid #ccc;
     background: #111;
     color: #fff;
@@ -1058,44 +1054,17 @@ html, body {
     justify-content: center;
     text-align: center;
     border-radius: 6px;
-    box-sizing: border-box;
-    position: relative;
 }
 
-/* Cores das bordas das pilhas */
-.box-deck.local, .local-ativo { border-color: #4CAF50 !important; }
-.box-deck.ataque { border-color: #ff5555 !important; }
-.box-lixo { border: 2px dashed #777 !important; background: rgba(0,0,0,0.5) !important; }
-
-/* 🛡️ BOTÕES CONTADORES (Fichas e Contador de Ataque - Pequenos) */
-.btn-total-fichas, 
-.box-cont-ataque {
-    width: 75px !important;    /* Botão pequeno e compacto */
-    height: 25px !important;   /* Altura reduzida */
-    background: #1a1a1a;
-    border: 1px solid #555;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    box-sizing: border-box;
-    font-size: 8px !important; /* Fonte pequena para não vazar */
-    font-weight: bold;
-    cursor: pointer;
+/* Força APENAS o Local Ativo a ficar maior e descer um pouco */
+div.box-deck.local:first-of-type {
+    height: 85px !important;
+    font-size: 9px !important;
+    border-color: #4CAF50;
+    box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2);
 }
+.box-deck.ataque { border-color: #ff5555; }
 
-/* Cores dos textos dos botões compactos */
-.btn-total-fichas { color: #4CAF50; }
-.box-cont-ataque { color: #ff5555; border-color: #ff5555; }
-
-.total-number {
-    font-size: 11px !important; 
-    font-family: 'Arial Black', sans-serif;
-    color: #fff;
-}
-
-/* Coluna de Mugics e Heptágonos */
 .coluna-mugics {
     display: flex;
     flex-direction: column;
@@ -1103,6 +1072,28 @@ html, body {
     padding: 6px;
     background: rgba(0,255,255,0.08);
     border-radius: 10px;
+}
+
+.hex-mugic::after {
+    content: '';
+    width: 20px;
+    height: 20px;
+    background: #0a0a0a;
+    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
+}
+
+.box-deck {
+    width: 90%;
+    height: 70px;
+    border: 2px solid #ccc;
+    background: #111;
+    color: #fff;
+    font-size: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    border-radius: 6px;
 }
 
 .hex-mugic {
@@ -1116,14 +1107,6 @@ html, body {
     box-shadow: 0 0 10px #00ffff;
 }
 
-.hex-mugic::after {
-    content: '';
-    width: 20px;
-    height: 20px;
-    background: #0a0a0a;
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
-}
-
 /* Zona Central (Pirâmide Centralizada) */
 .zona-central.centralizada {
     flex: 1;
@@ -1131,20 +1114,22 @@ html, body {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: 2px;
+    gap: 2px; /* Cartas quase coladas */
 }
 
 .linha-formacao-batalha {
     display: flex;
     justify-content: center;
-    gap: 2px;
+    gap: 2px; /* Cartas quase coladas */
 }
 
 .slot-carta-batalha {
-    width: 80px;
-    height: 100px;
+    width: 80px;  /* Diminuímos a largura de 88px */
+    height: 100px; /* Diminuímos a altura de 110px */
     background: transparent;
     border: none;
+    box-shadow: none;
+    border-radius: 0;
     overflow: visible;
 }
 
@@ -1325,44 +1310,32 @@ html, body {
    15. SISTEMA DE CONTADOR INTELIGENTE
    ========================================= */
 
-/* =========================================
-   15. SISTEMA DE CONTADOR INTELIGENTE (AJUSTADO)
-   ========================================= */
-
-/* O Botão do Contador - Diminuindo a fonte global */
+/* Botão de Fichas mais fino e elegante */
 .btn-total-fichas {
-    width: 100%;
+    width: 90%;
     background: #1a1a1a;
     border: 2px solid #555;
     color: #4CAF50;
-    border-radius: 8px;
-    padding: 6px; /* Reduzi um pouco o padding para o botão não ficar alto */
+    border-radius: 6px;
+    padding: 4px; /* Mais fino */
     cursor: pointer;
-    font-size: 8px; /* ⬅️ Era 10px, baixamos para 8px */
+    font-size: 9px;
     font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 5px; /* Reduzi o espaço entre o ícone e o texto */
+    gap: 5px;
     transition: background 0.2s, border-color 0.2s;
     box-sizing: border-box;
+    margin: 0 auto;
 }
 
-/* O número dentro do botão */
 .total-number {
-    font-size: 12px; /* ⬅️ Era 16px, baixamos para 12px para acompanhar o botão */
+    font-size: 14px;
     font-family: 'Arial Black', sans-serif;
     color: #fff;
 }
 
-/* O ícone heptágono dentro do botão */
-.mini-contador-heptagono {
-    width: 11px;  /* ⬅️ Diminuímos de 14px para 11px para não estourar a altura */
-    height: 11px;
-    background: #fff;
-    clip-path: polygon(50% 0%, 90% 20%, 100% 60%, 75% 100%, 25% 100%, 0% 60%, 10% 20%);
-    box-shadow: 0 0 2px #000;
-}
 
 /* =========================================
    15. SISTEMA DE CONTADOR INTELIGENTE (DROME)
