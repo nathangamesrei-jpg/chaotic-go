@@ -111,7 +111,6 @@ function atualizarContadorFichasHabilidade() {
         if(containerFichas && !document.getElementById(`btn-contador-${ladoId}`)) {
             const btnHTML = `
                 <button class="btn-total-fichas" id="btn-contador-${ladoId}">
-                    <div class="mini-contador-heptagono"></div>
                     <span id="txt-fichas-${ladoId}">Fichas: <span class="total-number" id="valor-total-${ladoId}">${totalFichas}</span></span>
                 </button>
             `;
