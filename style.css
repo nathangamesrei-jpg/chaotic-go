@@ -1042,10 +1042,13 @@ html, body {
     align-items: center;
 }
 
-/* 🛡️ UNIFICAÇÃO TOTAL: Decks e Lixo com tamanho de CARTA */
-.box-deck, .box-lixo {
-    width: 65px !important;  /* Tamanho proporcional de carta */
-    height: 90px !important; /* Tamanho proporcional de carta */
+/* 🛡️ PILHAS DE CARTAS (Tamanho Unificado: 65x90) */
+.box-deck.local, 
+.box-deck.ataque, 
+.box-lixo,
+.local-ativo {
+    width: 65px !important;  
+    height: 90px !important; 
     border: 2px solid #ccc;
     background: #111;
     color: #fff;
@@ -1059,38 +1062,35 @@ html, body {
     position: relative;
 }
 
-/* Bordas específicas mantendo o tamanho único */
-.box-deck.local, .local-ativo { 
-    border-color: #4CAF50 !important; 
-}
-.box-deck.ataque { 
-    border-color: #ff5555 !important; 
-}
-.box-lixo { 
-    border: 2px dashed #777 !important; 
-    background: rgba(0,0,0,0.5) !important;
-}
+/* Cores das bordas das pilhas */
+.box-deck.local, .local-ativo { border-color: #4CAF50 !important; }
+.box-deck.ataque { border-color: #ff5555 !important; }
+.box-lixo { border: 2px dashed #777 !important; background: rgba(0,0,0,0.5) !important; }
 
-/* 🛡️ FICHAS DE HABILIDADE - Correção de Fonte e Espaço */
-.btn-total-fichas {
-    width: 75px !important;    /* Largura fixa para não vazar */
-    height: 28px !important;   /* Altura mais fina */
+/* 🛡️ BOTÕES CONTADORES (Fichas e Contador de Ataque - Pequenos) */
+.btn-total-fichas, 
+.box-cont-ataque {
+    width: 75px !important;    /* Botão pequeno e compacto */
+    height: 25px !important;   /* Altura reduzida */
     background: #1a1a1a;
     border: 1px solid #555;
-    color: #4CAF50;
     border-radius: 4px;
-    padding: 2px 5px !important;
-    font-size: 8px !important; /* Fonte menor para caber o texto */
-    font-weight: bold;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;                  /* Aproxima o número do texto */
+    gap: 3px;
     box-sizing: border-box;
+    font-size: 8px !important; /* Fonte pequena para não vazar */
+    font-weight: bold;
+    cursor: pointer;
 }
 
+/* Cores dos textos dos botões compactos */
+.btn-total-fichas { color: #4CAF50; }
+.box-cont-ataque { color: #ff5555; border-color: #ff5555; }
+
 .total-number {
-    font-size: 11px !important; /* Número compacto */
+    font-size: 11px !important; 
     font-family: 'Arial Black', sans-serif;
     color: #fff;
 }
