@@ -207,7 +207,7 @@ window.confirmarEntradaDrome = function() {
 };
 
 // ==========================================
-// AJUSTE DINÂMICO DA ARENA DE BATALHA (FORÇA BRUTA CSS)
+// AJUSTE DINÂMICO DA ARENA DE BATALHA (FORÇA BRUTA CSS V2)
 // ==========================================
 window.ajustarTabuleiroBatalha = function(modo) {
     let opZona = document.querySelector('.lado-oponente .zona-central');
@@ -224,21 +224,20 @@ window.ajustarTabuleiroBatalha = function(modo) {
     let opMugics = document.querySelectorAll('.lado-oponente .hex-mugic');
     let jogMugics = document.querySelectorAll('.lado-jogador .hex-mugic');
 
-    // 🔥 O TRUQUE DE MESTRE: Forçar o CSS da Zona Central a esticar até o meio
+    // 🔥 Reset base e aplicação de Flex-Start (Gruda as cartas na linha divisória)
     [opZona, jogZona].forEach(zona => {
         if(zona) {
             zona.style.display = "flex";
             zona.style.flexDirection = "column";
             zona.style.height = "100%"; // Obriga a zona a encostar na linha divisória
             
-            // flex-start significa o "topo" da zona. 
-            // Como o oponente tá de cabeça pra baixo, o topo dele também é a linha do meio!
+            // Gruda as cartas no topo da zona (que visualmente é o centro do tabuleiro)
             zona.style.justifyContent = modo === "6x6" ? "space-evenly" : "flex-start"; 
-            zona.style.padding = "0"; // Arranca qualquer gordura do CSS antigo
+            zona.style.padding = "0"; 
         }
     });
 
-    // Arranca as margens que prendiam as linhas
+    // Zera todas as margens antigas
     [opLinha1, opLinha2, opLinha3, jogLinha1, jogLinha2, jogLinha3].forEach(linha => {
         if(linha) { linha.style.marginTop = "0"; linha.style.marginBottom = "0"; }
     });
@@ -261,9 +260,11 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
         
-        // Empurrão final exclusivo pro 1x1 caso as cartas ainda fiquem tímidas
-        if(jogLinha1) jogLinha1.style.marginTop = "20px";
-        if(opLinha1) opLinha1.style.marginTop = "20px";
+        // 🔥 AJUSTE DE APROXIMAÇÃO FINAL DO 1x1: MÁGICA DO ELÁSTICO (Margem Negativa)
+        // Usamos margem superior negativa (-15px). No oponente funciona porque ele está rotacionado 180º,
+        // então a margem superior "puxa" ele para baixo (visual do oponente).
+        if(jogLinha1) jogLinha1.style.marginTop = "-15px"; // Puxa o jogador pra cima, colando na linha
+        if(opLinha1) opLinha1.style.marginTop = "-15px";   // Puxa o oponentevisually pra baixo, colando na linha
 
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
