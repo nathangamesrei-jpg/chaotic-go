@@ -207,35 +207,32 @@ window.confirmarEntradaDrome = function() {
 };
 
 // ==========================================
-// AJUSTE DINÂMICO DA ARENA DE BATALHA (COM AVANÇO DE LINHA)
+// AJUSTE DINÂMICO DA ARENA DE BATALHA (BLINDADO)
 // ==========================================
 window.ajustarTabuleiroBatalha = function(modo) {
-    // Captura as Zonas Centrais (onde ficam as cartas)
     let opZona = document.querySelector('.lado-oponente .zona-central');
     let jogZona = document.querySelector('.lado-jogador .zona-central');
 
-    // Captura as fileiras do Oponente
-    let opLinha3 = document.getElementById('op-c1').parentElement; // Fileira de 3
-    let opLinha2 = document.getElementById('op-c4').parentElement; // Fileira de 2
-    let opLinha1 = document.getElementById('op-c6').parentElement; // Fileira de 1 (Frente)
+    let opLinha3 = document.getElementById('op-c1').parentElement; 
+    let opLinha2 = document.getElementById('op-c4').parentElement; 
+    let opLinha1 = document.getElementById('op-c6').parentElement; 
     
-    // Captura as fileiras do Jogador
     let jogLinha3 = document.getElementById('jog-c1').parentElement; 
     let jogLinha2 = document.getElementById('jog-c4').parentElement; 
     let jogLinha1 = document.getElementById('jog-c6').parentElement; 
     
-    // Captura os Mugics
     let opMugics = document.querySelectorAll('.lado-oponente .hex-mugic');
     let jogMugics = document.querySelectorAll('.lado-jogador .hex-mugic');
+
+    // Reseta qualquer estilo antigo pra garantir a pureza do layout
+    if(opZona) opZona.style.justifyContent = "center";
+    if(jogZona) jogZona.style.justifyContent = "center";
+    opLinha1.style.margin = "0"; jogLinha1.style.margin = "0";
 
     if (modo === "6x6") {
         opLinha3.style.display = "flex"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "flex"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
         
-        // No 6x6, as cartas ocupam o espaço todo
-        if(opZona) opZona.style.justifyContent = "center";
-        if(jogZona) jogZona.style.justifyContent = "center";
-
         opMugics.forEach(m => m.style.display = "block");
         jogMugics.forEach(m => m.style.display = "block");
     } 
@@ -243,20 +240,25 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
         
-        // 🔥 CORREÇÃO DA GRAVIDADE: Empurra as cartas para a linha divisória!
-        if(opZona) opZona.style.justifyContent = "flex-start"; 
-        if(jogZona) jogZona.style.justifyContent = "flex-end"; 
+        // MARRETA DO CSS: Empurra as linhas ativas direto pro meio!
+        jogLinha2.style.marginTop = "auto";
+        opLinha2.style.marginBottom = "auto";
 
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
     } 
-    else if (modo.includes("1x1")) { 
+    else if (modo.includes("1x1")) {
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
         
-        // 🔥 CORREÇÃO DA GRAVIDADE: Empurra as cartas para a linha divisória!
-        if(opZona) opZona.style.justifyContent = "flex-start"; 
-        if(jogZona) jogZona.style.justifyContent = "flex-end"; 
+        // MARRETA DO CSS NO 1x1: Força os guerreiros a colarem na divisória central!
+        // O jogador é empurrado de baixo pra cima (margin-bottom: auto)
+        jogLinha1.style.marginTop = "0"; 
+        jogLinha1.style.marginBottom = "auto"; 
+        
+        // O oponente tá de cabeça pra baixo, então empurramos do topo pra baixo (margin-top: auto)
+        opLinha1.style.marginBottom = "0";
+        opLinha1.style.marginTop = "auto";
 
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
