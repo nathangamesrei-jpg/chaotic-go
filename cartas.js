@@ -35,7 +35,7 @@ const ATAQUES = [
 const EQUIPAMENTOS = [
     {
         id: 201, nome: "Anel Precioso", tipoCarta: "Equipamento", img: "cartas/equips/anel_precioso.png", efeito: "O campeão equipado perde 15 de energia, mas ignora danos elementais. Indestrutível.", raridade: 0.3
-    }
+    },
     {
         id: 102, 
         nome: "Mão Negra", 
