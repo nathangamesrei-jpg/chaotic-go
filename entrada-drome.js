@@ -16,7 +16,7 @@ window.estadoDrome = {
 // ==========================================
 window.abrirEntradaDrome = function() {
     document.getElementById("tela-menu").style.display = "none";
-    modoMenu = false;
+    window.modoMenu = false;
     renderizarPassoTipoJogo();
 };
 
@@ -487,7 +487,7 @@ function renderizarAguardandoAmigo(salaId, nomeAmigo) {
             if (sala.status === "pronta") {
                 iniciarPartidaDrome(salaId, true);
             } else if (sala.status === "recusado") {
-                mostrarMensagemScanner(nomeAmigo.toUpperCase() + " RECUSOU O DESAFIO!");
+                window.mostrarMensagemScanner(nomeAmigo.toUpperCase() + " RECUSOU O DESAFIO!");
                 renderizarPassoEscolhaAmigo();
             }
         });
@@ -564,7 +564,7 @@ window.responderDesafioDrome = function(resposta, salaId, modo) {
 
             document.getElementById("tela-menu").style.display = "none";
             document.getElementById("tela-entrada-drome").style.display = "flex";
-            modoMenu = false;
+            window.modoMenu = false;
             window.renderizarPassoEscolhaDeck();
 
             // Sobrescreve o botão jogar para essa sala específica
@@ -590,9 +590,9 @@ function iniciarPartidaDrome(salaId, souP1) {
 
     document.getElementById("tela-entrada-drome").style.display = "none";
     document.getElementById("tela-batalha").style.display = "flex";
-    modoMenu = false;
+    window.modoMenu = false;
 
-    mostrarMensagemScanner("⚔️ PARTIDA INICIADA!");
+    window.mostrarMensagemScanner("⚔️ PARTIDA INICIADA!");
 }
 
 // ==========================================
@@ -601,7 +601,7 @@ function iniciarPartidaDrome(salaId, souP1) {
 window.voltarMenuDrome = function() {
     document.getElementById("tela-entrada-drome").style.display = "none";
     document.getElementById("tela-menu").style.display = "flex";
-    modoMenu = true;
+    window.modoMenu = true;
     window.estadoDrome = { tipoJogo: null, modo: null, deckSelecionado: null, amigoDesafiado: null, naFila: false };
 };
 
