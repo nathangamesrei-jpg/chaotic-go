@@ -2063,17 +2063,7 @@ apps.forEach((app, index) => {
     };
 });
 
-// ==========================================
-// ⚔️ TELA DE ENTRADA DO DROME
-// ==========================================
-window.abrirEntradaDrome = function() {
-    document.getElementById("tela-menu").style.display = "none";
-    document.getElementById("tela-entrada-drome").style.display = "flex";
-    window.modoMenu = false;
-    
-    // Se quiser mudar a música pro lobby ou de batalha, pode colocar aqui
-    // if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('lobby'); 
-};
+
 
 // A função que liga a tela e o botão de voltar da Oficina
 window.abrirOficinaDecks = function() {
