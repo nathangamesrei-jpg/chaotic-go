@@ -30,7 +30,7 @@ let mapaScanner, marcadorJogador, marcadorMonstro, watchID, circuloRadar;
 let localParaViagem = "";
 let imgLocalParaViagem = ""; 
 let triboLocalParaViagem = ""; 
-window.modoMenu = true;
+let modoMenu = true;
 let indexSelecionado = 0;
 let monstroAtual = null;
 let tipoDeCartaAtual = ""; 
