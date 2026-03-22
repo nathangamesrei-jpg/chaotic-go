@@ -70,7 +70,7 @@ const LOCAIS_DB = [
         elementoNativo: null, // Regra 2: Qualquer Elemento (null)
         img: "cartas/locais/locais azul/cidade de kiru.jpg", 
         tipoCarta: "Local", 
-        raridade: 0.8
+        raridade: 0.0001
     },
     {
         id: 502, 
