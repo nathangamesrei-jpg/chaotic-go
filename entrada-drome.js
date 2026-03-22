@@ -149,18 +149,31 @@ function carregarDecksParaEscolha(modo) {
         if (!encontrouAlgum) {
             lista.innerHTML = `<p style="color:#aaa;font-size:10px;text-align:center;line-height:1.6;">Nenhum deck ${modo} encontrado.<br><span style="color:#4CAF50;">Crie um deck na Oficina primeiro!</span></p>`;
         }
-    }).catch(() => {
+   }).catch((err) => {
+        console.error("Erro na leitura da Nuvem:", err); // Agora o console vai fofocar o erro!
         lista.innerHTML = "<p style='color:#ff5555;font-size:10px;text-align:center;'>Falha ao carregar decks!</p>";
     });
 }
 
 function verificarIrregularidadeDeck(deck, modo) {
     let p = [];
-    if (!deck.ataques || deck.ataques.length !== 20) p.push(`Ataques: ${deck.ataques ? deck.ataques.length : 0}/20`);
-    if (!deck.locais || deck.locais.length !== 10) p.push(`Locais: ${deck.locais ? deck.locais.length : 0}/10`);
+    
+    // 1. Checa Ataques e Locais com segurança (mesmo se o Firebase transformar em Objeto)
+    let qtdAtaques = deck.ataques ? Object.values(deck.ataques).length : 0;
+    let qtdLocais = deck.locais ? Object.values(deck.locais).length : 0;
+    
+    if (qtdAtaques !== 20) p.push(`Ataques: ${qtdAtaques}/20`);
+    if (qtdLocais !== 10) p.push(`Locais: ${qtdLocais}/10`);
+    
+    // 2. Checa as Criaturas ignorando os "nulls"
     let min = modo === '6x6' ? 6 : modo === '3x3' ? 3 : 1;
-    let crias = deck.criaturas ? deck.criaturas.filter(c => c !== null).length : 0;
+    let crias = 0;
+    if (deck.criaturas) {
+        crias = Object.values(deck.criaturas).filter(c => c !== null).length;
+    }
+    
     if (crias < min) p.push(`Criaturas: ${crias}/${min}`);
+    
     return p.length > 0 ? p.join(' · ') : null;
 }
 
