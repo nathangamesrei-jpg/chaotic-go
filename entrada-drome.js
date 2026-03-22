@@ -195,9 +195,88 @@ function selecionarDeckDrome(deckData, numSlot, irreg, divEl) {
 
 window.confirmarEntradaDrome = function() {
     if (!window.estadoDrome.deckSelecionado) return;
-    if (window.estadoDrome.tipoJogo === 'online') renderizarFilaOnline();
-    else renderizarPassoEscolhaAmigo();
+    
+    if (window.estadoDrome.tipoJogo === 'online') {
+        // 🔥 MODO SIMULADO / TREINO ATIVADO! (Pula a fila do servidor)
+        window.mostrarMensagemScanner("Iniciando Simulação (Modo Treino)...");
+        iniciarPartidaDrome("sala_simulada", true);
+    } 
+    else {
+        renderizarPassoEscolhaAmigo();
+    }
 };
+
+// ==========================================
+// AJUSTE DINÂMICO DA ARENA DE BATALHA (COM AVANÇO DE LINHA)
+// ==========================================
+function ajustarTabuleiroBatalha(modo) {
+    // Captura as Zonas Centrais (onde ficam as cartas)
+    let opZona = document.querySelector('.lado-oponente .zona-central');
+    let jogZona = document.querySelector('.lado-jogador .zona-central');
+
+    // Captura as fileiras do Oponente
+    let opLinha3 = document.getElementById('op-c1').parentElement; // Fileira de 3
+    let opLinha2 = document.getElementById('op-c4').parentElement; // Fileira de 2
+    let opLinha1 = document.getElementById('op-c6').parentElement; // Fileira de 1 (Frente)
+    
+    // Captura as fileiras do Jogador
+    let jogLinha3 = document.getElementById('jog-c1').parentElement; 
+    let jogLinha2 = document.getElementById('jog-c4').parentElement; 
+    let jogLinha1 = document.getElementById('jog-c6').parentElement; 
+    
+    // Captura os Mugics
+    let opMugics = document.querySelectorAll('.lado-oponente .hex-mugic');
+    let jogMugics = document.querySelectorAll('.lado-jogador .hex-mugic');
+
+    if (modo === "6x6") {
+        opLinha3.style.display = "flex"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
+        jogLinha3.style.display = "flex"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
+        
+        // No 6x6, as cartas ocupam o espaço todo (distribuição normal)
+        if(opZona) opZona.style.justifyContent = "center";
+        if(jogZona) jogZona.style.justifyContent = "center";
+
+        opMugics.forEach(m => m.style.display = "block");
+        jogMugics.forEach(m => m.style.display = "block");
+    } 
+    else if (modo === "3x3") {
+        opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
+        jogLinha3.style.display = "none"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
+        
+        // Empurra os lutadores para o centro da Arena!
+        if(opZona) opZona.style.justifyContent = "flex-end"; // Oponente desce para a linha branca
+        if(jogZona) jogZona.style.justifyContent = "flex-start"; // Jogador sobe para a linha branca
+
+        opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
+        jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
+    } 
+    else if (modo === "1x1") {
+        opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
+        jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
+        
+        // Empurra os lutadores para o centro da Arena!
+        if(opZona) opZona.style.justifyContent = "flex-end"; 
+        if(jogZona) jogZona.style.justifyContent = "flex-start";
+
+        opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
+        jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
+    }
+}
+// ==========================================
+// INICIAR PARTIDA (ATUALIZADO)
+// ==========================================
+function iniciarPartidaDrome(salaId, souP1) {
+    clearInterval(window._timerFila);
+    window.estadoDrome.naFila = false;
+    document.getElementById("tela-entrada-drome").style.display = "none";
+    document.getElementById("tela-batalha").style.display = "flex";
+    window.modoMenu = false;
+    
+    // 🛠️ Chama a função que corta as linhas do tabuleiro!
+    ajustarTabuleiroBatalha(window.estadoDrome.modo);
+    
+    window.mostrarMensagemScanner("⚔️ ARENA PRONTA!");
+}
 
 // ==========================================
 // FILA ONLINE
