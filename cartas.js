@@ -36,6 +36,17 @@ const EQUIPAMENTOS = [
     {
         id: 201, nome: "Anel Precioso", tipoCarta: "Equipamento", img: "cartas/equips/anel_precioso.png", efeito: "O campeão equipado perde 15 de energia, mas ignora danos elementais. Indestrutível.", raridade: 0.3
     }
+    {
+        id: 102, 
+        nome: "Mão Negra", 
+        custo: 0, 
+        danoBase: 0, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, vento: 0 }, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/mao_negra.jpg", 
+        efeito: "Pegue uma carta aleatória de ataque da mão do seu oponente.", 
+        raridade: 0.7
+    }
 ];
 
 // ==========================================
