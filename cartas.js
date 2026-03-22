@@ -26,15 +26,6 @@ const MONSTROS = [
 const ATAQUES = [
     {
         id: 101, nome: "Ácido Gástrico", custo: 3, danoBase: 10, danoElemental: { fogo: 5, agua: 5, terra: 0, vento: 0 }, tipoCarta: "Ataque", img: "cartas/ataques/acido_gastrico.jpg", efeito: "Remove o equipamento do campeão ativo do oponente.", raridade: 0.6
-    }
-];
-
-// ==========================================
-// 3. BANCO DE DADOS: EQUIPAMENTOS (Neutros)
-// ==========================================
-const EQUIPAMENTOS = [
-    {
-        id: 201, nome: "Anel Precioso", tipoCarta: "Equipamento", img: "cartas/equips/anel_precioso.png", efeito: "O campeão equipado perde 15 de energia, mas ignora danos elementais. Indestrutível.", raridade: 0.3
     },
     {
         id: 102, 
@@ -46,7 +37,28 @@ const EQUIPAMENTOS = [
         img: "cartas/ataques/mao_negra.jpg", 
         efeito: "Pegue uma carta aleatória de ataque da mão do seu oponente.", 
         raridade: 0.7
+    },
+    {
+        id: 103, 
+        nome: "Aliança", 
+        custo: 2, 
+        danoBase: 0, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, vento: 0 }, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/alianca.jpg", 
+        efeito: "Escolha um campeão derrotado seu, o valor da metade da energia dele é recuperado no seu campeão ativo.", 
+        raridade: 0.7
     }
+];
+
+// ==========================================
+// 3. BANCO DE DADOS: EQUIPAMENTOS (Neutros)
+// ==========================================
+const EQUIPAMENTOS = [
+    {
+        id: 201, nome: "Anel Precioso", tipoCarta: "Equipamento", img: "cartas/equips/anel_precioso.png", efeito: "O campeão equipado perde 15 de energia, mas ignora danos elementais. Indestrutível.", raridade: 0.3
+    }
+    
 ];
 
 // ==========================================
