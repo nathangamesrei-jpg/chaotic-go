@@ -36,7 +36,7 @@ let mapaScanner, marcadorJogador, marcadorMonstro, watchID, circuloRadar;
 let localParaViagem = "";
 let imgLocalParaViagem = ""; 
 let triboLocalParaViagem = ""; 
-window.window.window.modoMenu = true;
+window.modoMenu = true;
 let indexSelecionado = 0;
 let monstroAtual = null;
 let tipoDeCartaAtual = ""; 
@@ -361,10 +361,10 @@ document.getElementById("btn-acao-dir").onclick = function() {
         mudarMusicaFundo('mapa'); 
         iniciarGPS(); 
     } else if (tipoDeCartaAtual === "monstro") {
-       let novaCaptura = {
-            id: Date.now(), nome: monstroAtual.nome, tribo: monstroAtual.tribo || "Azul", tipoCarta: "Criatura", 
-            tipo: monstroAtual.tipoClasse || "Subordinado", // 🛠️ FIX: Agora o Scanner lê a palavra 'tipoClasse' do seu BD!
-            img: monstroAtual.cartaBlank, favorito: false, quantidade: 1,
+       let novaCaptura = {
+            id: Date.now(), nome: monstroAtual.nome, tribo: monstroAtual.tribo || "Azul", tipoCarta: "Criatura", 
+            tipo: monstroAtual.tipoClasse || "Subordinado", // 🛠️ FIX: Agora o Scanner lê a palavra 'tipoClasse' do seu BD!
+            img: monstroAtual.cartaBlank, favorito: false, quantidade: 1,
             stats: {
                 c: document.getElementById("stat-coragem").innerText, p: document.getElementById("stat-poder").innerText,
                 s: document.getElementById("stat-sabedoria").innerText, v: document.getElementById("stat-velocidade").innerText,
@@ -376,10 +376,10 @@ document.getElementById("btn-acao-dir").onclick = function() {
         mostrarMensagemScanner("CARTA ARMAZENADA NO ÁLBUM!");
         voltarAoRadar();
    } else if (tipoDeCartaAtual === "album") {
-        document.getElementById("tela-detalhe-carta").style.display = "none";
-        document.getElementById("painel-viagem").style.display = "none";
-        abrirAlbum(); // 🛠️ CORREÇÃO AQUI: Estava faltando chamar o Álbum de volta!
-    } else if (tipoDeCartaAtual === "inspecao_troca") {
+        document.getElementById("tela-detalhe-carta").style.display = "none";
+        document.getElementById("painel-viagem").style.display = "none";
+        abrirAlbum(); // 🛠️ CORREÇÃO AQUI: Estava faltando chamar o Álbum de volta!
+    } else if (tipoDeCartaAtual === "inspecao_troca") {
         document.getElementById("tela-detalhe-carta").style.display = "none";
         document.getElementById("painel-viagem").style.display = "none";
         if(document.getElementById("tela-social")) document.getElementById("tela-social").style.display = "flex";
@@ -410,10 +410,10 @@ window.excluirCartaConfirmada = function() {
     } else {
         inventario = inventario.filter(c => c.id !== cartaVisualizadaId); mostrarMensagemScanner("CARTA EXCLUÍDA!");
     }
-   salvarAlbumNaNuvem(); 
-    document.getElementById("tela-detalhe-carta").style.display = "none";
-    document.getElementById("painel-viagem").style.display = "none";
-    abrirAlbum(); // 🛠️ CORREÇÃO AQUI TAMBÉM: Retorna ao álbum após excluir a carta!
+   salvarAlbumNaNuvem(); 
+    document.getElementById("tela-detalhe-carta").style.display = "none";
+    document.getElementById("painel-viagem").style.display = "none";
+    abrirAlbum(); // 🛠️ CORREÇÃO AQUI TAMBÉM: Retorna ao álbum após excluir a carta!
 }
 
 function voltarAoRadar() {
@@ -435,7 +435,7 @@ function voltarAoRadar() {
 function iniciarMinigame(monstro) {
     mudarMusicaFundo('minigameCriatura');
     monstroAtual = monstro;
-    window.window.window.window.window.window.modoMenu = false;
+    window.modoMenu = false;
     document.getElementById("tela-mapa").style.display = "none";
     document.getElementById("tela-minigame").style.display = "block";
     document.getElementById("fundo-cena-minigame").src = CENARIOS[localParaViagem] || "";
@@ -544,10 +544,10 @@ function criarMarcadorMonstro(latM, lonM, sorteado, ehPassivo = false) {
             let distancia = calcularDistancia(posJogador.lat, posJogador.lng, latM, lonM);
             
             // 100 é o raio do seu círculo azul. Se estiver maior, bloqueia!
-            if (distancia > 100) { // 🛠️ FIX: Agora trava em 100 metros cravados!
-                mostrarMensagemScanner(`FORA DE ALCANCE! Ande mais ${Math.ceil(distancia - 100)}m para escanear.`);
-                return; // Aborta a função e impede o minigame de abrir
-            }
+            if (distancia > 100) { // 🛠️ FIX: Agora trava em 100 metros cravados!
+                mostrarMensagemScanner(`FORA DE ALCANCE! Ande mais ${Math.ceil(distancia - 100)}m para escanear.`);
+                return; // Aborta a função e impede o minigame de abrir
+            }
         }
         // ===============================
 
@@ -593,14 +593,14 @@ window.criarMarcadorItem = function(latM, lonM, tipoNode) {
 
     novoMarcador.on('click', () => {
         // Trava de Distância (Você tem que estar a menos de 100m)
-        if (marcadorJogador) {
-            let pos = marcadorJogador.getLatLng();
-            let dist = calcularDistancia(pos.lat, pos.lng, latM, lonM);
-            if (dist > 100) { // 🛠️ FIX: Agora baús também exigem 100 metros!
-                mostrarMensagemScanner(`FORA DE ALCANCE! Aproxime-se mais ${Math.ceil(dist - 100)}m.`);
-                return;
-            }
-        }
+        if (marcadorJogador) {
+            let pos = marcadorJogador.getLatLng();
+            let dist = calcularDistancia(pos.lat, pos.lng, latM, lonM);
+            if (dist > 100) { // 🛠️ FIX: Agora baús também exigem 100 metros!
+                mostrarMensagemScanner(`FORA DE ALCANCE! Aproxime-se mais ${Math.ceil(dist - 100)}m.`);
+                return;
+            }
+        }
 
         // Abre o Node!
         if (tipoNode === 'bau') {
@@ -862,12 +862,12 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
     let elementoRegra = regrasLocal ? (regrasLocal.elementoNativo || null) : null;
 
     // 2. O FILTRO INTELIGENTE E RARIDADE: Checa o Bioma e já coloca bilhetes pela Raridade Padrão!
-    let listaFiltrada = [];
+    let listaFiltrada = [];
     if (typeof MONSTROS !== 'undefined') {
         MONSTROS.forEach(m => {
-            let triboOK = (triboRegra === "Qualquer" || m.tribo === triboRegra);
-            let elementoOK = (!elementoRegra || (m.elementos && m.elementos.includes(elementoRegra)));
-            
+            let triboOK = (triboRegra === "Qualquer" || m.tribo === triboRegra);
+            let elementoOK = (!elementoRegra || (m.elementos && m.elementos.includes(elementoRegra)));
+            
             if (triboOK && elementoOK) {
                 // Multiplica a raridade (ex: 0.8) por 10 para virar quantidade de bilhetes (8 bilhetes)
                 let qtdBilhetes = Math.max(1, Math.floor((m.raridade || 0.5) * 10));
@@ -875,7 +875,7 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
                     listaFiltrada.push(m);
                 }
             }
-        });
+        });
     }
 
     // 🚀 3. SISTEMA DE NINHO (BOOST DE SPAWN): Injeta bilhetes extras SE for um evento/ninho!
@@ -908,12 +908,12 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
         marcadoresMonstros = [];
 
         // 🛠️ FIX: Reduzido para 15 itens no mapa, para não poluir a tela (Vibe Pokémon GO).
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 15; i++) {
             let sementeUnica = sementeBase + (i * 150); 
             
             // 🛠️ FIX: Multiplicador 0.008 espalha os itens de forma realista (aprox. 800m a 1km)
-            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.008;
-            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.008;
+            let offLat = (sementeRandom(sementeUnica + 200) - 0.5) * 0.008;
+            let offLon = (sementeRandom(sementeUnica + 300) - 0.5) * 0.008;
             
             let roletaTipo = sementeRandom(sementeUnica + 400); // Rola de 0.0 a 1.0
             
@@ -924,21 +924,21 @@ window.spawnMonstrosNaArea = function(lat, lon, forcarPassivo = false) {
                 // 10% de chance de ser um Símbolo Mugic
                 criarMarcadorItem(lat + offLat, lon + offLon, 'mugic');
             } else if (listaFiltrada.length > 0) {
-                // 70% de chance de ser Criatura, MAS SÓ SPAWNA se existir alguma criatura compatível com o local!
-                let indexMonstro = Math.floor(sementeRandom(sementeUnica) * listaFiltrada.length);
-                const sorteado = listaFiltrada[indexMonstro];
-                criarMarcadorMonstro(lat + offLat, lon + offLon, sorteado, false);
-            }
+                // 70% de chance de ser Criatura, MAS SÓ SPAWNA se existir alguma criatura compatível com o local!
+                let indexMonstro = Math.floor(sementeRandom(sementeUnica) * listaFiltrada.length);
+                const sorteado = listaFiltrada[indexMonstro];
+                criarMarcadorMonstro(lat + offLat, lon + offLon, sorteado, false);
+            }
         }
     }
 
     // 2. SPAWN PASSIVO (Estilo "Caminhada" - Só para você)
-    // Só vai piscar monstro na sua tela se o local tiver monstros nativos!
-    if (forcarPassivo && listaFiltrada.length > 0) {
+    // Só vai piscar monstro na sua tela se o local tiver monstros nativos!
+    if (forcarPassivo && listaFiltrada.length > 0) {
         // 💡 FIX: A Urna (listaFiltrada) já está com os bilhetes certos de raridade! É só sortear um!
-        const sorteadoPassivo = listaFiltrada[Math.floor(Math.random() * listaFiltrada.length)];
+        const sorteadoPassivo = listaFiltrada[Math.floor(Math.random() * listaFiltrada.length)];
 
-        // Aparece colado em você (aprox. 30 metros)
+        // Aparece colado em você (aprox. 30 metros)
         let offLat = (Math.random() - 0.5) * 0.0003;
         let offLon = (Math.random() - 0.5) * 0.0003;
         
@@ -998,13 +998,13 @@ window.iniciarGPS = function() {
     }
 
     watchID = navigator.geolocation.watchPosition((pos) => {
-        let lat = pos.coords.latitude; 
-        let lon = pos.coords.longitude;
+        let lat = pos.coords.latitude; 
+        let lon = pos.coords.longitude;
 
         // 📡 TRANSMITINDO SINAL PARA A NUVEM: Avisa seus amigos exatamente onde você está!
         update(ref(db, 'jogadores/' + uid + '/posicao'), { lat: lat, lon: lon, local: localParaViagem, online: Date.now() });
 
-        document.getElementById("texto-carregando").style.display = "none";
+        document.getElementById("texto-carregando").style.display = "none";
         document.getElementById("meu-mapa").style.display = "block";
         document.getElementById("btn-sair-radar").style.display = "block";
 
@@ -1033,9 +1033,9 @@ window.iniciarGPS = function() {
             document.getElementById("tela-mapa").appendChild(btnCentro);
             
             // Círculo Azul de Alcance
-            let corRadar = triboLocalParaViagem === "Azul" ? "#00ccff" : "#ff3300"; 
-            // 🛠️ FIX: Raio ajustado para 100 metros (alcance realista de GPS)
-            circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 100, fillOpacity: 0.1 }).addTo(mapaScanner);
+            let corRadar = triboLocalParaViagem === "Azul" ? "#00ccff" : "#ff3300"; 
+            // 🛠️ FIX: Raio ajustado para 100 metros (alcance realista de GPS)
+            circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 100, fillOpacity: 0.1 }).addTo(mapaScanner);
             
             // 🧭 NOVA SETA 3D VETORIAL
             const svgSeta = `<svg viewBox="0 0 100 100" id="icone-seta-jogador" style="width: 100%; height: 100%; transform: rotate(0deg); transform-origin: center; transition: transform 0.1s ease-out;"><polygon points="50,5 90,90 50,70 10,90" fill="#ff3300" stroke="#fff" stroke-width="3" filter="drop-shadow(0px 4px 4px rgba(0,0,0,0.5))"/></svg>`;
@@ -1050,8 +1050,8 @@ window.iniciarGPS = function() {
             marcadorJogador = L.marker([lat, lon], { icon: divIconSeta }).addTo(mapaScanner);
             
 spawnMonstrosNaArea(lat, lon, false);
-            ultimaLatSpawn = lat;
-            ultimaLonSpawn = lon;
+            ultimaLatSpawn = lat;
+            ultimaLonSpawn = lon;
             
             // 🛰️ LIGANDO O RASTREADOR DE ALIADOS NO MAPA!
             if (typeof window.rastrearAmigos === "undefined") {
@@ -1089,7 +1089,7 @@ spawnMonstrosNaArea(lat, lon, false);
                 window.rastrearAmigos(); // Liga o drone!
             }
 
-        } else {
+        } else {
             marcadorJogador.setLatLng([lat, lon]);
             circuloRadar.setLatLng([lat, lon]);
             
@@ -1112,10 +1112,10 @@ spawnMonstrosNaArea(lat, lon, false);
         console.error("Erro no GPS: ", err);
         mostrarMensagemScanner("SINAL DE GPS FRACO!");
     }, {
-        enableHighAccuracy: true, 
-        maximumAge: 10000, 
-        timeout: 30000 // 🛠️ FIX: Aumentamos a paciência do radar para 30 segundos!
-    });
+        enableHighAccuracy: true, 
+        maximumAge: 10000, 
+        timeout: 30000 // 🛠️ FIX: Aumentamos a paciência do radar para 30 segundos!
+    });
 };
 
 function escanearLocalAtual() {
@@ -1150,15 +1150,15 @@ function escanearLocalAtual() {
 let btnSairRadar = document.getElementById("btn-sair-radar");
 if (btnSairRadar) {
     btnSairRadar.onclick = () => {
-        if (typeof watchID !== 'undefined' && watchID !== null) {
-            navigator.geolocation.clearWatch(watchID);
-            console.log("Sinal de GPS encerrado pelo Scanner.");
+        if (typeof watchID !== 'undefined' && watchID !== null) {
+            navigator.geolocation.clearWatch(watchID);
+            console.log("Sinal de GPS encerrado pelo Scanner.");
             
             // 📡 AVISA A NUVEM QUE VOCÊ SAIU DO RADAR (Pra você sumir do mapa dos seus amigos)
             update(ref(db, 'jogadores/' + uid + '/posicao'), { online: 0 });
-        }
-        location.reload();
-    };
+        }
+        location.reload();
+    };
 }
 
 // ==========================================
@@ -1166,17 +1166,17 @@ if (btnSairRadar) {
 // ==========================================
 
 function abrirAlbum() {
-    document.getElementById("tela-menu").style.display = "none";
-    let telaAlbum = document.getElementById("tela-album");
-    if(telaAlbum) {
-        telaAlbum.style.display = "flex";
+    document.getElementById("tela-menu").style.display = "none";
+    let telaAlbum = document.getElementById("tela-album");
+    if(telaAlbum) {
+        telaAlbum.style.display = "flex";
         
         // CORREÇÃO: Religa os botões físicos que foram apagados na inspeção!
         document.getElementById("painel-botoes-fisicos").style.display = "flex";
         
-        window.window.window.window.window.window.modoMenu = false;
-        renderizarListaAlbum(); 
-    }
+        window.modoMenu = false;
+        renderizarListaAlbum(); 
+    }
 }
 
 document.getElementById("filtro-nome").addEventListener("input", renderizarListaAlbum);
@@ -1276,25 +1276,25 @@ window.verCartaAlbum = function(id) {
 
 let btnVoltarAlbum = document.getElementById('btn-voltar-album');
 if(btnVoltarAlbum) {
-    btnVoltarAlbum.onclick = () => {
-        // Se estava escolhendo carta pro Deck, cancela e volta pra Oficina
-        if (window.slotSelecionadoAtual !== null) {
-            window.slotSelecionadoAtual = null; // Limpa a memória
-            document.getElementById('tela-album').style.display = 'none';
-            document.getElementById('tela-decks').style.display = 'flex';
-            
-            let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
-            if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
-        } 
-        // Se era só uma visita normal ao álbum, volta pro Menu Principal
-        else {
-            document.getElementById('tela-album').style.display = 'none';
-            document.getElementById('tela-menu').style.display = 'flex';
+    btnVoltarAlbum.onclick = () => {
+        // Se estava escolhendo carta pro Deck, cancela e volta pra Oficina
+        if (window.slotSelecionadoAtual !== null) {
+            window.slotSelecionadoAtual = null; // Limpa a memória
+            document.getElementById('tela-album').style.display = 'none';
+            document.getElementById('tela-decks').style.display = 'flex';
+            
+            let tituloAlbum = document.querySelector('#tela-album .titulo-tela');
+            if(tituloAlbum) tituloAlbum.innerText = "MINHA COLEÇÃO";
+        } 
+        // Se era só uma visita normal ao álbum, volta pro Menu Principal
+        else {
+            document.getElementById('tela-album').style.display = 'none';
+            document.getElementById('tela-menu').style.display = 'flex';
             
             // CORREÇÃO AQUI: Religa os botões do menu!
-            window.window.modoMenu = true; 
-        }
-    };
+            window.modoMenu = true; 
+        }
+    };
 }
 
 // ==========================================
@@ -1303,7 +1303,7 @@ if(btnVoltarAlbum) {
 function abrirPerfil() {
     document.getElementById("tela-menu").style.display = "none";
     document.getElementById("tela-perfil").style.display = "flex";
-    window.window.window.window.window.window.modoMenu = false;
+    window.modoMenu = false;
 
     document.getElementById("nome-jogador").innerText = perfilJogador.nome + " ✏️";
     
@@ -1445,7 +1445,7 @@ function abrirSocial() {
     document.getElementById("tela-social").style.display = "flex";
     document.getElementById("painel-botoes-fisicos").style.display = "flex";
     
-    window.window.window.window.window.window.modoMenu = false;
+    window.modoMenu = false;
     renderizarAmigos();
 }
 
@@ -2043,16 +2043,16 @@ apps.forEach((app, index) => {
             if (index === 0) {
                 document.getElementById("tela-menu").style.display = "none";
                 document.getElementById("tela-locais").style.display = "flex";
-                window.window.window.window.window.window.modoMenu = false;
+                window.modoMenu = false;
                 renderizarCarrosselLocais(); 
             } else if (index === 1) {
                 abrirAlbum();
-            } else if (index === 2) {
-                // ⚔️ ABRE O TABULEIRO DO DROME!
+            } else if (index === 2) {
+                // ⚔️ ABRE O TABULEIRO DO DROME!
                 document.getElementById("tela-menu").style.display = "none";
                 window.abrirEntradaDrome();
-                window.window.window.window.window.window.modoMenu = false;
-            } else if (index === 3) {
+                window.modoMenu = false;
+            } else if (index === 3) {
                 abrirSocial();
             } else if (index === 4) {
                 abrirPerfil();
@@ -2063,11 +2063,23 @@ apps.forEach((app, index) => {
     };
 });
 
+// ==========================================
+// ⚔️ TELA DE ENTRADA DO DROME
+// ==========================================
+window.abrirEntradaDrome = function() {
+    document.getElementById("tela-menu").style.display = "none";
+    document.getElementById("tela-entrada-drome").style.display = "flex";
+    window.modoMenu = false;
+    
+    // Se quiser mudar a música pro lobby ou de batalha, pode colocar aqui
+    // if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('lobby'); 
+};
+
 // A função que liga a tela e o botão de voltar da Oficina
 window.abrirOficinaDecks = function() {
     document.getElementById("tela-menu").style.display = "none";
     document.getElementById("tela-decks").style.display = "flex";
-    window.window.window.window.window.window.modoMenu = false;
+    window.modoMenu = false;
     
     if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
 
@@ -2174,7 +2186,7 @@ if (btnSairOficina) {
         window.slotSelecionadoAtual = null; // Limpa a memória por segurança
         
         // 💡 A MÁGICA DO DESCONGELAMENTO: Religa os botões físicos do Scanner!
-        window.window.modoMenu = true; 
+        window.modoMenu = true; 
     });
 }
 let seletorModo = document.getElementById("seletor-modo-deck");
@@ -2227,16 +2239,16 @@ document.getElementById("btn-escanear").onclick = function() {
         if (indexSelecionado === 0) {
             document.getElementById("tela-menu").style.display = "none";
             document.getElementById("tela-locais").style.display = "flex";
-            window.window.window.window.window.modoMenu = false;
+            window.modoMenu = false;
             renderizarCarrosselLocais(); 
         } else if (indexSelecionado === 1) {
-            abrirAlbum();
-        } else if (indexSelecionado === 2) {
-            // ⚔️ ABRE O TABULEIRO DO DROME PELO BOTÃO SCAN!
+            abrirAlbum();
+        } else if (indexSelecionado === 2) {
+            // ⚔️ ABRE O TABULEIRO DO DROME PELO BOTÃO SCAN!
             document.getElementById("tela-menu").style.display = "none";
             window.abrirEntradaDrome();
-            window.window.window.window.window.modoMenu = false;
-        } else if (indexSelecionado === 3) {
+            window.modoMenu = false;
+        } else if (indexSelecionado === 3) {
             abrirSocial();
         } else if (indexSelecionado === 4) {
             abrirPerfil();
@@ -2253,10 +2265,10 @@ document.getElementById("btn-escanear").onclick = function() {
 };
 
 document.getElementById("btn-dir").onclick = () => { 
-    if(modoMenu && indexSelecionado < apps.length - 1) { indexSelecionado++; atualizarSelecao(); } 
+    if(window.modoMenu && indexSelecionado < apps.length - 1) { indexSelecionado++; atualizarSelecao(); } 
 };
 document.getElementById("btn-esq").onclick = () => { 
-    if(modoMenu && indexSelecionado > 0) { indexSelecionado--; atualizarSelecao(); } 
+    if(window.modoMenu && indexSelecionado > 0) { indexSelecionado--; atualizarSelecao(); } 
 };
 
 document.getElementById("btn-baixo").onclick = () => {
@@ -2552,19 +2564,19 @@ window.interceptarMontagemDeck = function(idCarta) {
     // ==========================================
 
     // REGRA A: Magias (Max 2 cópias, a menos que o efeito exija limite menor)
-    if (cartaSelecionada.tipoCarta === "Magia") {
-        let magiasAtuais = 0;
+    if (cartaSelecionada.tipoCarta === "Magia") {
+        let magiasAtuais = 0;
         // Olha se a carta tem limite próprio no BD, se não, usa o padrão 2.
         let maxMagia = cartaSelecionada.limiteDeck !== undefined ? cartaSelecionada.limiteDeck : 2; 
         
-        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => {
-            if (s !== slot && s.dataset.cartaId == idCarta) magiasAtuais++;
-        });
-        if (magiasAtuais >= maxMagia) {
-            mostrarAviso(`REGRA: MÁXIMO DE ${maxMagia} CÓPIA(S) DESTA MAGIA NO DECK!`);
-            fecharEVoltar(); return;
-        }
-    }
+        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => {
+            if (s !== slot && s.dataset.cartaId == idCarta) magiasAtuais++;
+        });
+        if (magiasAtuais >= maxMagia) {
+            mostrarAviso(`REGRA: MÁXIMO DE ${maxMagia} CÓPIA(S) DESTA MAGIA NO DECK!`);
+            fecharEVoltar(); return;
+        }
+    }
 
     // REGRA DE EQUIPAMENTOS: Não há limite natural, a menos que a carta especifique!
     if (cartaSelecionada.tipoCarta === "Equipamento") {
@@ -2580,20 +2592,20 @@ window.interceptarMontagemDeck = function(idCarta) {
         }
     }
 
-   // REGRA B: Criaturas (Limites por Tipo da Criatura, Limite de Líder e Tribo)
-    if (cartaSelecionada.tipoCarta === "Criatura") {
-        // 💡 O Leitor Inteligente: Busca a classe verdadeira mesmo em cartas antigas bugadas!
+   // REGRA B: Criaturas (Limites por Tipo da Criatura, Limite de Líder e Tribo)
+    if (cartaSelecionada.tipoCarta === "Criatura") {
+        // 💡 O Leitor Inteligente: Busca a classe verdadeira mesmo em cartas antigas bugadas!
         // 💡 FIX: O Juiz consulta o banco de dados oficial (MONSTROS) para garantir a classe de cartas antigas!
-        let tipoBruto = cartaSelecionada.tipo || cartaSelecionada.tipoClasse;
-        if (typeof MONSTROS !== 'undefined') {
-            let cartaOriginal = MONSTROS.find(m => m.nome === cartaSelecionada.nome);
-            if (cartaOriginal && cartaOriginal.tipoClasse) {
-                tipoBruto = cartaOriginal.tipoClasse; // Agora ele lê a propriedade certinha do seu BD!
-            }
-        }
-        tipoBruto = tipoBruto || "Subordinado"; // Se não achar de jeito nenhum, vira Subordinado.
+        let tipoBruto = cartaSelecionada.tipo || cartaSelecionada.tipoClasse;
+        if (typeof MONSTROS !== 'undefined') {
+            let cartaOriginal = MONSTROS.find(m => m.nome === cartaSelecionada.nome);
+            if (cartaOriginal && cartaOriginal.tipoClasse) {
+                tipoBruto = cartaOriginal.tipoClasse; // Agora ele lê a propriedade certinha do seu BD!
+            }
+        }
+        tipoBruto = tipoBruto || "Subordinado"; // Se não achar de jeito nenhum, vira Subordinado.
         
-        let tipoNormalizado = tipoBruto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+        let tipoNormalizado = tipoBruto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
         
         let limitePerCard = 3; // Padrão é 3 (Subordinado/Outros)
         let isLider = false;
@@ -2618,11 +2630,11 @@ window.interceptarMontagemDeck = function(idCarta) {
 
         // B.1 Limite de cópias da mesma carta de acordo com o Tipo
         // 🛠️ FIX: Agora conta pelo NOME da carta, já que criaturas têm IDs únicos!
-        let qtdMesmaCriatura = criaturasNoDeck.filter(c => c.nome === cartaSelecionada.nome).length;
-        if (qtdMesmaCriatura >= limitePerCard) {
-            mostrarAviso(`REGRA: MÁXIMO DE ${limitePerCard} CÓPIA(S) DE "${cartaSelecionada.nome.toUpperCase()}"!`);
-            fecharEVoltar(); return;
-        }
+        let qtdMesmaCriatura = criaturasNoDeck.filter(c => c.nome === cartaSelecionada.nome).length;
+        if (qtdMesmaCriatura >= limitePerCard) {
+            mostrarAviso(`REGRA: MÁXIMO DE ${limitePerCard} CÓPIA(S) DE "${cartaSelecionada.nome.toUpperCase()}"!`);
+            fecharEVoltar(); return;
+        }
         // B.2 Regras Absolutas de LÍDER
         if (isLider) {
             let temLider = criaturasNoDeck.some(c => {
@@ -2762,55 +2774,55 @@ if (btnSalvarDeck) {
 
         let deckData = { nome: nomeDeck, modo: modo, criaturas: [], equipamentos: [], mugics: [], ataques: [], locais: [] };
 
-        // 🐛 BUG DA CARTA FANTASMA CORRIGIDO: 
-        // Ignora os slots que estão invisíveis (escondidos) pela mudança de modo!
-        document.querySelectorAll('.slot-criatura').forEach(s => { 
-            let invisivel = s.closest('.linha-2')?.classList.contains('escondido') || s.closest('.linha-3')?.classList.contains('escondido');
-            deckData.criaturas.push(invisivel ? null : (s.dataset.cartaId || null)); 
-        });
-        document.querySelectorAll('.slot-equipamento').forEach(s => { 
-            let invisivel = s.closest('.linha-2')?.classList.contains('escondido') || s.closest('.linha-3')?.classList.contains('escondido');
-            deckData.equipamentos.push(invisivel ? null : (s.dataset.cartaId || null)); 
-        });
-        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => { 
-            deckData.mugics.push(s.classList.contains('escondido') ? null : (s.dataset.cartaId || null)); 
-        });
+        // 🐛 BUG DA CARTA FANTASMA CORRIGIDO: 
+        // Ignora os slots que estão invisíveis (escondidos) pela mudança de modo!
+        document.querySelectorAll('.slot-criatura').forEach(s => { 
+            let invisivel = s.closest('.linha-2')?.classList.contains('escondido') || s.closest('.linha-3')?.classList.contains('escondido');
+            deckData.criaturas.push(invisivel ? null : (s.dataset.cartaId || null)); 
+        });
+        document.querySelectorAll('.slot-equipamento').forEach(s => { 
+            let invisivel = s.closest('.linha-2')?.classList.contains('escondido') || s.closest('.linha-3')?.classList.contains('escondido');
+            deckData.equipamentos.push(invisivel ? null : (s.dataset.cartaId || null)); 
+        });
+        document.querySelectorAll('.slot-mugic-heptagono').forEach(s => { 
+            deckData.mugics.push(s.classList.contains('escondido') ? null : (s.dataset.cartaId || null)); 
+        });
 
-        let pAtaques = document.getElementById('pilha-ataques');
-        if(pAtaques && pAtaques.dataset.cartas) deckData.ataques = JSON.parse(pAtaques.dataset.cartas);
-        let pLocais = document.getElementById('pilha-locais');
-        if(pLocais && pLocais.dataset.cartas) deckData.locais = JSON.parse(pLocais.dataset.cartas);
+        let pAtaques = document.getElementById('pilha-ataques');
+        if(pAtaques && pAtaques.dataset.cartas) deckData.ataques = JSON.parse(pAtaques.dataset.cartas);
+        let pLocais = document.getElementById('pilha-locais');
+        if(pLocais && pLocais.dataset.cartas) deckData.locais = JSON.parse(pLocais.dataset.cartas);
 
-        // ⚖️ JUIZ DE BATALHA: Checa se o deck está legalizado para a Arena!
-        let custoTotalAtaques = 0;
-        deckData.ataques.forEach(id => {
-            let carta = window.inventario.find(c => c.id == id);
-            if(carta) custoTotalAtaques += (parseInt(carta.custo) || 0);
-        });
-        
-        // Verifica se tem 20 ataques, se a soma do custo é 20, e se tem 10 locais.
-        deckData.validoParaBatalha = (deckData.ataques.length === 20 && custoTotalAtaques === 20 && deckData.locais.length === 10);
+        // ⚖️ JUIZ DE BATALHA: Checa se o deck está legalizado para a Arena!
+        let custoTotalAtaques = 0;
+        deckData.ataques.forEach(id => {
+            let carta = window.inventario.find(c => c.id == id);
+            if(carta) custoTotalAtaques += (parseInt(carta.custo) || 0);
+        });
+        
+        // Verifica se tem 20 ataques, se a soma do custo é 20, e se tem 10 locais.
+        deckData.validoParaBatalha = (deckData.ataques.length === 20 && custoTotalAtaques === 20 && deckData.locais.length === 10);
 
-        if (deckData.criaturas.every(c => c === null)) {
-            let avisoDeck = document.getElementById('aviso-deck');
-            if(avisoDeck) { avisoDeck.innerText = "DECK VAZIO! ADICIONE CRIATURAS."; setTimeout(() => avisoDeck.innerText = "", 4000); }
-            return;
-        }
+        if (deckData.criaturas.every(c => c === null)) {
+            let avisoDeck = document.getElementById('aviso-deck');
+            if(avisoDeck) { avisoDeck.innerText = "DECK VAZIO! ADICIONE CRIATURAS."; setTimeout(() => avisoDeck.innerText = "", 4000); }
+            return;
+        }
 
-        // Mensagem dinâmica avisando o status do deck
-        if(deckData.validoParaBatalha) {
-            mostrarMensagemScanner("SALVANDO DECK PRONTO PARA BATALHA! ⚔️");
-        } else {
-            mostrarMensagemScanner("SALVANDO DECK INCOMPLETO... 🚧");
-        }
+        // Mensagem dinâmica avisando o status do deck
+        if(deckData.validoParaBatalha) {
+            mostrarMensagemScanner("SALVANDO DECK PRONTO PARA BATALHA! ⚔️");
+        } else {
+            mostrarMensagemScanner("SALVANDO DECK INCOMPLETO... 🚧");
+        }
 
-        // 🔥 Salva usando o idFogo (Modo + Slot)
-        set(ref(db, 'jogadores/' + uid + '/decks/' + idFogo), deckData).then(() => {
-            mostrarMensagemScanner("DECK SALVO COM SUCESSO! ☁️✅");
-            tocarSFX('notificacao');
-            btnSalvarDeck.style.background = "#fff"; setTimeout(() => btnSalvarDeck.style.background = "#4CAF50", 300);
-        }).catch(err => { mostrarMensagemScanner("ERRO AO SALVAR NA NUVEM!"); });
-    });
+        // 🔥 Salva usando o idFogo (Modo + Slot)
+        set(ref(db, 'jogadores/' + uid + '/decks/' + idFogo), deckData).then(() => {
+            mostrarMensagemScanner("DECK SALVO COM SUCESSO! ☁️✅");
+            tocarSFX('notificacao');
+            btnSalvarDeck.style.background = "#fff"; setTimeout(() => btnSalvarDeck.style.background = "#4CAF50", 300);
+        }).catch(err => { mostrarMensagemScanner("ERRO AO SALVAR NA NUVEM!"); });
+    });
 }
 
 // 📥 SISTEMA DE CARREGAR DA NUVEM
@@ -2928,12 +2940,13 @@ if (evtSeletorSlot) {
         if (e && e.isTrusted) dispararCargaDaNuvem();
     });
 }
+
 // Fecha a tela do Drome e volta pro Menu
 let btnSairDrome = document.getElementById("btn-sair-drome");
 if (btnSairDrome) {
     btnSairDrome.onclick = () => {
         document.getElementById("tela-batalha").style.display = "none";
         document.getElementById("tela-menu").style.display = "flex";
-        window.window.modoMenu = true;
+        window.modoMenu = true;
     };
 }
