@@ -36,7 +36,7 @@ let mapaScanner, marcadorJogador, marcadorMonstro, watchID, circuloRadar;
 let localParaViagem = "";
 let imgLocalParaViagem = ""; 
 let triboLocalParaViagem = ""; 
-window.modoMenu = true;
+window.window.window.modoMenu = true;
 let indexSelecionado = 0;
 let monstroAtual = null;
 let tipoDeCartaAtual = ""; 
@@ -435,7 +435,7 @@ function voltarAoRadar() {
 function iniciarMinigame(monstro) {
     mudarMusicaFundo('minigameCriatura');
     monstroAtual = monstro;
-    modoMenu = false;
+    window.window.window.window.window.window.modoMenu = false;
     document.getElementById("tela-mapa").style.display = "none";
     document.getElementById("tela-minigame").style.display = "block";
     document.getElementById("fundo-cena-minigame").src = CENARIOS[localParaViagem] || "";
@@ -1174,7 +1174,7 @@ function abrirAlbum() {
         // CORREÇÃO: Religa os botões físicos que foram apagados na inspeção!
         document.getElementById("painel-botoes-fisicos").style.display = "flex";
         
-        modoMenu = false;
+        window.window.window.window.window.window.modoMenu = false;
         renderizarListaAlbum(); 
     }
 }
@@ -1292,7 +1292,7 @@ if(btnVoltarAlbum) {
             document.getElementById('tela-menu').style.display = 'flex';
             
             // CORREÇÃO AQUI: Religa os botões do menu!
-            modoMenu = true; 
+            window.window.modoMenu = true; 
         }
     };
 }
@@ -1303,7 +1303,7 @@ if(btnVoltarAlbum) {
 function abrirPerfil() {
     document.getElementById("tela-menu").style.display = "none";
     document.getElementById("tela-perfil").style.display = "flex";
-    modoMenu = false;
+    window.window.window.window.window.window.modoMenu = false;
 
     document.getElementById("nome-jogador").innerText = perfilJogador.nome + " ✏️";
     
@@ -1445,7 +1445,7 @@ function abrirSocial() {
     document.getElementById("tela-social").style.display = "flex";
     document.getElementById("painel-botoes-fisicos").style.display = "flex";
     
-    modoMenu = false;
+    window.window.window.window.window.window.modoMenu = false;
     renderizarAmigos();
 }
 
@@ -2037,13 +2037,13 @@ document.addEventListener("DOMContentLoaded", () => {
 let apps = document.querySelectorAll(".app-icone");
 apps.forEach((app, index) => {
     app.onclick = function() {
-        if (modoMenu) {
+        if (window.modoMenu) {
             indexSelecionado = index;
             atualizarSelecao();
             if (index === 0) {
                 document.getElementById("tela-menu").style.display = "none";
                 document.getElementById("tela-locais").style.display = "flex";
-                modoMenu = false;
+                window.window.window.window.window.window.modoMenu = false;
                 renderizarCarrosselLocais(); 
             } else if (index === 1) {
                 abrirAlbum();
@@ -2051,7 +2051,7 @@ apps.forEach((app, index) => {
                 // ⚔️ ABRE O TABULEIRO DO DROME!
                 document.getElementById("tela-menu").style.display = "none";
                 window.abrirEntradaDrome();
-                modoMenu = false;
+                window.window.window.window.window.window.modoMenu = false;
             } else if (index === 3) {
                 abrirSocial();
             } else if (index === 4) {
@@ -2067,7 +2067,7 @@ apps.forEach((app, index) => {
 window.abrirOficinaDecks = function() {
     document.getElementById("tela-menu").style.display = "none";
     document.getElementById("tela-decks").style.display = "flex";
-    modoMenu = false;
+    window.window.window.window.window.window.modoMenu = false;
     
     if(typeof mudarMusicaFundo === 'function') mudarMusicaFundo('menu'); 
 
@@ -2174,7 +2174,7 @@ if (btnSairOficina) {
         window.slotSelecionadoAtual = null; // Limpa a memória por segurança
         
         // 💡 A MÁGICA DO DESCONGELAMENTO: Religa os botões físicos do Scanner!
-        modoMenu = true; 
+        window.window.modoMenu = true; 
     });
 }
 let seletorModo = document.getElementById("seletor-modo-deck");
@@ -2223,11 +2223,11 @@ function atualizarSelecao() {
 }
 
 document.getElementById("btn-escanear").onclick = function() {
-    if (modoMenu) {
+    if (window.modoMenu) {
         if (indexSelecionado === 0) {
             document.getElementById("tela-menu").style.display = "none";
             document.getElementById("tela-locais").style.display = "flex";
-            modoMenu = false;
+            window.window.window.window.window.modoMenu = false;
             renderizarCarrosselLocais(); 
         } else if (indexSelecionado === 1) {
             abrirAlbum();
@@ -2235,7 +2235,7 @@ document.getElementById("btn-escanear").onclick = function() {
             // ⚔️ ABRE O TABULEIRO DO DROME PELO BOTÃO SCAN!
             document.getElementById("tela-menu").style.display = "none";
             window.abrirEntradaDrome();
-            modoMenu = false;
+            window.window.window.window.window.modoMenu = false;
         } else if (indexSelecionado === 3) {
             abrirSocial();
         } else if (indexSelecionado === 4) {
@@ -2934,6 +2934,6 @@ if (btnSairDrome) {
     btnSairDrome.onclick = () => {
         document.getElementById("tela-batalha").style.display = "none";
         document.getElementById("tela-menu").style.display = "flex";
-        modoMenu = true;
+        window.window.modoMenu = true;
     };
 }
