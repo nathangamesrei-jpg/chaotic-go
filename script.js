@@ -544,7 +544,7 @@ function criarMarcadorMonstro(latM, lonM, sorteado, ehPassivo = false) {
             let distancia = calcularDistancia(posJogador.lat, posJogador.lng, latM, lonM);
             
             // 100 é o raio do seu círculo azul. Se estiver maior, bloqueia!
-            if (distancia > 100) { // 🛠️ FIX: Agora trava em 100 metros cravados!
+            if (distancia > 1000) { // 🛠️ FIX: Agora trava em 100 metros cravados!
                 mostrarMensagemScanner(`FORA DE ALCANCE! Ande mais ${Math.ceil(distancia - 100)}m para escanear.`);
                 return; // Aborta a função e impede o minigame de abrir
             }
@@ -596,7 +596,7 @@ window.criarMarcadorItem = function(latM, lonM, tipoNode) {
         if (marcadorJogador) {
             let pos = marcadorJogador.getLatLng();
             let dist = calcularDistancia(pos.lat, pos.lng, latM, lonM);
-            if (dist > 100) { // 🛠️ FIX: Agora baús também exigem 100 metros!
+            if (dist > 1000) { // 🛠️ FIX: Agora baús também exigem 100 metros!
                 mostrarMensagemScanner(`FORA DE ALCANCE! Aproxime-se mais ${Math.ceil(dist - 100)}m.`);
                 return;
             }
@@ -1035,7 +1035,7 @@ window.iniciarGPS = function() {
             // Círculo Azul de Alcance
             let corRadar = triboLocalParaViagem === "Azul" ? "#00ccff" : "#ff3300"; 
             // 🛠️ FIX: Raio ajustado para 100 metros (alcance realista de GPS)
-            circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 100, fillOpacity: 0.1 }).addTo(mapaScanner);
+            circuloRadar = L.circle([lat, lon], { color: corRadar, radius: 1000, fillOpacity: 0.1 }).addTo(mapaScanner);
             
             // 🧭 NOVA SETA 3D VETORIAL
             const svgSeta = `<svg viewBox="0 0 100 100" id="icone-seta-jogador" style="width: 100%; height: 100%; transform: rotate(0deg); transform-origin: center; transition: transform 0.1s ease-out;"><polygon points="50,5 90,90 50,70 10,90" fill="#ff3300" stroke="#fff" stroke-width="3" filter="drop-shadow(0px 4px 4px rgba(0,0,0,0.5))"/></svg>`;
