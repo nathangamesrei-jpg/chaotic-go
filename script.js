@@ -30,7 +30,7 @@ let mapaScanner, marcadorJogador, marcadorMonstro, watchID, circuloRadar;
 let localParaViagem = "";
 let imgLocalParaViagem = ""; 
 let triboLocalParaViagem = ""; 
-let modoMenu = true;
+window.modoMenu = true;
 let indexSelecionado = 0;
 let monstroAtual = null;
 let tipoDeCartaAtual = ""; 
@@ -270,7 +270,7 @@ function sementeRandom(s) {
 // ==========================================
 // 2. FUNÇÕES DE APOIO E MENSAGEM GLOBAL
 // ==========================================
-function mostrarMensagemScanner(texto) {
+window.mostrarMensagemScanner = function(texto) {
     let cx = document.getElementById("mensagem-global");
     if (!cx) {
         cx = document.createElement("div");
