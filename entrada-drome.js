@@ -114,7 +114,7 @@ function carregarDecksParaEscolha(modo) {
         
         // Aqui está o segredo: forçar o nome exato que usamos para salvar
         [1, 2, 3].forEach(numSlot => {
-            let idFogo = modo + "_slot_" + numSlot; 
+            let idFogo = modo + "_" + numSlot; 
             
             let todosOsDecks = snapshot.exists() ? snapshot.val() : {};
             let deckData = todosOsDecks[idFogo] ? todosOsDecks[idFogo] : null;
