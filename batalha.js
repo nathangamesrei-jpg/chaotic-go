@@ -70,21 +70,53 @@ function desenharMiniCarta(criaturaObj) {
 }
 
 // ==========================================
-// SISTEMA DE CONTADOR INTELIGENTE
+// SISTEMA DE CONTADOR INTELIGENTE E CARGA DE DECK
 // ==========================================
 
+// O Campo agora começa 100% vazio, aguardando o Scanner injetar as cartas reais
 let campoJogador = {
-    c1: null,
-    c2: {
-        nome: "Johnes",
-        tribo: "Azul",
-        elementos: ["Terra"],
-        cartaBlank: "cartas/criaturas/azul/johnes.jpg",
-        statsMax: { coragem: 50, poder: 40, sabedoria: 60, velocidade: 30, energia: 45 },
-        hpAtual: 45,
-        fichasHabilidade: 2
-    },
-    c3: null, c4: null, c5: null, c6: null
+    c1: null, c2: null, c3: null, c4: null, c5: null, c6: null
+};
+
+// 🛠️ MÁGICA: A função que pega o seu deck selecionado e cria os guerreiros no tabuleiro!
+window.carregarDeckParaBatalha = function() {
+    let deck = window.estadoDrome.deckSelecionado;
+    if (!deck || !deck.criaturas) return;
+
+    // As 6 posições do tabuleiro
+    let chaves = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
+    
+    chaves.forEach((chave, index) => {
+        let idCarta = deck.criaturas[index]; // Pega o ID salvo no slot do deck
+        
+        if (idCarta) {
+            // Acha a carta real no seu inventário!
+            let cartaOriginal = window.inventario.find(c => c.id == idCarta);
+            
+            if (cartaOriginal) {
+                // Monta o guerreiro com os status reais de DNA da sua coleção
+                campoJogador[chave] = {
+                    nome: cartaOriginal.nome,
+                    tribo: cartaOriginal.tribo || "Azul",
+                    elementos: cartaOriginal.elementos || [],
+                    cartaBlank: cartaOriginal.img,
+                    statsMax: { 
+                        coragem: cartaOriginal.stats?.c || 0, 
+                        poder: cartaOriginal.stats?.p || 0, 
+                        sabedoria: cartaOriginal.stats?.s || 0, 
+                        velocidade: cartaOriginal.stats?.v || 0, 
+                        energia: cartaOriginal.stats?.e || 0 
+                    },
+                    hpAtual: cartaOriginal.stats?.e || 0,
+                    fichasHabilidade: 2 // Começa com 2 fichas padrão
+                };
+            }
+        } else {
+            campoJogador[chave] = null;
+        }
+    });
+
+    atualizarTelaBatalha(); // Manda desenhar na tela!
 };
 
 function atualizarTelaBatalha() {
@@ -193,4 +225,5 @@ function fecharModalFichas() {
     if(el) el.remove();
 }
 
+// A atualização inicial do tabuleiro agora acontece de forma mais limpa!
 setTimeout(atualizarTelaBatalha, 500);
