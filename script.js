@@ -2950,3 +2950,25 @@ if (btnSairDrome) {
         window.modoMenu = true;
     };
 }
+// ==========================================
+// LÓGICA DOS BOTÕES DO PORTAL DO DROME
+// ==========================================
+
+// Função para Voltar ao Menu
+window.fecharEntradaDrome = function() {
+    document.getElementById("tela-entrada-drome").style.display = "none";
+    document.getElementById("tela-menu").style.display = "flex";
+    window.modoMenu = true;
+};
+
+// Função para, de fato, entrar no Tabuleiro de Batalha!
+window.iniciarBatalhaDrome = function(modoEscolhido) {
+    document.getElementById("tela-entrada-drome").style.display = "none";
+    document.getElementById("tela-batalha").style.display = "flex";
+    
+    // Mostra o aviso de qual modo foi selecionado
+    mostrarMensagemScanner("INICIANDO DROME: MODO " + modoEscolhido + "!");
+    
+    // Opcional: Aqui você pode colocar a lógica futura para esconder/mostrar 
+    // os slots do tabuleiro dependendo se o jogador escolheu 1x1 ou 6x6.
+};
