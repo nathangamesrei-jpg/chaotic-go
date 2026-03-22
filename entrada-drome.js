@@ -207,7 +207,7 @@ window.confirmarEntradaDrome = function() {
 };
 
 // ==========================================
-// AJUSTE DINÂMICO DA ARENA DE BATALHA (BLINDADO)
+// AJUSTE DINÂMICO DA ARENA DE BATALHA (FORÇA BRUTA CSS)
 // ==========================================
 window.ajustarTabuleiroBatalha = function(modo) {
     let opZona = document.querySelector('.lado-oponente .zona-central');
@@ -224,10 +224,24 @@ window.ajustarTabuleiroBatalha = function(modo) {
     let opMugics = document.querySelectorAll('.lado-oponente .hex-mugic');
     let jogMugics = document.querySelectorAll('.lado-jogador .hex-mugic');
 
-    // Reseta qualquer estilo antigo pra garantir a pureza do layout
-    if(opZona) opZona.style.justifyContent = "center";
-    if(jogZona) jogZona.style.justifyContent = "center";
-    opLinha1.style.margin = "0"; jogLinha1.style.margin = "0";
+    // 🔥 O TRUQUE DE MESTRE: Forçar o CSS da Zona Central a esticar até o meio
+    [opZona, jogZona].forEach(zona => {
+        if(zona) {
+            zona.style.display = "flex";
+            zona.style.flexDirection = "column";
+            zona.style.height = "100%"; // Obriga a zona a encostar na linha divisória
+            
+            // flex-start significa o "topo" da zona. 
+            // Como o oponente tá de cabeça pra baixo, o topo dele também é a linha do meio!
+            zona.style.justifyContent = modo === "6x6" ? "space-evenly" : "flex-start"; 
+            zona.style.padding = "0"; // Arranca qualquer gordura do CSS antigo
+        }
+    });
+
+    // Arranca as margens que prendiam as linhas
+    [opLinha1, opLinha2, opLinha3, jogLinha1, jogLinha2, jogLinha3].forEach(linha => {
+        if(linha) { linha.style.marginTop = "0"; linha.style.marginBottom = "0"; }
+    });
 
     if (modo === "6x6") {
         opLinha3.style.display = "flex"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
@@ -240,10 +254,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
         
-        // MARRETA DO CSS: Empurra as linhas ativas direto pro meio!
-        jogLinha2.style.marginTop = "auto";
-        opLinha2.style.marginBottom = "auto";
-
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
     } 
@@ -251,14 +261,9 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
         
-        // MARRETA DO CSS NO 1x1: Força os guerreiros a colarem na divisória central!
-        // O jogador é empurrado de baixo pra cima (margin-bottom: auto)
-        jogLinha1.style.marginTop = "0"; 
-        jogLinha1.style.marginBottom = "auto"; 
-        
-        // O oponente tá de cabeça pra baixo, então empurramos do topo pra baixo (margin-top: auto)
-        opLinha1.style.marginBottom = "0";
-        opLinha1.style.marginTop = "auto";
+        // Empurrão final exclusivo pro 1x1 caso as cartas ainda fiquem tímidas
+        if(jogLinha1) jogLinha1.style.marginTop = "20px";
+        if(opLinha1) opLinha1.style.marginTop = "20px";
 
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
