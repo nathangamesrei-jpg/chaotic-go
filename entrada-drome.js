@@ -209,7 +209,7 @@ window.confirmarEntradaDrome = function() {
 // ==========================================
 // AJUSTE DINÂMICO DA ARENA DE BATALHA (COM AVANÇO DE LINHA)
 // ==========================================
-function ajustarTabuleiroBatalha(modo) {
+window.ajustarTabuleiroBatalha = function(modo) {
     // Captura as Zonas Centrais (onde ficam as cartas)
     let opZona = document.querySelector('.lado-oponente .zona-central');
     let jogZona = document.querySelector('.lado-jogador .zona-central');
@@ -250,7 +250,7 @@ function ajustarTabuleiroBatalha(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
     } 
-    else if (modo === "1x1") {
+    else if (modo.includes("1x1")) { // CORREÇÃO AQUI: Garante que o 1x1 Duelo seja reconhecido
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
         
@@ -262,18 +262,20 @@ function ajustarTabuleiroBatalha(modo) {
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
     }
 }
+
 // ==========================================
-// INICIAR PARTIDA (ATUALIZADO)
+// INICIAR PARTIDA (ATUALIZADO E CORRIGIDO)
 // ==========================================
 function iniciarPartidaDrome(salaId, souP1) {
     clearInterval(window._timerFila);
     window.estadoDrome.naFila = false;
     document.getElementById("tela-entrada-drome").style.display = "none";
+    
+    // 🛠️ MÁGICA: Corta o tabuleiro ANTES de exibir na tela (Evita piscar errado)
+    window.ajustarTabuleiroBatalha(window.estadoDrome.modo);
+    
     document.getElementById("tela-batalha").style.display = "flex";
     window.modoMenu = false;
-    
-    // 🛠️ Chama a função que corta as linhas do tabuleiro!
-    ajustarTabuleiroBatalha(window.estadoDrome.modo);
     
     window.mostrarMensagemScanner("⚔️ ARENA PRONTA!");
 }
