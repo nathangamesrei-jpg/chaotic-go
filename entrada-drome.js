@@ -232,7 +232,7 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "flex"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "flex"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
         
-        // No 6x6, as cartas ocupam o espaço todo (distribuição normal)
+        // No 6x6, as cartas ocupam o espaço todo
         if(opZona) opZona.style.justifyContent = "center";
         if(jogZona) jogZona.style.justifyContent = "center";
 
@@ -243,26 +243,25 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
         
-        // Empurra os lutadores para o centro da Arena!
-        if(opZona) opZona.style.justifyContent = "flex-end"; // Oponente desce para a linha branca
-        if(jogZona) jogZona.style.justifyContent = "flex-start"; // Jogador sobe para a linha branca
+        // 🔥 CORREÇÃO DA GRAVIDADE: Empurra as cartas para a linha divisória!
+        if(opZona) opZona.style.justifyContent = "flex-start"; 
+        if(jogZona) jogZona.style.justifyContent = "flex-end"; 
 
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
     } 
-    else if (modo.includes("1x1")) { // CORREÇÃO AQUI: Garante que o 1x1 Duelo seja reconhecido
+    else if (modo.includes("1x1")) { 
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
         
-        // Empurra os lutadores para o centro da Arena!
-        if(opZona) opZona.style.justifyContent = "flex-end"; 
-        if(jogZona) jogZona.style.justifyContent = "flex-start";
+        // 🔥 CORREÇÃO DA GRAVIDADE: Empurra as cartas para a linha divisória!
+        if(opZona) opZona.style.justifyContent = "flex-start"; 
+        if(jogZona) jogZona.style.justifyContent = "flex-end"; 
 
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
     }
 }
-
 // ==========================================
 // INICIAR PARTIDA (ATUALIZADO E CORRIGIDO)
 // ==========================================
