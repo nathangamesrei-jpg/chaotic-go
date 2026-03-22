@@ -17,6 +17,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 window._firebaseDB = db;
+window._dbGet = (path) => get(ref(db, path));
+window._dbSet = (path, val) => set(ref(db, path), val);
+window._dbUpdate = (path, val) => update(ref(db, path), val);
+window._dbRemove = (path) => remove(ref(db, path));
+window._dbOn = (path, cb) => onValue(ref(db, path), cb);
+
 // Verifica Segurança: O jogador está logado?
 const uid = localStorage.getItem("chaoticUID");
 if (!uid) {
