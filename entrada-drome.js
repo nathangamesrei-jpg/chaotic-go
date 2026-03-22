@@ -271,8 +271,13 @@ function iniciarPartidaDrome(salaId, souP1) {
     window.estadoDrome.naFila = false;
     document.getElementById("tela-entrada-drome").style.display = "none";
     
-    // 🛠️ MÁGICA: Corta o tabuleiro ANTES de exibir na tela (Evita piscar errado)
+    // 🛠️ MÁGICA 1: Corta o tabuleiro ANTES de exibir na tela (Evita piscar errado)
     window.ajustarTabuleiroBatalha(window.estadoDrome.modo);
+
+    // 🛠️ MÁGICA 2: Carrega o seu deck real no campo de batalha!
+    if (typeof window.carregarDeckParaBatalha === "function") {
+        window.carregarDeckParaBatalha(); 
+    }
     
     document.getElementById("tela-batalha").style.display = "flex";
     window.modoMenu = false;
@@ -440,18 +445,6 @@ window.responderDesafioDrome = function(resposta, salaId, modo) {
         }, 1500);
     }
 };
-
-// ==========================================
-// INICIAR PARTIDA
-// ==========================================
-function iniciarPartidaDrome(salaId, souP1) {
-    clearInterval(window._timerFila);
-    window.estadoDrome.naFila = false;
-    document.getElementById("tela-entrada-drome").style.display = "none";
-    document.getElementById("tela-batalha").style.display = "flex";
-    window.modoMenu = false;
-    window.mostrarMensagemScanner("⚔️ PARTIDA INICIADA!");
-}
 
 window.voltarMenuDrome = function() {
     document.getElementById("tela-entrada-drome").style.display = "none";
