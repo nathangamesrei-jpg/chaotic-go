@@ -312,142 +312,137 @@
                         </div>
                     </div>
 
-                    <div class="navegacao-livro">
+                   <div class="navegacao-livro">
                         <button class="seta-livro" id="btn-pagina-anterior">◀</button>
                         <button class="seta-livro" id="btn-pagina-proxima">▶</button>
                     </div>
-           <!-- ⚔️ TELA DE ENTRADA DO DROME -->
-<div id="tela-entrada-drome" style="display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; padding-bottom: 20px; box-sizing: border-box;">
-    
-    <p style="color: #ff5555; font-weight: bold; font-size: 16px; margin-bottom: 5px; text-shadow: 0 0 10px #ff5555;">PORTAL DO DROME</p>
-    <p style="color: #aaa; font-size: 10px; text-align: center; margin-bottom: 25px;">Selecione o formato de combate:</p>
 
-    <div style="display: flex; flex-direction: column; gap: 15px; width: 80%;">
-        <button onclick="iniciarBatalhaDrome('6x6')" style="background: #e53935; color: white; border: 2px solid #b71c1c; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(229, 57, 53, 0.4);">⚔️ 6x6 PRINCIPAL</button>
-        
-        <button onclick="iniciarBatalhaDrome('3x3')" style="background: #ff9800; color: white; border: 2px solid #e65100; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 152, 0, 0.4);">⚡ 3x3 RÁPIDO</button>
-        
-        <button onclick="iniciarBatalhaDrome('1x1')" style="background: #4CAF50; color: black; border: 2px solid #1b5e20; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);">🤺 1x1 DUELO</button>
-    </div>
-
-    <button onclick="fecharEntradaDrome()" style="margin-top: 30px; background: transparent; color: #ff5555; border: 1px solid #ff5555; padding: 8px 20px; font-size: 10px; border-radius: 5px; cursor: pointer;">Voltar ao Menu</button>
-</div>
-</div> </div> </div> 
+                </div> </div> <div id="tela-entrada-drome" style="display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; justify-content: center; overflow-y: auto; padding-bottom: 20px; box-sizing: border-box;">
                 
-           <div id="tela-batalha" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #222; z-index: 100; flex-direction: column; overflow: hidden; box-sizing: border-box;">
-    
-    <button id="btn-sair-drome" style="position: absolute; top: 5px; right: 5px; z-index: 200; background: #e53935; color: white; border: none; padding: 5px 15px; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 10px;">SAIR</button>
+                <p style="color: #ff5555; font-weight: bold; font-size: 16px; margin-bottom: 5px; text-shadow: 0 0 10px #ff5555;">PORTAL DO DROME</p>
+                <p style="color: #aaa; font-size: 10px; text-align: center; margin-bottom: 25px;">Selecione o formato de combate:</p>
 
-    <div class="arena-drome-container">
-        
-        <div class="metade-tabuleiro lado-oponente">
+                <div style="display: flex; flex-direction: column; gap: 15px; width: 80%;">
+                    <button onclick="iniciarBatalhaDrome('6x6')" style="background: #e53935; color: white; border: 2px solid #b71c1c; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(229, 57, 53, 0.4);">⚔️ 6x6 PRINCIPAL</button>
+                    
+                    <button onclick="iniciarBatalhaDrome('3x3')" style="background: #ff9800; color: white; border: 2px solid #e65100; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(255, 152, 0, 0.4);">⚡ 3x3 RÁPIDO</button>
+                    
+                    <button onclick="iniciarBatalhaDrome('1x1')" style="background: #4CAF50; color: black; border: 2px solid #1b5e20; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 12px; cursor: pointer; box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);">🤺 1x1 DUELO</button>
+                </div>
+
+                <button onclick="fecharEntradaDrome()" style="margin-top: 30px; background: transparent; color: #ff5555; border: 1px solid #ff5555; padding: 8px 20px; font-size: 10px; border-radius: 5px; cursor: pointer;">Voltar ao Menu</button>
+            </div>
             
-            <div class="zona-lateral" style="position: relative; justify-content: center;">
-                <div class="box-deck local" style="height: 95px; font-size: 6px; border-color: #4CAF50; box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2); width: 160%; position: relative; left: 30%; z-index: 5;">LOCAL ATIVO<br>(JOGADOR)</div>
-                <div style="display: flex; gap: 4px; width: auto; position: absolute; bottom: 0; left: 0;">
-                    <div class="box-deck local" style="background:#2e7d32; width: 65px; min-width: 65px; max-width: 65px; height: 90px; font-size: 7px; box-sizing: border-box;">DECK</div>
-                    <div class="box-deck local" style="border-style:dashed; width: 65px; min-width: 65px; max-width: 65px; height: 90px; font-size: 7px; box-sizing: border-box;">LIXO</div>
-                </div>
-            </div>
+            <div id="tela-batalha" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #222; z-index: 100; flex-direction: column; overflow: hidden; box-sizing: border-box;">
+                <button id="btn-sair-drome" style="position: absolute; top: 5px; right: 5px; z-index: 200; background: #e53935; color: white; border: none; padding: 5px 15px; font-weight: bold; border-radius: 5px; cursor: pointer; font-size: 10px;">SAIR</button>
 
-            <div class="zona-central centralizada"> 
-                <div class="linha-formacao-batalha">
-                    <div class="slot-carta-batalha" id="op-c1"></div>
-                    <div class="slot-carta-batalha" id="op-c2"></div>
-                    <div class="slot-carta-batalha" id="op-c3"></div>
-                </div>
-                <div class="linha-formacao-batalha">
-                    <div class="slot-carta-batalha" id="op-c4"></div>
-                    <div class="slot-carta-batalha" id="op-c5"></div>
-                </div>
-                <div class="linha-formacao-batalha">
-                    <div class="slot-carta-batalha" id="op-c6"></div>
-                </div>
-            </div>
+                <div class="arena-drome-container">
+                    
+                    <div class="metade-tabuleiro lado-oponente">
+                        <div class="zona-lateral" style="position: relative; justify-content: center;">
+                            <div class="box-deck local" style="height: 95px; font-size: 6px; border-color: #4CAF50; box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2); width: 160%; position: relative; left: 30%; z-index: 5;">LOCAL ATIVO<br>(JOGADOR)</div>
+                            <div style="display: flex; gap: 4px; width: auto; position: absolute; bottom: 0; left: 0;">
+                                <div class="box-deck local" style="background:#2e7d32; width: 65px; min-width: 65px; max-width: 65px; height: 90px; font-size: 7px; box-sizing: border-box;">DECK</div>
+                                <div class="box-deck local" style="border-style:dashed; width: 65px; min-width: 65px; max-width: 65px; height: 90px; font-size: 7px; box-sizing: border-box;">LIXO</div>
+                            </div>
+                        </div>
 
-            <div class="zona-lateral" style="position: relative; justify-content: center;">
-                <div class="coluna-mugics" style="position: absolute; top: 0;">
-                    <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
-                    <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
-                </div>
-                <div style="position: absolute; bottom: 0; right: 5px; display: flex; flex-direction: row; gap: 6px; align-items: flex-end;">
-                    <div style="display: flex; flex-direction: column; gap: 4px; width: 65px; margin-bottom: 2px;">
-                        <div class="container-fichas-js" style="width: 100%;"></div>
-                        <div class="box-deck ataque" style="background:#c62828; color:white; border-color:#fff; font-size:6px; font-weight:bold; height: 30px; width: 65px; margin: 0; text-align:center; box-sizing: border-box; line-height: 1.2;">Cont. Ataque: 3</div>
+                        <div class="zona-central centralizada"> 
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha" id="op-c1"></div>
+                                <div class="slot-carta-batalha" id="op-c2"></div>
+                                <div class="slot-carta-batalha" id="op-c3"></div>
+                            </div>
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha" id="op-c4"></div>
+                                <div class="slot-carta-batalha" id="op-c5"></div>
+                            </div>
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha" id="op-c6"></div>
+                            </div>
+                        </div>
+
+                        <div class="zona-lateral" style="position: relative; justify-content: center;">
+                            <div class="coluna-mugics" style="position: absolute; top: 0;">
+                                <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
+                                <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
+                            </div>
+                            <div style="position: absolute; bottom: 0; right: 5px; display: flex; flex-direction: row; gap: 6px; align-items: flex-end;">
+                                <div style="display: flex; flex-direction: column; gap: 4px; width: 65px; margin-bottom: 2px;">
+                                    <div class="container-fichas-js" style="width: 100%;"></div>
+                                    <div class="box-deck ataque" style="background:#c62828; color:white; border-color:#fff; font-size:6px; font-weight:bold; height: 30px; width: 65px; margin: 0; text-align:center; box-sizing: border-box; line-height: 1.2;">Cont. Ataque: 3</div>
+                                </div>
+                                <div class="box-deck ataque" style="background:#b71c1c; width: 65px; min-width: 65px; max-width: 65px; height: 90px; margin: 0; border-radius: 5px; flex-shrink: 0; box-sizing: border-box;">DECK<br>ATAQUE</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="box-deck ataque" style="background:#b71c1c; width: 65px; min-width: 65px; max-width: 65px; height: 90px; margin: 0; border-radius: 5px; flex-shrink: 0; box-sizing: border-box;">DECK<br>ATAQUE</div>
-                </div>
-            </div>
 
-        </div>
+                    <div style="width: 100%; height: 2px; background: rgba(255,255,255,0.2); margin: 2px 0;"></div>
 
-        <div style="width: 100%; height: 2px; background: rgba(255,255,255,0.2); margin: 2px 0;"></div>
+                    <div class="metade-tabuleiro lado-jogador">
+                        <div class="zona-lateral" style="position: relative; justify-content: center;">
+                            <div class="box-deck local" style="height: 95px; font-size: 6px; border-color: #4CAF50; box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2); width: 160%; position: relative; left: 30%; z-index: 5;">LOCAL ATIVO<br>(OPONENTE)</div>
+                            <div style="display: flex; gap: 4px; width: auto; position: absolute; bottom: 0; left: 0;">
+                                <div class="box-deck local" style="background:#2e7d32; width: 65px; min-width: 65px; max-width: 65px; height: 90px; font-size: 7px; box-sizing: border-box;">DECK</div>
+                                <div class="box-deck local" style="border-style:dashed; width: 65px; min-width: 65px; max-width: 65px; height: 90px; font-size: 7px; box-sizing: border-box;">LIXO</div>
+                            </div>
+                        </div>
 
-        <div class="metade-tabuleiro lado-jogador">
-            
-            <div class="zona-lateral" style="position: relative; justify-content: center;">
-                <div class="box-deck local" style="height: 95px; font-size: 6px; border-color: #4CAF50; box-shadow: inset 0 0 10px rgba(76, 175, 80, 0.2); width: 160%; position: relative; left: 30%; z-index: 5;">LOCAL ATIVO<br>(OPONENTE)</div>
-                <div style="display: flex; gap: 4px; width: auto; position: absolute; bottom: 0; left: 0;">
-                    <div class="box-deck local" style="background:#2e7d32; width: 65px; min-width: 65px; max-width: 65px; height: 90px; font-size: 7px; box-sizing: border-box;">DECK</div>
-                    <div class="box-deck local" style="border-style:dashed; width: 65px; min-width: 65px; max-width: 65px; height: 90px; font-size: 7px; box-sizing: border-box;">LIXO</div>
-                </div>
-            </div>
+                        <div class="zona-central centralizada"> 
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha" id="jog-c1"></div>
+                                <div class="slot-carta-batalha" id="jog-c2"></div>
+                                <div class="slot-carta-batalha" id="jog-c3"></div>
+                            </div>
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha" id="jog-c4"></div>
+                                <div class="slot-carta-batalha" id="jog-c5"></div>
+                            </div>
+                            <div class="linha-formacao-batalha">
+                                <div class="slot-carta-batalha" id="jog-c6"></div>
+                            </div>
+                        </div>
 
-            <div class="zona-central centralizada"> 
-                <div class="linha-formacao-batalha">
-                    <div class="slot-carta-batalha" id="jog-c1"></div>
-                    <div class="slot-carta-batalha" id="jog-c2"></div>
-                    <div class="slot-carta-batalha" id="jog-c3"></div>
-                </div>
-                <div class="linha-formacao-batalha">
-                    <div class="slot-carta-batalha" id="jog-c4"></div>
-                    <div class="slot-carta-batalha" id="jog-c5"></div>
-                </div>
-                <div class="linha-formacao-batalha">
-                    <div class="slot-carta-batalha" id="jog-c6"></div>
-                </div>
-            </div>
-
-            <div class="zona-lateral" style="position: relative; justify-content: center;">
-                <div class="coluna-mugics" style="position: absolute; top: 0;">
-                    <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
-                    <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
-                </div>
-                <div style="position: absolute; bottom: 0; right: 5px; display: flex; flex-direction: row; gap: 6px; align-items: flex-end;">
-                    <div style="display: flex; flex-direction: column; gap: 4px; width: 65px; margin-bottom: 2px;">
-                        <div class="container-fichas-js" style="width: 100%;"></div>
-                        <div class="box-deck ataque" style="background:#c62828; color:white; border-color:#fff; font-size:6px; font-weight:bold; height: 30px; width: 65px; margin: 0; text-align:center; box-sizing: border-box; line-height: 1.2;">Cont. Ataque: 3</div>
+                        <div class="zona-lateral" style="position: relative; justify-content: center;">
+                            <div class="coluna-mugics" style="position: absolute; top: 0;">
+                                <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
+                                <div class="hex-mugic"></div><div class="hex-mugic"></div><div class="hex-mugic"></div>
+                            </div>
+                            <div style="position: absolute; bottom: 0; right: 5px; display: flex; flex-direction: row; gap: 6px; align-items: flex-end;">
+                                <div style="display: flex; flex-direction: column; gap: 4px; width: 65px; margin-bottom: 2px;">
+                                    <div class="container-fichas-js" style="width: 100%;"></div>
+                                    <div class="box-deck ataque" style="background:#c62828; color:white; border-color:#fff; font-size:6px; font-weight:bold; height: 30px; width: 65px; margin: 0; text-align:center; box-sizing: border-box; line-height: 1.2;">Cont. Ataque: 3</div>
+                                </div>
+                                <div class="box-deck ataque" style="background:#b71c1c; width: 65px; min-width: 65px; max-width: 65px; height: 90px; margin: 0; border-radius: 5px; flex-shrink: 0; box-sizing: border-box;">DECK<br>ATAQUE</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="box-deck ataque" style="background:#b71c1c; width: 65px; min-width: 65px; max-width: 65px; height: 90px; margin: 0; border-radius: 5px; flex-shrink: 0; box-sizing: border-box;">DECK<br>ATAQUE</div>
+
+                    <div class="mao-jogador">
+                        <div class="carta-mao">ATAQUE 1</div>
+                        <div class="carta-mao">ATAQUE 2</div>
+                        <div class="carta-mao">ATAQUE 3</div>
+                    </div>
+
                 </div>
+            </div> </div> <div class="painel-botoes" id="painel-botoes-fisicos">
+            <div class="linha-botoes"><button class="btn-direcional" id="btn-cima">▲</button></div>
+            <div class="linha-botoes linha-meio">
+                <button class="btn-direcional" id="btn-esq">◀</button>
+                <button class="btn-escanear" id="btn-escanear">SCAN</button>
+                <button class="btn-direcional" id="btn-dir">▶</button>
             </div>
-
+            <div class="linha-botoes"><button class="btn-direcional" id="btn-baixo">▼</button></div>
         </div>
-
-        <div class="mao-jogador">
-            <div class="carta-mao">ATAQUE 1</div>
-            <div class="carta-mao">ATAQUE 2</div>
-            <div class="carta-mao">ATAQUE 3</div>
-        </div>
-
-    </div>
-
-            </div> <div class="painel-botoes" id="painel-botoes-fisicos">
-                <div class="linha-botoes"><button class="btn-direcional" id="btn-cima">▲</button></div>
-                <div class="linha-botoes linha-meio">
-                    <button class="btn-direcional" id="btn-esq">◀</button>
-                    <button class="btn-escanear" id="btn-escanear">SCAN</button>
-                    <button class="btn-direcional" id="btn-dir">▶</button>
-                </div>
-                <div class="linha-botoes"><button class="btn-direcional" id="btn-baixo">▼</button></div>
-            </div>
 
         <div class="painel-acao-viagem" id="painel-viagem" style="display: none;">
             <button class="botao-voltar-viagem" id="btn-acao-esq">VOLTAR</button>
             <button class="botao-viajar" id="btn-acao-dir">VIAJAR</button>
         </div>
         
-   <script src="cartas.js"></script>
+    </div>
+
+    <script src="cartas.js"></script>
     <script>window.chaoticAPI = {};</script>
     <script src="entrada-drome.js" defer></script>
     <script type="module" src="script.js"></script>
