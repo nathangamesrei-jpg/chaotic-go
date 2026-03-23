@@ -338,8 +338,9 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach(m => m.style.display = "block");
         jogMugics.forEach(m => m.style.display = "block");
 
-        if(jogZona) jogZona.style.transform = "translateY(-65px)";
-        if(opZona) opZona.style.transform = "translateY(-65px)"; 
+        // 🔥 AJUSTE MICRO-FINO 6X6: Subindo 4px (-65 para -69)
+        if(jogZona) jogZona.style.transform = "translateY(-69px)";
+        if(opZona) opZona.style.transform = "translateY(-69px)"; 
         
         jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
         opDecksBottom.forEach(el => el.style.transform = "translateY(15px)");
@@ -353,9 +354,9 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
 
-        // 🔥 AJUSTE MICRO-FINO 3X3: Abaixou 2px, cravado em -126px!
-        if(jogZona) jogZona.style.transform = "translateY(-126px)"; 
-        if(opZona) opZona.style.transform = "translateY(-126px)";
+        // 🔥 AJUSTE MICRO-FINO 3X3: Abaixando 2px (-126 para -124)
+        if(jogZona) jogZona.style.transform = "translateY(-124px)"; 
+        if(opZona) opZona.style.transform = "translateY(-124px)";
         
         jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
         opDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
@@ -369,11 +370,10 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
 
-        // 🔥 AJUSTE INICIAL 1X1: O salto gigante para compensar as 2 fileiras perdidas
-        if(jogZona) jogZona.style.transform = "translateY(-180px)";
-        if(opZona) opZona.style.transform = "translateY(-180px)";
+        // 🔥 AJUSTE MICRO-FINO 1X1: Abaixando 4px (-180 para -176)
+        if(jogZona) jogZona.style.transform = "translateY(-176px)";
+        if(opZona) opZona.style.transform = "translateY(-176px)";
         
-        // Padronização do rodapé para ficar idêntico aos outros modos
         jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)");
         opDecksBottom.forEach(el => el.style.transform = "translateY(15px)");
 
