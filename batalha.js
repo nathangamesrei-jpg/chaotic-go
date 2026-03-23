@@ -316,7 +316,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
     let opZona = document.querySelector('.lado-oponente .zona-central');
     let jogZona = document.querySelector('.lado-jogador .zona-central');
 
-    // Captura as fileiras
     let opLinha3 = document.getElementById('op-c1').parentElement; 
     let opLinha2 = document.getElementById('op-c4').parentElement; 
     let opLinha1 = document.getElementById('op-c6').parentElement; 
@@ -327,7 +326,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
     let opMugics = document.querySelectorAll('.lado-oponente .hex-mugic');
     let jogMugics = document.querySelectorAll('.lado-jogador .hex-mugic');
 
-    // 🔥 CAPTURA AS ZONAS INFERIORES DOS DECKS
     let jogDecksBottom = document.querySelectorAll('.lado-jogador .zona-lateral > div[style*="bottom: 0"]');
     let opDecksBottom = document.querySelectorAll('.lado-oponente .zona-lateral > div[style*="bottom: 0"]');
 
@@ -337,15 +335,12 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach(m => m.style.display = "block");
         jogMugics.forEach(m => m.style.display = "block");
 
-        // 🛠️ CIRURGIA DO 6X6: Pinças de Posicionamento!
-        // Sobe a pirâmide inteira pra linha divisória
-        if(jogZona) jogZona.style.transform = "translateY(-40px)";
-        // Oponente tá de cabeça pra baixo, então "subir" visualmente é usar o mesmo eixo
-        if(opZona) opZona.style.transform = "translateY(-40px)"; 
+        // 🔥 AJUSTE FINO 6X6: Sobe as criaturas pro meio e sobe de leve as bordas!
+        if(jogZona) jogZona.style.transform = "translateY(-65px)";
+        if(opZona) opZona.style.transform = "translateY(-65px)"; 
         
-        // Empurra os decks pra baixo pra liberar a tela
-        jogDecksBottom.forEach(el => el.style.transform = "translateY(35px)");
-        opDecksBottom.forEach(el => el.style.transform = "translateY(35px)");
+        jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); // Estavam em 35px, agora subiram 20px
+        opDecksBottom.forEach(el => el.style.transform = "translateY(15px)");
     } 
     else if (modo === "3x3") {
         opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
@@ -353,7 +348,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
 
-        // Reseta os transformadores
         if(jogZona) jogZona.style.transform = "translateY(0px)";
         if(opZona) opZona.style.transform = "translateY(0px)";
         jogDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
@@ -365,7 +359,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
 
-        // Reseta os transformadores
         if(jogZona) jogZona.style.transform = "translateY(0px)";
         if(opZona) opZona.style.transform = "translateY(0px)";
         jogDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
@@ -517,7 +510,6 @@ function limparDestaquesMovimento() {
 }
 
 setTimeout(() => {
-    // Removemos os paddings gigantes antigos pra usar as "Pinças de Translação" lá em cima.
     let arena = document.querySelector('.arena-drome-container');
     if (arena) {
         arena.style.paddingBottom = "15px"; 
