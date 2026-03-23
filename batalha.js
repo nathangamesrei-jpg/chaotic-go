@@ -329,7 +329,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
     let jogDecksBottom = document.querySelectorAll('.lado-jogador .zona-lateral > div[style*="bottom: 0"]');
     let opDecksBottom = document.querySelectorAll('.lado-oponente .zona-lateral > div[style*="bottom: 0"]');
 
-    // 🔥 NOVO: Captura os Contadores de forma independente do deck
     let contadoresJog = document.querySelector('.lado-jogador .container-fichas-js')?.parentElement;
     let contadoresOp = document.querySelector('.lado-oponente .container-fichas-js')?.parentElement;
 
@@ -345,7 +344,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
         jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
         opDecksBottom.forEach(el => el.style.transform = "translateY(15px)");
 
-        // 🔥 ELEVADOR EXCLUSIVO PARA OS CONTADORES: Sobem para o lado do c6
         if(contadoresJog) contadoresJog.style.transform = "translateY(-80px)";
         if(contadoresOp) contadoresOp.style.transform = "translateY(-80px)";
     } 
@@ -355,13 +353,15 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
 
-        if(jogZona) jogZona.style.transform = "translateY(0px)";
-        if(opZona) opZona.style.transform = "translateY(0px)";
-        jogDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
-        opDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
+        // 🔥 AJUSTE FINO 3X3: Traz as criaturas pro meio, e padroniza os decks como no 6x6!
+        if(jogZona) jogZona.style.transform = "translateY(-40px)"; // Sobe um pouco menos pq a fileira da frente sumiu
+        if(opZona) opZona.style.transform = "translateY(-40px)";
         
-        if(contadoresJog) contadoresJog.style.transform = "translateY(0px)";
-        if(contadoresOp) contadoresOp.style.transform = "translateY(0px)";
+        jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); // Fica igual ao 6x6
+        opDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); // Fica igual ao 6x6
+        
+        if(contadoresJog) contadoresJog.style.transform = "translateY(-80px)"; // Mantém os contadores colados na c6
+        if(contadoresOp) contadoresOp.style.transform = "translateY(-80px)"; // Mantém os contadores colados na c6
     } 
     else if (modo && modo.includes("1x1")) {
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
