@@ -470,11 +470,11 @@ function limparDestaquesMovimento() {
 }
 
 setTimeout(() => {
-    // 🔥 CORREÇÃO DE VISÃO E ESPAÇAMENTO: Aplica "almofadas" para afastar as bordas e espremer o tabuleiro pro meio!
+    // 🔥 GRAVIDADE CENTRAL: Ajusta o "colchão" da arena pra liberar as mãos e empurra as zonas pro meio!
     let arena = document.querySelector('.arena-drome-container');
     if (arena) {
-        arena.style.paddingBottom = "90px"; // Empurra sua base para cima
-        arena.style.paddingTop = "40px";    // Empurra o oponente para baixo
+        arena.style.paddingBottom = "110px"; // Afasta as cartas do rodapé pra caber a sua mão
+        arena.style.paddingTop = "70px";     // Afasta as cartas do topo pra caber a mão do oponente
         arena.style.boxSizing = "border-box";
     }
 
@@ -482,6 +482,15 @@ setTimeout(() => {
         let style = document.createElement('style');
         style.id = "css-movimento";
         style.innerHTML = `
+            /* 🔥 FORÇA A ZONA CENTRAL A ESPREMER AS CARTAS NA LINHA DIVISÓRIA */
+            .zona-central {
+                justify-content: flex-start !important; 
+                gap: 5px !important;
+            }
+            .linha-formacao-batalha {
+                margin: 0 !important;
+            }
+
             .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
             .slot-livre-movimento { box-shadow: inset 0 0 25px rgba(0,255,0,0.8), 0 0 15px rgba(0,255,0,0.5) !important; border-color: #00ff00 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
             .slot-livre-movimento:hover { background: rgba(0,255,0,0.15); transform: scale(1.02); }
@@ -586,9 +595,9 @@ setTimeout(() => {
             /* 🔥 A MÃO DO OPONENTE */
             .container-mao-oponente {
                 position: fixed;
-                top: -25px; /* Esconde a base lá no teto */
+                top: -25px; 
                 left: 50%;
-                transform: translateX(-50%) rotate(180deg); /* Fica de ponta cabeça */
+                transform: translateX(-50%) rotate(180deg); 
                 display: flex;
                 justify-content: center;
                 align-items: flex-end;
@@ -597,9 +606,9 @@ setTimeout(() => {
             }
 
             .carta-oponente-na-mao {
-                width: 50px; /* Um pouco menor pra dar perspectiva */
+                width: 50px; 
                 height: 75px;
-                background: repeating-linear-gradient(45deg, #111, #111 5px, #222 5px, #222 10px); /* Textura de Verso */
+                background: repeating-linear-gradient(45deg, #111, #111 5px, #222 5px, #222 10px); 
                 border: 2px solid #555;
                 border-radius: 6px;
                 margin: 0 -10px;
