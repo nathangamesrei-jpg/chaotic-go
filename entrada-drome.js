@@ -207,7 +207,7 @@ window.confirmarEntradaDrome = function() {
 };
 
 // ==========================================
-// AJUSTE DINÂMICO DA ARENA DE BATALHA (FORÇA BRUTA CSS V2)
+// AJUSTE DINÂMICO DA ARENA DE BATALHA (CALIBRAÇÃO FINAL 1x1)
 // ==========================================
 window.ajustarTabuleiroBatalha = function(modo) {
     let opZona = document.querySelector('.lado-oponente .zona-central');
@@ -224,7 +224,7 @@ window.ajustarTabuleiroBatalha = function(modo) {
     let opMugics = document.querySelectorAll('.lado-oponente .hex-mugic');
     let jogMugics = document.querySelectorAll('.lado-jogador .hex-mugic');
 
-    // 🔥 Reset base e aplicação de Flex-Start (Gruda as cartas na linha divisória)
+    // 🔥 Reset base e aplicação de Flex-Start (Cola as cartas na linha divisória)
     [opZona, jogZona].forEach(zona => {
         if(zona) {
             zona.style.display = "flex";
@@ -253,6 +253,10 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
         
+        // Mantém o vão que já estava bom no 3x3
+        if(jogLinha2) jogLinha2.style.marginTop = "10px";
+        if(opLinha2) opLinha2.style.marginTop = "10px";
+
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
     } 
@@ -260,11 +264,10 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
         
-        // 🔥 AJUSTE DE APROXIMAÇÃO FINAL DO 1x1: MÁGICA DO ELÁSTICO (Margem Negativa)
-        // Usamos margem superior negativa (-15px). No oponente funciona porque ele está rotacionado 180º,
-        // então a margem superior "puxa" ele para baixo (visual do oponente).
-        if(jogLinha1) jogLinha1.style.marginTop = "-15px"; // Puxa o jogador pra cima, colando na linha
-        if(opLinha1) opLinha1.style.marginTop = "-15px";   // Puxa o oponentevisually pra baixo, colando na linha
+        // 🔥 CALIBRAÇÃO FINAL DO 1x1: Trocamos margem negativa por POSITIVA
+        // Isso vai empurrá-los levemente para longe da linha, criando o vão perfeito.
+        if(jogLinha1) jogLinha1.style.marginTop = "10px"; // Empurra o jogador 10px pra baixo
+        if(opLinha1) opLinha1.style.marginTop = "10px";   // Empurra o oponente 10px (visualmente) pra cima
 
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
