@@ -266,8 +266,8 @@ window.ajustarTabuleiroBatalha = function(modo) {
         
         // 🔥 CALIBRAÇÃO FINAL DO 1x1: Trocamos margem negativa por POSITIVA
         // Isso vai empurrá-los levemente para longe da linha, criando o vão perfeito.
-        if(jogLinha1) jogLinha1.style.marginTop = "5px"; // Empurra o jogador 10px pra baixo
-        if(opLinha1) opLinha1.style.marginTop = "5px";   // Empurra o oponente 10px (visualmente) pra cima
+        if(jogLinha1) jogLinha1.style.marginTop = "2px"; // Empurra o jogador 10px pra baixo
+        if(opLinha1) opLinha1.style.marginTop = "2px";   // Empurra o oponente 10px (visualmente) pra cima
 
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
