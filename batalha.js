@@ -338,9 +338,9 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach(m => m.style.display = "block");
         jogMugics.forEach(m => m.style.display = "block");
 
-        // 🔥 AJUSTE MICRO-FINO 6X6: Subindo 4px (-65 para -69)
-        if(jogZona) jogZona.style.transform = "translateY(-69px)";
-        if(opZona) opZona.style.transform = "translateY(-69px)"; 
+        // 🔥 AJUSTE MICRO-FINO 6X6: Subindo mais 2px (-69 para -71)
+        if(jogZona) jogZona.style.transform = "translateY(-71px)";
+        if(opZona) opZona.style.transform = "translateY(-71px)"; 
         
         jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
         opDecksBottom.forEach(el => el.style.transform = "translateY(15px)");
@@ -354,7 +354,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
 
-        // 🔥 AJUSTE MICRO-FINO 3X3: Abaixando 2px (-126 para -124)
         if(jogZona) jogZona.style.transform = "translateY(-124px)"; 
         if(opZona) opZona.style.transform = "translateY(-124px)";
         
@@ -370,7 +369,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
 
-        // 🔥 AJUSTE MICRO-FINO 1X1: Abaixando 4px (-180 para -176)
         if(jogZona) jogZona.style.transform = "translateY(-176px)";
         if(opZona) opZona.style.transform = "translateY(-176px)";
         
