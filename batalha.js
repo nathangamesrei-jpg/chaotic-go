@@ -353,9 +353,9 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
 
-        // 🔥 AJUSTE MICRO-FINO 3X3: Ajustado exatamente para -128px a seu pedido!
-        if(jogZona) jogZona.style.transform = "translateY(-128px)"; 
-        if(opZona) opZona.style.transform = "translateY(-128px)";
+        // 🔥 AJUSTE MICRO-FINO 3X3: Abaixou 2px, cravado em -126px!
+        if(jogZona) jogZona.style.transform = "translateY(-126px)"; 
+        if(opZona) opZona.style.transform = "translateY(-126px)";
         
         jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
         opDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
@@ -369,13 +369,16 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
 
-        if(jogZona) jogZona.style.transform = "translateY(0px)";
-        if(opZona) opZona.style.transform = "translateY(0px)";
-        jogDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
-        opDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
+        // 🔥 AJUSTE INICIAL 1X1: O salto gigante para compensar as 2 fileiras perdidas
+        if(jogZona) jogZona.style.transform = "translateY(-180px)";
+        if(opZona) opZona.style.transform = "translateY(-180px)";
+        
+        // Padronização do rodapé para ficar idêntico aos outros modos
+        jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)");
+        opDecksBottom.forEach(el => el.style.transform = "translateY(15px)");
 
-        if(contadoresJog) contadoresJog.style.transform = "translateY(0px)";
-        if(contadoresOp) contadoresOp.style.transform = "translateY(0px)";
+        if(contadoresJog) contadoresJog.style.transform = "translateY(-80px)";
+        if(contadoresOp) contadoresOp.style.transform = "translateY(-80px)";
     }
 }
 
