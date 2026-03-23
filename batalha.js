@@ -73,10 +73,8 @@ function desenharMiniCarta(criaturaObj) {
 // SISTEMA DE CONTADOR INTELIGENTE E CARGA DE DECK
 // ==========================================
 
-// O Campo agora começa 100% vazio, aguardando o Scanner injetar as cartas reais
 let campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
 
-// 🛠️ MÁGICA: A função que pega o seu deck selecionado e cria os guerreiros no tabuleiro!
 window.carregarDeckParaBatalha = function() {
     // 🔥 CORREÇÃO DO BUG FANTASMA: Limpa o tabuleiro inteiro antes de começar!
     campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
@@ -87,20 +85,17 @@ window.carregarDeckParaBatalha = function() {
     let deck = window.estadoDrome.deckSelecionado;
     if (!deck || !deck.criaturas) return;
 
-    // As 6 posições do tabuleiro
     let chaves = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
     
     chaves.forEach((chave, index) => {
-        let idCarta = deck.criaturas[index]; // Pega o ID salvo no slot do deck
+        let idCarta = deck.criaturas[index]; 
         
         if (idCarta) {
-            // Acha a carta real no seu inventário!
             let cartaOriginal = window.inventario.find(c => c.id == idCarta);
             
             if (cartaOriginal) {
-                // Monta o guerreiro com os status reais de DNA da sua coleção
                 campoJogador[chave] = {
-                    dono: 'jogador', // 🔥 NOVO: Identidade para o sistema saber que a carta é sua
+                    dono: 'jogador',
                     nome: cartaOriginal.nome,
                     tribo: cartaOriginal.tribo || "Azul",
                     elementos: cartaOriginal.elementos || [],
@@ -113,15 +108,13 @@ window.carregarDeckParaBatalha = function() {
                         energia: cartaOriginal.stats?.e || 0 
                     },
                     hpAtual: cartaOriginal.stats?.e || 0,
-                    fichasHabilidade: 2 // Começa com 2 fichas padrão
+                    fichasHabilidade: 2
                 };
             }
-        } else {
-            campoJogador[chave] = null;
         }
     });
 
-    atualizarTelaBatalha(); // Manda desenhar na tela!
+    atualizarTelaBatalha(); 
 };
 
 function atualizarTelaBatalha() {
@@ -134,7 +127,7 @@ function atualizarTelaBatalha() {
     const slotsOp = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
     slotsOp.forEach(slotId => {
         const el = document.getElementById('op-' + slotId);
-        if(el) el.innerHTML = desenharMiniCarta(window.campoOponente ? window.campoOponente[slotId] : null); // Alterado para ler do oponente também
+        if(el) el.innerHTML = desenharMiniCarta(window.campoOponente ? window.campoOponente[slotId] : null); 
     });
 
     atualizarContadorFichasHabilidade();
@@ -230,32 +223,61 @@ function fecharModalFichas() {
     if(el) el.remove();
 }
 
-// A atualização inicial do tabuleiro agora acontece de forma mais limpa!
 setTimeout(atualizarTelaBatalha, 500);
 
 // ==========================================
-// SISTEMA DE MOVIMENTAÇÃO E COMBATE
+// SISTEMA DE MOVIMENTAÇÃO E COMBATE DINÂMICO
 // ==========================================
 
-// 1. O Mapa Mental do Tabuleiro (A Pirâmide do Drome e as pontes)
-const mapAdjacencia = {
+// 1. O Mapa Base (Conexões internas do seu próprio campo)
+const baseAdjacencia = {
     'jog-c1': ['jog-c2', 'jog-c4'],
     'jog-c2': ['jog-c1', 'jog-c3', 'jog-c4', 'jog-c5'],
     'jog-c3': ['jog-c2', 'jog-c5'],
     'jog-c4': ['jog-c1', 'jog-c2', 'jog-c5', 'jog-c6'],
     'jog-c5': ['jog-c2', 'jog-c3', 'jog-c4', 'jog-c6'],
-    'jog-c6': ['jog-c4', 'jog-c5', 'op-c6'], // Ponte para o inimigo!
+    'jog-c6': ['jog-c4', 'jog-c5'], 
+    
     'op-c1': ['op-c2', 'op-c4'],
     'op-c2': ['op-c1', 'op-c3', 'op-c4', 'op-c5'],
     'op-c3': ['op-c2', 'op-c5'],
     'op-c4': ['op-c1', 'op-c2', 'op-c5', 'op-c6'],
     'op-c5': ['op-c2', 'op-c3', 'op-c4', 'op-c6'],
-    'op-c6': ['op-c4', 'op-c5', 'jog-c6'] // Ponte de volta
+    'op-c6': ['op-c4', 'op-c5']
 };
 
 window.slotSelecionadoMovimento = null;
 
-// Puxa ou salva a criatura dependendo do lado da mesa
+// 🔥 NOVO: Motor Inteligente de Pontes (Descobre quem é a linha de frente de acordo com o modo)
+function obterAdjacencias(fullId) {
+    let adj = [...(baseAdjacencia[fullId] || [])];
+    let modo = window.estadoDrome ? window.estadoDrome.modo : "6x6";
+
+    // Cria as pontes para o inimigo dependendo de quem está na linha de frente do modo escolhido!
+    if (modo === "6x6") {
+        if (fullId === 'jog-c1') adj.push('op-c1', 'op-c2');
+        if (fullId === 'jog-c2') adj.push('op-c1', 'op-c2', 'op-c3');
+        if (fullId === 'jog-c3') adj.push('op-c2', 'op-c3');
+        
+        if (fullId === 'op-c1') adj.push('jog-c1', 'jog-c2');
+        if (fullId === 'op-c2') adj.push('jog-c1', 'jog-c2', 'jog-c3');
+        if (fullId === 'op-c3') adj.push('jog-c2', 'jog-c3');
+    } 
+    else if (modo === "3x3") {
+        if (fullId === 'jog-c4') adj.push('op-c4', 'op-c5');
+        if (fullId === 'jog-c5') adj.push('op-c4', 'op-c5');
+        
+        if (fullId === 'op-c4') adj.push('jog-c4', 'jog-c5');
+        if (fullId === 'op-c5') adj.push('jog-c4', 'jog-c5');
+    } 
+    else if (modo && modo.includes("1x1")) {
+        if (fullId === 'jog-c6') adj.push('op-c6');
+        if (fullId === 'op-c6') adj.push('jog-c6');
+    }
+
+    return adj;
+}
+
 function obterCriaturaNoSlot(fullId) {
     if (fullId.startsWith('jog-')) return campoJogador[fullId.replace('jog-', '')];
     if (fullId.startsWith('op-')) return window.campoOponente[fullId.replace('op-', '')];
@@ -272,31 +294,26 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     let criaturaAlvo = obterCriaturaNoSlot(fullId);
     let el = document.getElementById(fullId);
     
-    // Se o slot estiver invisível por causa do modo (ex: 1x1 ou 3x3), ignora totalmente!
     if (!el || el.parentElement.style.display === 'none') return;
 
-    // A) SE NÃO TEM NINGUÉM SELECIONADO AINDA
     if (!window.slotSelecionadoMovimento) {
         if (criaturaAlvo && criaturaAlvo.dono === 'jogador') {
             window.slotSelecionadoMovimento = fullId;
             destacarAdjacentes(fullId);
-            if(window.tocarSFX) window.tocarSFX('notificacao'); // Toca sonzinho suave
+            if(window.tocarSFX) window.tocarSFX('notificacao'); 
         }
         return;
     }
 
-    // B) SE JÁ TEM ALGUÉM SELECIONADO
     let idOrigem = window.slotSelecionadoMovimento;
     let criaturaOrigem = obterCriaturaNoSlot(idOrigem);
 
-    // Clicou na mesma carta? Deseleciona.
     if (idOrigem === fullId) {
         limparDestaquesMovimento();
         window.slotSelecionadoMovimento = null;
         return;
     }
 
-    // Clicou em outra carta SUA? Troca a seleção pra ela!
     if (criaturaAlvo && criaturaAlvo.dono === 'jogador') {
         limparDestaquesMovimento();
         window.slotSelecionadoMovimento = fullId;
@@ -305,8 +322,8 @@ window.lidarComCliqueTabuleiro = function(fullId) {
         return;
     }
 
-    // Clicou longe demais? (Espaço não é adjacente)
-    if (!mapAdjacencia[idOrigem].includes(fullId)) {
+    // 🔥 VERIFICAÇÃO ATUALIZADA: Agora pergunta para o Motor Inteligente de Pontes!
+    if (!obterAdjacencias(idOrigem).includes(fullId)) {
         limparDestaquesMovimento();
         window.slotSelecionadoMovimento = null;
         return;
@@ -316,19 +333,16 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     // MODO AÇÃO! (Mover ou Atacar)
     // ===========================
     if (!criaturaAlvo) {
-        // MOVIMENTO (Clicou num buraco vazio)
-        setarCriaturaNoSlot(fullId, criaturaOrigem); // Clona pra frente
-        setarCriaturaNoSlot(idOrigem, null); // Apaga de onde estava
+        setarCriaturaNoSlot(fullId, criaturaOrigem); 
+        setarCriaturaNoSlot(idOrigem, null); 
         window.mostrarMensagemScanner("Avançando pelo tabuleiro!");
     } else if (criaturaAlvo.dono === 'oponente') {
-        // COMBATE (Clicou numa criatura do Oponente)
         window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
-        // O código de abrir a tela de ataque entrará aqui futuramente
     }
 
     limparDestaquesMovimento();
     window.slotSelecionadoMovimento = null;
-    atualizarTelaBatalha(); // Redesenha a tela pra mostrar a carta no lugar novo
+    atualizarTelaBatalha(); 
 }
 
 // 3. Efeitos Visuais (CSS Dinâmico)
@@ -336,22 +350,21 @@ function destacarAdjacentes(fullId) {
     limparDestaquesMovimento();
     document.getElementById(fullId).classList.add('slot-selecionado');
 
-    mapAdjacencia[fullId].forEach(adjId => {
+    // 🔥 DESTAQUE ATUALIZADO: Usando o Motor Inteligente
+    obterAdjacencias(fullId).forEach(adjId => {
         let el = document.getElementById(adjId);
-        // Só acende e permite ir para slots que existem e estão visíveis na tela
         if (el && el.parentElement.style.display !== 'none') {
             let criaturaAlvo = obterCriaturaNoSlot(adjId);
             if (!criaturaAlvo) {
-                el.classList.add('slot-livre-movimento'); // Verde: Pode andar
+                el.classList.add('slot-livre-movimento'); 
             } else if (criaturaAlvo.dono === 'oponente') {
-                el.classList.add('slot-alvo-combate'); // Vermelho: Pode atacar
+                el.classList.add('slot-alvo-combate'); 
             }
         }
     });
 }
 
 function limparDestaquesMovimento() {
-    // 🔥 CORREÇÃO 6x6: O limpador agora varre todo mundo para tirar as cores
     document.querySelectorAll('.slot-criatura, .zona-central > div').forEach(el => {
         el.classList.remove('slot-selecionado', 'slot-livre-movimento', 'slot-alvo-combate');
     });
@@ -372,26 +385,21 @@ setTimeout(() => {
         document.head.appendChild(style);
     }
 
-    // 🔥 CORREÇÃO DA LONA INVISÍVEL: Fura a barreira das fileiras
     let zonas = document.querySelectorAll('.zona-central');
-    if (zonas) zonas.forEach(z => z.style.pointerEvents = "none"); // Fura a lona gigante
+    if (zonas) zonas.forEach(z => z.style.pointerEvents = "none"); 
 
-    // Cola o sensor de clique em todos os 12 buracos do tabuleiro!
     ['jog', 'op'].forEach(lado => {
         ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
             let el = document.getElementById(`${lado}-${slot}`);
             if (el) {
-                // Fura a lona da fileira individual
                 if (el.parentElement) el.parentElement.style.pointerEvents = "none";
-                
-                // Devolve a capacidade de clicar APENAS para a minicarta
                 el.style.pointerEvents = "auto";
                 
                 el.onclick = (e) => {
-                    e.stopPropagation(); // Trava pro clique não vazar
+                    e.stopPropagation(); 
                     window.lidarComCliqueTabuleiro(`${lado}-${slot}`);
                 };
             }
         });
     });
-}, 1000); // 1 segundo de atraso para ter certeza que a tela existe
+}, 1000);
