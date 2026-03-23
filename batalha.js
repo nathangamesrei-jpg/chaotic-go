@@ -73,13 +73,16 @@ function desenharMiniCarta(criaturaObj) {
 // SISTEMA DE CONTADOR INTELIGENTE E CARGA DE DECK
 // ==========================================
 
-// O Campo agora começa 100% vazio, aguardando o Scanner injetar as cartas reais
-let campoJogador = {
-    c1: null, c2: null, c3: null, c4: null, c5: null, c6: null
-};
+let campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
 
 // 🛠️ MÁGICA: A função que pega o seu deck selecionado e cria os guerreiros no tabuleiro!
 window.carregarDeckParaBatalha = function() {
+    // 🔥 CORREÇÃO DO BUG FANTASMA: Limpa o tabuleiro inteiro antes de começar!
+    campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
+    window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
+    window.slotSelecionadoMovimento = null;
+    if (typeof limparDestaquesMovimento === "function") limparDestaquesMovimento();
+
     let deck = window.estadoDrome.deckSelecionado;
     if (!deck || !deck.criaturas) return;
 
@@ -112,8 +115,6 @@ window.carregarDeckParaBatalha = function() {
                     fichasHabilidade: 2 // Começa com 2 fichas padrão
                 };
             }
-        } else {
-            campoJogador[chave] = null;
         }
     });
 
@@ -347,7 +348,8 @@ function destacarAdjacentes(fullId) {
 }
 
 function limparDestaquesMovimento() {
-    document.querySelectorAll('.slot-criatura').forEach(el => {
+    // 🔥 CORREÇÃO 6x6: O limpador agora varre todo mundo para tirar as cores
+    document.querySelectorAll('.slot-criatura, .zona-central > div').forEach(el => {
         el.classList.remove('slot-selecionado', 'slot-livre-movimento', 'slot-alvo-combate');
     });
 }
@@ -371,8 +373,8 @@ setTimeout(() => {
     ['jog', 'op'].forEach(lado => {
         ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
             let el = document.getElementById(`${lado}-${slot}`);
-            // Usa o parentElement para capturar o clique em toda a área visível do slot
-            if (el) el.parentElement.onclick = () => window.lidarComCliqueTabuleiro(`${lado}-${slot}`);
+            // 🔥 CORREÇÃO 6x6: O clique agora é direto no slot, garantindo precisão!
+            if (el) el.onclick = () => window.lidarComCliqueTabuleiro(`${lado}-${slot}`);
         });
     });
 }, 1000); // 1 segundo de atraso para ter certeza que a tela existe
