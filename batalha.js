@@ -329,18 +329,25 @@ window.ajustarTabuleiroBatalha = function(modo) {
     let jogDecksBottom = document.querySelectorAll('.lado-jogador .zona-lateral > div[style*="bottom: 0"]');
     let opDecksBottom = document.querySelectorAll('.lado-oponente .zona-lateral > div[style*="bottom: 0"]');
 
+    // 🔥 NOVO: Captura os Contadores de forma independente do deck
+    let contadoresJog = document.querySelector('.lado-jogador .container-fichas-js')?.parentElement;
+    let contadoresOp = document.querySelector('.lado-oponente .container-fichas-js')?.parentElement;
+
     if (modo === "6x6") {
         opLinha3.style.display = "flex"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "flex"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
         opMugics.forEach(m => m.style.display = "block");
         jogMugics.forEach(m => m.style.display = "block");
 
-        // 🔥 AJUSTE FINO 6X6: Sobe as criaturas pro meio e sobe de leve as bordas!
         if(jogZona) jogZona.style.transform = "translateY(-65px)";
         if(opZona) opZona.style.transform = "translateY(-65px)"; 
         
-        jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); // Estavam em 35px, agora subiram 20px
+        jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
         opDecksBottom.forEach(el => el.style.transform = "translateY(15px)");
+
+        // 🔥 ELEVADOR EXCLUSIVO PARA OS CONTADORES: Sobem para o lado do c6
+        if(contadoresJog) contadoresJog.style.transform = "translateY(-80px)";
+        if(contadoresOp) contadoresOp.style.transform = "translateY(-80px)";
     } 
     else if (modo === "3x3") {
         opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
@@ -352,6 +359,9 @@ window.ajustarTabuleiroBatalha = function(modo) {
         if(opZona) opZona.style.transform = "translateY(0px)";
         jogDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
         opDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
+        
+        if(contadoresJog) contadoresJog.style.transform = "translateY(0px)";
+        if(contadoresOp) contadoresOp.style.transform = "translateY(0px)";
     } 
     else if (modo && modo.includes("1x1")) {
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
@@ -363,6 +373,9 @@ window.ajustarTabuleiroBatalha = function(modo) {
         if(opZona) opZona.style.transform = "translateY(0px)";
         jogDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
         opDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
+
+        if(contadoresJog) contadoresJog.style.transform = "translateY(0px)";
+        if(contadoresOp) contadoresOp.style.transform = "translateY(0px)";
     }
 }
 
