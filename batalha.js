@@ -470,6 +470,14 @@ function limparDestaquesMovimento() {
 }
 
 setTimeout(() => {
+    // 🔥 CORREÇÃO DE VISÃO E ESPAÇAMENTO: Aplica "almofadas" para afastar as bordas e espremer o tabuleiro pro meio!
+    let arena = document.querySelector('.arena-drome-container');
+    if (arena) {
+        arena.style.paddingBottom = "90px"; // Empurra sua base para cima
+        arena.style.paddingTop = "40px";    // Empurra o oponente para baixo
+        arena.style.boxSizing = "border-box";
+    }
+
     if (!document.getElementById("css-movimento")) {
         let style = document.createElement('style');
         style.id = "css-movimento";
@@ -521,38 +529,37 @@ setTimeout(() => {
 }, 1000);
 
 // ==========================================
-// EFEITO 3D DA MÃO DE CARTAS (LEQUE)
+// EFEITO 3D DAS MÃOS DE CARTAS (O SEU LEQUE E O DO INIMIGO)
 // ==========================================
 setTimeout(() => {
     if (!document.getElementById("css-mao-cartas")) {
         let style = document.createElement('style');
         style.id = "css-mao-cartas";
         style.innerHTML = `
-            /* Container da Mão Centralizado na base da tela */
+            /* A SUA MÃO */
             .container-mao-ataques {
                 position: fixed;
-                bottom: -20px; /* Esconde um pedacinho da base da carta */
+                bottom: -20px; 
                 left: 50%;
                 transform: translateX(-50%);
                 display: flex;
                 justify-content: center;
                 align-items: flex-end;
                 z-index: 9999;
-                pointer-events: none; /* Deixa o clique vazar pro tabuleiro atrás da mão */
+                pointer-events: none; 
             }
 
-            /* A Física da Carta Padrão */
             .carta-na-mao {
-                width: 60px; /* Ajustada para combinar com a interface */
+                width: 60px; 
                 height: 90px;
                 background: #111; 
                 border: 2px solid #e53935;
                 border-radius: 6px;
-                margin: 0 -15px; /* SOBREPOSIÇÃO: Uma carta monta na outra */
+                margin: 0 -15px; 
                 box-shadow: -4px 4px 10px rgba(0,0,0,0.6);
-                transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animação suave igual elástico */
-                transform-origin: bottom center; /* O eixo de giro é a base da carta */
-                pointer-events: auto; /* O mouse funciona de novo ao bater na carta */
+                transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+                transform-origin: bottom center; 
+                pointer-events: auto; 
                 cursor: pointer;
                 display: flex;
                 justify-content: center;
@@ -564,33 +571,69 @@ setTimeout(() => {
                 text-align: center;
             }
 
-            /* O Truque do Leque (Curvatura baseada na posição de 1 a 3) */
             .carta-na-mao:nth-child(1) { transform: rotate(-15deg) translateY(12px); }
             .carta-na-mao:nth-child(2) { transform: rotate(0deg) translateY(0px); z-index: 2; }
             .carta-na-mao:nth-child(3) { transform: rotate(15deg) translateY(12px); }
 
-            /* A Mágica do Hover: A carta sobe e vira pra você ler! */
             .carta-na-mao:hover {
                 transform: rotate(0deg) translateY(-40px) scale(1.4) !important;
                 z-index: 100 !important;
                 box-shadow: 0 15px 25px rgba(0,0,0,0.9);
-                border-color: #ffd700; /* Brilha amarelo */
+                border-color: #ffd700; 
                 color: #ffd700;
             }
+
+            /* 🔥 A MÃO DO OPONENTE */
+            .container-mao-oponente {
+                position: fixed;
+                top: -25px; /* Esconde a base lá no teto */
+                left: 50%;
+                transform: translateX(-50%) rotate(180deg); /* Fica de ponta cabeça */
+                display: flex;
+                justify-content: center;
+                align-items: flex-end;
+                z-index: 9999;
+                pointer-events: none;
+            }
+
+            .carta-oponente-na-mao {
+                width: 50px; /* Um pouco menor pra dar perspectiva */
+                height: 75px;
+                background: repeating-linear-gradient(45deg, #111, #111 5px, #222 5px, #222 10px); /* Textura de Verso */
+                border: 2px solid #555;
+                border-radius: 6px;
+                margin: 0 -10px;
+                box-shadow: -4px 4px 10px rgba(0,0,0,0.6);
+            }
+
+            .carta-oponente-na-mao:nth-child(1) { transform: rotate(-15deg) translateY(12px); }
+            .carta-oponente-na-mao:nth-child(2) { transform: rotate(0deg) translateY(0px); z-index: 2; }
+            .carta-oponente-na-mao:nth-child(3) { transform: rotate(15deg) translateY(12px); }
         `;
         document.head.appendChild(style);
     }
 
-    // APLICADOR AUTOMÁTICO:
-    // Localiza a classe '.carta-mao' que estava na div '.mao-jogador'
+    // 1. Aplica o estilo na SUA mão
     let todasAsCartas = document.querySelectorAll('.carta-mao'); 
-    
     if(todasAsCartas.length > 0) {
         let caixaPai = todasAsCartas[0].parentElement;
-        caixaPai.className = "container-mao-ataques"; // Transforma a caixa antiga no leque voador
-        
+        caixaPai.className = "container-mao-ataques"; 
         todasAsCartas.forEach(carta => {
-            carta.className = "carta-na-mao"; // Aplica a física nas 3 cartas
+            carta.className = "carta-na-mao"; 
         });
     }
+
+    // 2. Injeta a mão do OPONENTE dinamicamente na tela
+    if(!document.getElementById('mao-oponente-ui')) {
+        let maoOp = document.createElement('div');
+        maoOp.id = 'mao-oponente-ui';
+        maoOp.className = 'container-mao-oponente';
+        maoOp.innerHTML = `
+            <div class="carta-oponente-na-mao"></div>
+            <div class="carta-oponente-na-mao"></div>
+            <div class="carta-oponente-na-mao"></div>
+        `;
+        document.getElementById('tela-batalha').appendChild(maoOp);
+    }
+
 }, 1200);
