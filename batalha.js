@@ -353,9 +353,9 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
 
-        // 🔥 AJUSTE FINO 3X3: Ajustado para -130px para achar o meio termo perfeito!
-        if(jogZona) jogZona.style.transform = "translateY(-130px)"; 
-        if(opZona) opZona.style.transform = "translateY(-130px)";
+        // 🔥 AJUSTE MICRO-FINO 3X3: Ajustado exatamente para -128px a seu pedido!
+        if(jogZona) jogZona.style.transform = "translateY(-128px)"; 
+        if(opZona) opZona.style.transform = "translateY(-128px)";
         
         jogDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
         opDecksBottom.forEach(el => el.style.transform = "translateY(15px)"); 
