@@ -96,6 +96,7 @@ window.carregarDeckParaBatalha = function() {
             if (cartaOriginal) {
                 // Monta o guerreiro com os status reais de DNA da sua coleção
                 campoJogador[chave] = {
+                    dono: 'jogador', // 🔥 NOVO: Identidade para o sistema saber que a carta é sua
                     nome: cartaOriginal.nome,
                     tribo: cartaOriginal.tribo || "Azul",
                     elementos: cartaOriginal.elementos || [],
@@ -129,7 +130,7 @@ function atualizarTelaBatalha() {
     const slotsOp = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
     slotsOp.forEach(slotId => {
         const el = document.getElementById('op-' + slotId);
-        if(el) el.innerHTML = desenharMiniCarta(null);
+        if(el) el.innerHTML = desenharMiniCarta(window.campoOponente ? window.campoOponente[slotId] : null); // Alterado para ler do oponente também
     });
 
     atualizarContadorFichasHabilidade();
@@ -227,3 +228,151 @@ function fecharModalFichas() {
 
 // A atualização inicial do tabuleiro agora acontece de forma mais limpa!
 setTimeout(atualizarTelaBatalha, 500);
+
+// ==========================================
+// SISTEMA DE MOVIMENTAÇÃO E COMBATE
+// ==========================================
+
+// 1. O Mapa Mental do Tabuleiro (A Pirâmide do Drome e as pontes)
+const mapAdjacencia = {
+    'jog-c1': ['jog-c2', 'jog-c4'],
+    'jog-c2': ['jog-c1', 'jog-c3', 'jog-c4', 'jog-c5'],
+    'jog-c3': ['jog-c2', 'jog-c5'],
+    'jog-c4': ['jog-c1', 'jog-c2', 'jog-c5', 'jog-c6'],
+    'jog-c5': ['jog-c2', 'jog-c3', 'jog-c4', 'jog-c6'],
+    'jog-c6': ['jog-c4', 'jog-c5', 'op-c6'], // Ponte para o inimigo!
+    'op-c1': ['op-c2', 'op-c4'],
+    'op-c2': ['op-c1', 'op-c3', 'op-c4', 'op-c5'],
+    'op-c3': ['op-c2', 'op-c5'],
+    'op-c4': ['op-c1', 'op-c2', 'op-c5', 'op-c6'],
+    'op-c5': ['op-c2', 'op-c3', 'op-c4', 'op-c6'],
+    'op-c6': ['op-c4', 'op-c5', 'jog-c6'] // Ponte de volta
+};
+
+window.slotSelecionadoMovimento = null;
+
+// Puxa ou salva a criatura dependendo do lado da mesa
+function obterCriaturaNoSlot(fullId) {
+    if (fullId.startsWith('jog-')) return campoJogador[fullId.replace('jog-', '')];
+    if (fullId.startsWith('op-')) return window.campoOponente[fullId.replace('op-', '')];
+    return null;
+}
+
+function setarCriaturaNoSlot(fullId, criatura) {
+    if (fullId.startsWith('jog-')) campoJogador[fullId.replace('jog-', '')] = criatura;
+    if (fullId.startsWith('op-')) window.campoOponente[fullId.replace('op-', '')] = criatura;
+}
+
+// 2. A Lógica do Clique no Tabuleiro
+window.lidarComCliqueTabuleiro = function(fullId) {
+    let criaturaAlvo = obterCriaturaNoSlot(fullId);
+    let el = document.getElementById(fullId);
+    
+    // Se o slot estiver invisível por causa do modo (ex: 1x1 ou 3x3), ignora totalmente!
+    if (!el || el.parentElement.style.display === 'none') return;
+
+    // A) SE NÃO TEM NINGUÉM SELECIONADO AINDA
+    if (!window.slotSelecionadoMovimento) {
+        if (criaturaAlvo && criaturaAlvo.dono === 'jogador') {
+            window.slotSelecionadoMovimento = fullId;
+            destacarAdjacentes(fullId);
+            if(window.tocarSFX) window.tocarSFX('notificacao'); // Toca sonzinho suave
+        }
+        return;
+    }
+
+    // B) SE JÁ TEM ALGUÉM SELECIONADO
+    let idOrigem = window.slotSelecionadoMovimento;
+    let criaturaOrigem = obterCriaturaNoSlot(idOrigem);
+
+    // Clicou na mesma carta? Deseleciona.
+    if (idOrigem === fullId) {
+        limparDestaquesMovimento();
+        window.slotSelecionadoMovimento = null;
+        return;
+    }
+
+    // Clicou em outra carta SUA? Troca a seleção pra ela!
+    if (criaturaAlvo && criaturaAlvo.dono === 'jogador') {
+        limparDestaquesMovimento();
+        window.slotSelecionadoMovimento = fullId;
+        destacarAdjacentes(fullId);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        return;
+    }
+
+    // Clicou longe demais? (Espaço não é adjacente)
+    if (!mapAdjacencia[idOrigem].includes(fullId)) {
+        limparDestaquesMovimento();
+        window.slotSelecionadoMovimento = null;
+        return;
+    }
+
+    // ===========================
+    // MODO AÇÃO! (Mover ou Atacar)
+    // ===========================
+    if (!criaturaAlvo) {
+        // MOVIMENTO (Clicou num buraco vazio)
+        setarCriaturaNoSlot(fullId, criaturaOrigem); // Clona pra frente
+        setarCriaturaNoSlot(idOrigem, null); // Apaga de onde estava
+        window.mostrarMensagemScanner("Avançando pelo tabuleiro!");
+    } else if (criaturaAlvo.dono === 'oponente') {
+        // COMBATE (Clicou numa criatura do Oponente)
+        window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
+        // O código de abrir a tela de ataque entrará aqui futuramente
+    }
+
+    limparDestaquesMovimento();
+    window.slotSelecionadoMovimento = null;
+    atualizarTelaBatalha(); // Redesenha a tela pra mostrar a carta no lugar novo
+}
+
+// 3. Efeitos Visuais (CSS Dinâmico)
+function destacarAdjacentes(fullId) {
+    limparDestaquesMovimento();
+    document.getElementById(fullId).classList.add('slot-selecionado');
+
+    mapAdjacencia[fullId].forEach(adjId => {
+        let el = document.getElementById(adjId);
+        // Só acende e permite ir para slots que existem e estão visíveis na tela
+        if (el && el.parentElement.style.display !== 'none') {
+            let criaturaAlvo = obterCriaturaNoSlot(adjId);
+            if (!criaturaAlvo) {
+                el.classList.add('slot-livre-movimento'); // Verde: Pode andar
+            } else if (criaturaAlvo.dono === 'oponente') {
+                el.classList.add('slot-alvo-combate'); // Vermelho: Pode atacar
+            }
+        }
+    });
+}
+
+function limparDestaquesMovimento() {
+    document.querySelectorAll('.slot-criatura').forEach(el => {
+        el.classList.remove('slot-selecionado', 'slot-livre-movimento', 'slot-alvo-combate');
+    });
+}
+
+// Injeta o CSS das luzes e os Sensores de Clique nas caixas
+setTimeout(() => {
+    if (!document.getElementById("css-movimento")) {
+        let style = document.createElement('style');
+        style.id = "css-movimento";
+        style.innerHTML = `
+            .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 10;}
+            .slot-livre-movimento { box-shadow: inset 0 0 25px rgba(0,255,0,0.8), 0 0 15px rgba(0,255,0,0.5) !important; border-color: #00ff00 !important; cursor: pointer; transition: 0.2s;}
+            .slot-livre-movimento:hover { background: rgba(0,255,0,0.15); transform: scale(1.02); }
+            .slot-alvo-combate { box-shadow: inset 0 0 25px rgba(255,0,0,0.8), 0 0 15px rgba(255,0,0,0.5) !important; border-color: #ff0000 !important; cursor: pointer; transition: 0.2s;}
+            .slot-alvo-combate:hover { background: rgba(255,0,0,0.15); transform: scale(1.02); }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Cola o sensor de clique em todos os 12 buracos do tabuleiro!
+    ['jog', 'op'].forEach(lado => {
+        ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
+            let el = document.getElementById(`${lado}-${slot}`);
+            // Usa o parentElement para capturar o clique em toda a área visível do slot
+            if (el) el.parentElement.onclick = () => window.lidarComCliqueTabuleiro(`${lado}-${slot}`);
+        });
+    });
+}, 1000); // 1 segundo de atraso para ter certeza que a tela existe
