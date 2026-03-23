@@ -76,7 +76,6 @@ function desenharMiniCarta(criaturaObj) {
 let campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
 
 window.carregarDeckParaBatalha = function() {
-    // 🔥 CORREÇÃO DO BUG FANTASMA: Limpa o tabuleiro inteiro antes de começar!
     campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     window.slotSelecionadoMovimento = null;
@@ -229,7 +228,6 @@ setTimeout(atualizarTelaBatalha, 500);
 // SISTEMA DE MOVIMENTAÇÃO E COMBATE DINÂMICO
 // ==========================================
 
-// 1. O Mapa Base (Conexões internas do seu próprio campo)
 const baseAdjacencia = {
     'jog-c1': ['jog-c2', 'jog-c4'],
     'jog-c2': ['jog-c1', 'jog-c3', 'jog-c4', 'jog-c5'],
@@ -248,27 +246,26 @@ const baseAdjacencia = {
 
 window.slotSelecionadoMovimento = null;
 
-// 🔥 NOVO: Motor Inteligente de Pontes (Descobre quem é a linha de frente de acordo com o modo)
+// 🔥 CORREÇÃO DO ESPELHO: As pontes agora respeitam a rotação de 180 graus do oponente!
 function obterAdjacencias(fullId) {
     let adj = [...(baseAdjacencia[fullId] || [])];
     let modo = window.estadoDrome ? window.estadoDrome.modo : "6x6";
 
-    // Cria as pontes para o inimigo dependendo de quem está na linha de frente do modo escolhido!
     if (modo === "6x6") {
-        if (fullId === 'jog-c1') adj.push('op-c1', 'op-c2');
-        if (fullId === 'jog-c2') adj.push('op-c1', 'op-c2', 'op-c3');
-        if (fullId === 'jog-c3') adj.push('op-c2', 'op-c3');
+        if (fullId === 'jog-c1') adj.push('op-c3', 'op-c2'); // Esquerda ataca a Esquerda rodada (c3)
+        if (fullId === 'jog-c2') adj.push('op-c3', 'op-c2', 'op-c1'); // Centro ataca os três
+        if (fullId === 'jog-c3') adj.push('op-c2', 'op-c1'); // Direita ataca a Direita rodada (c1)
         
-        if (fullId === 'op-c1') adj.push('jog-c1', 'jog-c2');
+        if (fullId === 'op-c3') adj.push('jog-c1', 'jog-c2');
         if (fullId === 'op-c2') adj.push('jog-c1', 'jog-c2', 'jog-c3');
-        if (fullId === 'op-c3') adj.push('jog-c2', 'jog-c3');
+        if (fullId === 'op-c1') adj.push('jog-c2', 'jog-c3');
     } 
     else if (modo === "3x3") {
-        if (fullId === 'jog-c4') adj.push('op-c4', 'op-c5');
-        if (fullId === 'jog-c5') adj.push('op-c4', 'op-c5');
+        if (fullId === 'jog-c4') adj.push('op-c5', 'op-c4'); // Esquerda ataca a Esquerda rodada (c5)
+        if (fullId === 'jog-c5') adj.push('op-c5', 'op-c4');
         
-        if (fullId === 'op-c4') adj.push('jog-c4', 'jog-c5');
-        if (fullId === 'op-c5') adj.push('jog-c4', 'jog-c5');
+        if (fullId === 'op-c4') adj.push('jog-c5', 'jog-c4');
+        if (fullId === 'op-c5') adj.push('jog-c5', 'jog-c4');
     } 
     else if (modo && modo.includes("1x1")) {
         if (fullId === 'jog-c6') adj.push('op-c6');
@@ -289,7 +286,6 @@ function setarCriaturaNoSlot(fullId, criatura) {
     if (fullId.startsWith('op-')) window.campoOponente[fullId.replace('op-', '')] = criatura;
 }
 
-// 2. A Lógica do Clique no Tabuleiro
 window.lidarComCliqueTabuleiro = function(fullId) {
     let criaturaAlvo = obterCriaturaNoSlot(fullId);
     let el = document.getElementById(fullId);
@@ -322,16 +318,12 @@ window.lidarComCliqueTabuleiro = function(fullId) {
         return;
     }
 
-    // 🔥 VERIFICAÇÃO ATUALIZADA: Agora pergunta para o Motor Inteligente de Pontes!
     if (!obterAdjacencias(idOrigem).includes(fullId)) {
         limparDestaquesMovimento();
         window.slotSelecionadoMovimento = null;
         return;
     }
 
-    // ===========================
-    // MODO AÇÃO! (Mover ou Atacar)
-    // ===========================
     if (!criaturaAlvo) {
         setarCriaturaNoSlot(fullId, criaturaOrigem); 
         setarCriaturaNoSlot(idOrigem, null); 
@@ -345,12 +337,10 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     atualizarTelaBatalha(); 
 }
 
-// 3. Efeitos Visuais (CSS Dinâmico)
 function destacarAdjacentes(fullId) {
     limparDestaquesMovimento();
     document.getElementById(fullId).classList.add('slot-selecionado');
 
-    // 🔥 DESTAQUE ATUALIZADO: Usando o Motor Inteligente
     obterAdjacencias(fullId).forEach(adjId => {
         let el = document.getElementById(adjId);
         if (el && el.parentElement.style.display !== 'none') {
@@ -370,7 +360,6 @@ function limparDestaquesMovimento() {
     });
 }
 
-// Injeta o CSS das luzes e os Sensores de Clique nas caixas
 setTimeout(() => {
     if (!document.getElementById("css-movimento")) {
         let style = document.createElement('style');
