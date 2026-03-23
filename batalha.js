@@ -528,3 +528,79 @@ setTimeout(() => {
         });
     });
 }, 1000);
+// ==========================================
+// EFEITO 3D DA MÃO DE CARTAS (LEQUE)
+// ==========================================
+setTimeout(() => {
+    if (!document.getElementById("css-mao-cartas")) {
+        let style = document.createElement('style');
+        style.id = "css-mao-cartas";
+        style.innerHTML = `
+            /* Container da Mão Centralizado na base da tela */
+            .container-mao-ataques {
+                position: fixed;
+                bottom: -15px; /* Esconde um pedacinho da base da carta */
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                justify-content: center;
+                align-items: flex-end;
+                z-index: 9999;
+                pointer-events: none; /* Deixa o clique vazar pro tabuleiro atrás da mão */
+            }
+
+            /* A Física da Carta Padrão */
+            .carta-na-mao {
+                width: 65px; /* Ajuste a largura da sua carta aqui */
+                height: 95px; /* Ajuste a altura da sua carta aqui */
+                background: #111; /* Fundo temporário se não tiver imagem */
+                border: 2px solid #e53935;
+                border-radius: 8px;
+                margin: 0 -15px; /* SOBREPOSIÇÃO: Uma carta monta na outra */
+                box-shadow: -4px 4px 10px rgba(0,0,0,0.6);
+                transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animação suave igual elástico */
+                transform-origin: bottom center; /* O eixo de giro é a base da carta */
+                pointer-events: auto; /* O mouse funciona de novo ao bater na carta */
+                cursor: pointer;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                color: #4CAF50;
+                font-family: monospace;
+                font-size: 10px;
+                text-align: center;
+            }
+
+            /* O Truque do Leque (Curvatura baseada na posição de 1 a 3) */
+            .carta-na-mao:nth-child(1) { transform: rotate(-15deg) translateY(12px); }
+            .carta-na-mao:nth-child(2) { transform: rotate(0deg) translateY(0px); z-index: 2; }
+            .carta-na-mao:nth-child(3) { transform: rotate(15deg) translateY(12px); }
+
+            /* A Mágica do Hover: A carta sobe e vira pra você ler! */
+            .carta-na-mao:hover {
+                transform: rotate(0deg) translateY(-40px) scale(1.4) !important;
+                z-index: 100 !important;
+                box-shadow: 0 15px 25px rgba(0,0,0,0.9);
+                border-color: #ffd700; /* Brilha amarelo */
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // APLICADOR AUTOMÁTICO:
+    // Tenta encontrar a caixa onde as suas cartas de ataque estão agora.
+    // Pela sua print, parece que elas estão numa div agrupada.
+    // ⚠️ IMPORTANTE: Se o nome do ID não for esse, a gente ajusta!
+    
+    // Procura o container que tem as 3 cartas (Ataque 1, 2 e 3)
+    let todasAsCartas = document.querySelectorAll('.ataque-card'); // Substitua pela classe real das suas cartas!
+    
+    if(todasAsCartas.length > 0) {
+        let caixaPai = todasAsCartas[0].parentElement;
+        caixaPai.className = "container-mao-ataques";
+        
+        todasAsCartas.forEach(carta => {
+            carta.className = "carta-na-mao"; 
+        });
+    }
+}, 1200);
