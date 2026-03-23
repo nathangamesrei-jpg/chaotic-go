@@ -9,7 +9,7 @@ function desenharMiniCarta(criaturaObj) {
     let pct = 0;
     let corHp = '#444';
     let triboClass = ""; 
-    let htmlEquipamento = ""; // 🔥 NOVO: HTML do ícone de equipamento
+    let htmlEquipamento = ""; 
 
     if (criaturaObj) {
         img = criaturaObj.cartaBlank; 
@@ -31,7 +31,6 @@ function desenharMiniCarta(criaturaObj) {
         if (pct <= 50) corHp = 'orange';
         if (pct <= 20) corHp = 'red';
 
-        // 🔥 NOVO: Renderiza o ícone do equipamento se existir
         if (criaturaObj.equipamento) {
             if (criaturaObj.equipamentoRevelado) {
                 htmlEquipamento = `
@@ -108,11 +107,11 @@ window.carregarDeckParaBatalha = function() {
     
     chaves.forEach((chave, index) => {
         let idCarta = deck.criaturas[index]; 
-        let idEquip = deck.equipamentos ? deck.equipamentos[index] : null; // 🔥 NOVO: Puxa o equipamento do deck
+        let idEquip = deck.equipamentos ? deck.equipamentos[index] : null; 
         
         if (idCarta) {
             let cartaOriginal = window.inventario.find(c => c.id == idCarta);
-            let equipOriginal = idEquip ? window.inventario.find(c => c.id == idEquip) : null; // 🔥 NOVO: Busca item no inventário
+            let equipOriginal = idEquip ? window.inventario.find(c => c.id == idEquip) : null; 
             
             if (cartaOriginal) {
                 campoJogador[chave] = {
@@ -130,7 +129,6 @@ window.carregarDeckParaBatalha = function() {
                     },
                     hpAtual: cartaOriginal.stats?.e || 0,
                     fichasHabilidade: 2,
-                    // 🔥 NOVO: Salva os dados do equipamento no guerreiro!
                     equipamento: equipOriginal ? { 
                         nome: equipOriginal.nome, 
                         img: equipOriginal.img, 
@@ -251,7 +249,6 @@ function fecharModalFichas() {
     if(el) el.remove();
 }
 
-// 🔥 NOVO: MODAL DE AÇÕES DA CRIATURA (Equipamento vs Movimento)
 window.abrirModalAcoesCriatura = function(fullId, criatura) {
     if (document.getElementById('overlay-acoes')) return;
 
@@ -306,7 +303,6 @@ window.revelarEquipamento = function(fullId) {
         criatura.equipamentoRevelado = true;
         window.mostrarMensagemScanner("🔮 Equipamento Revelado!");
         atualizarTelaBatalha();
-        // Em um jogo online, aqui enviaríamos o comando pro Firebase avisando o inimigo!
     }
 }
 
@@ -399,19 +395,15 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     
     if (!el || el.parentElement.style.display === 'none') return;
 
-    // 🔥 NOVO LOGIC DO CLIQUE INICIAL (Com Equipamento)
     if (!window.slotSelecionadoMovimento) {
         if (criaturaAlvo) {
             if (criaturaAlvo.dono === 'jogador') {
                 if (criaturaAlvo.equipamento) {
-                    // Tem equipamento? Abre o Modal de Ações pra escolher
                     window.abrirModalAcoesCriatura(fullId, criaturaAlvo);
                 } else {
-                    // Não tem equipamento? Já puxa direto pro movimento pra ser rápido!
                     window.selecionarParaMovimento(fullId);
                 }
             } else if (criaturaAlvo.dono === 'oponente' && criaturaAlvo.equipamento && criaturaAlvo.equipamentoRevelado) {
-                // Clicou no oponente e o equipamento tá revelado? Mostra os detalhes
                 window.verEquipamentoModal(fullId);
             }
         }
@@ -478,7 +470,6 @@ function limparDestaquesMovimento() {
 }
 
 setTimeout(() => {
-    // 🔥 NOVO CSS: Estilos do Equipamento, Ícones Hover e Botões do Modal
     if (!document.getElementById("css-movimento")) {
         let style = document.createElement('style');
         style.id = "css-movimento";
@@ -528,6 +519,7 @@ setTimeout(() => {
         });
     });
 }, 1000);
+
 // ==========================================
 // EFEITO 3D DA MÃO DE CARTAS (LEQUE)
 // ==========================================
@@ -539,7 +531,7 @@ setTimeout(() => {
             /* Container da Mão Centralizado na base da tela */
             .container-mao-ataques {
                 position: fixed;
-                bottom: -15px; /* Esconde um pedacinho da base da carta */
+                bottom: -20px; /* Esconde um pedacinho da base da carta */
                 left: 50%;
                 transform: translateX(-50%);
                 display: flex;
@@ -551,11 +543,11 @@ setTimeout(() => {
 
             /* A Física da Carta Padrão */
             .carta-na-mao {
-                width: 65px; /* Ajuste a largura da sua carta aqui */
-                height: 95px; /* Ajuste a altura da sua carta aqui */
-                background: #111; /* Fundo temporário se não tiver imagem */
+                width: 60px; /* Ajustada para combinar com a interface */
+                height: 90px;
+                background: #111; 
                 border: 2px solid #e53935;
-                border-radius: 8px;
+                border-radius: 6px;
                 margin: 0 -15px; /* SOBREPOSIÇÃO: Uma carta monta na outra */
                 box-shadow: -4px 4px 10px rgba(0,0,0,0.6);
                 transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); /* Animação suave igual elástico */
@@ -565,8 +557,9 @@ setTimeout(() => {
                 display: flex;
                 justify-content: center;
                 align-items: center;
-                color: #4CAF50;
+                color: #e53935;
                 font-family: monospace;
+                font-weight: bold;
                 font-size: 10px;
                 text-align: center;
             }
@@ -582,25 +575,22 @@ setTimeout(() => {
                 z-index: 100 !important;
                 box-shadow: 0 15px 25px rgba(0,0,0,0.9);
                 border-color: #ffd700; /* Brilha amarelo */
+                color: #ffd700;
             }
         `;
         document.head.appendChild(style);
     }
 
     // APLICADOR AUTOMÁTICO:
-    // Tenta encontrar a caixa onde as suas cartas de ataque estão agora.
-    // Pela sua print, parece que elas estão numa div agrupada.
-    // ⚠️ IMPORTANTE: Se o nome do ID não for esse, a gente ajusta!
-    
-    // Procura o container que tem as 3 cartas (Ataque 1, 2 e 3)
-    let todasAsCartas = document.querySelectorAll('.ataque-card'); // Substitua pela classe real das suas cartas!
+    // Localiza a classe '.carta-mao' que estava na div '.mao-jogador'
+    let todasAsCartas = document.querySelectorAll('.carta-mao'); 
     
     if(todasAsCartas.length > 0) {
         let caixaPai = todasAsCartas[0].parentElement;
-        caixaPai.className = "container-mao-ataques";
+        caixaPai.className = "container-mao-ataques"; // Transforma a caixa antiga no leque voador
         
         todasAsCartas.forEach(carta => {
-            carta.className = "carta-na-mao"; 
+            carta.className = "carta-na-mao"; // Aplica a física nas 3 cartas
         });
     }
 }, 1200);
