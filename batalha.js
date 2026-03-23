@@ -73,6 +73,7 @@ function desenharMiniCarta(criaturaObj) {
 // SISTEMA DE CONTADOR INTELIGENTE E CARGA DE DECK
 // ==========================================
 
+// O Campo agora começa 100% vazio, aguardando o Scanner injetar as cartas reais
 let campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
 
 // 🛠️ MÁGICA: A função que pega o seu deck selecionado e cria os guerreiros no tabuleiro!
@@ -115,6 +116,8 @@ window.carregarDeckParaBatalha = function() {
                     fichasHabilidade: 2 // Começa com 2 fichas padrão
                 };
             }
+        } else {
+            campoJogador[chave] = null;
         }
     });
 
@@ -360,21 +363,35 @@ setTimeout(() => {
         let style = document.createElement('style');
         style.id = "css-movimento";
         style.innerHTML = `
-            .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 10;}
-            .slot-livre-movimento { box-shadow: inset 0 0 25px rgba(0,255,0,0.8), 0 0 15px rgba(0,255,0,0.5) !important; border-color: #00ff00 !important; cursor: pointer; transition: 0.2s;}
+            .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
+            .slot-livre-movimento { box-shadow: inset 0 0 25px rgba(0,255,0,0.8), 0 0 15px rgba(0,255,0,0.5) !important; border-color: #00ff00 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
             .slot-livre-movimento:hover { background: rgba(0,255,0,0.15); transform: scale(1.02); }
-            .slot-alvo-combate { box-shadow: inset 0 0 25px rgba(255,0,0,0.8), 0 0 15px rgba(255,0,0,0.5) !important; border-color: #ff0000 !important; cursor: pointer; transition: 0.2s;}
+            .slot-alvo-combate { box-shadow: inset 0 0 25px rgba(255,0,0,0.8), 0 0 15px rgba(255,0,0,0.5) !important; border-color: #ff0000 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
             .slot-alvo-combate:hover { background: rgba(255,0,0,0.15); transform: scale(1.02); }
         `;
         document.head.appendChild(style);
     }
 
+    // 🔥 CORREÇÃO DA LONA INVISÍVEL: Fura a barreira das fileiras
+    let zonas = document.querySelectorAll('.zona-central');
+    if (zonas) zonas.forEach(z => z.style.pointerEvents = "none"); // Fura a lona gigante
+
     // Cola o sensor de clique em todos os 12 buracos do tabuleiro!
     ['jog', 'op'].forEach(lado => {
         ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
             let el = document.getElementById(`${lado}-${slot}`);
-            // 🔥 CORREÇÃO 6x6: O clique agora é direto no slot, garantindo precisão!
-            if (el) el.onclick = () => window.lidarComCliqueTabuleiro(`${lado}-${slot}`);
+            if (el) {
+                // Fura a lona da fileira individual
+                if (el.parentElement) el.parentElement.style.pointerEvents = "none";
+                
+                // Devolve a capacidade de clicar APENAS para a minicarta
+                el.style.pointerEvents = "auto";
+                
+                el.onclick = (e) => {
+                    e.stopPropagation(); // Trava pro clique não vazar
+                    window.lidarComCliqueTabuleiro(`${lado}-${slot}`);
+                };
+            }
         });
     });
 }, 1000); // 1 segundo de atraso para ter certeza que a tela existe
