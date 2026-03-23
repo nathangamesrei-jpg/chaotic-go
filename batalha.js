@@ -160,10 +160,8 @@ function atualizarTelaBatalha() {
 }
 
 function atualizarContadorFichasHabilidade() {
-    
     function renderizarBotaoFichas(seletorLado, ladoId, totalFichas) {
         const containerFichas = document.querySelector(`${seletorLado} .container-fichas-js`);
-        
         if(containerFichas && !document.getElementById(`btn-contador-${ladoId}`)) {
             const btnHTML = `
                 <button class="btn-total-fichas" id="btn-contador-${ladoId}">
@@ -178,19 +176,13 @@ function atualizarContadorFichasHabilidade() {
     }
 
     let totalJogador = 0;
-    Object.values(campoJogador).forEach(c => {
-        if(c && c.fichasHabilidade) totalJogador += c.fichasHabilidade;
-    });
+    Object.values(campoJogador).forEach(c => { if(c && c.fichasHabilidade) totalJogador += c.fichasHabilidade; });
     renderizarBotaoFichas('.lado-jogador', 'jogador', totalJogador);
 
-    if(!window.campoOponente) {
-        window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
-    }
+    if(!window.campoOponente) window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
 
     let totalOponente = 0;
-    Object.values(window.campoOponente).forEach(c => {
-        if(c && c.fichasHabilidade) totalOponente += c.fichasHabilidade;
-    });
+    Object.values(window.campoOponente).forEach(c => { if(c && c.fichasHabilidade) totalOponente += c.fichasHabilidade; });
     renderizarBotaoFichas('.lado-oponente', 'oponente', totalOponente);
 }
 
@@ -200,7 +192,6 @@ function atualizarContadorFichasHabilidade() {
 
 function abrirModalFichas(ladoId) {
     let listaHTML = '';
-    
     const campoAlvo = ladoId === 'oponente' ? window.campoOponente : campoJogador;
     const tituloModal = ladoId === 'oponente' ? 'FICHAS DO OPONENTE' : 'MINHAS FICHAS';
     
@@ -208,7 +199,6 @@ function abrirModalFichas(ladoId) {
         if(c) {
             const fichas = c.fichasHabilidade || 0;
             const semFichasClass = fichas === 0 ? 'sem-fichas' : '';
-            
             listaHTML += `
                 <div class="criatura-fichas-item ${semFichasClass}">
                     <div class="criatura-fichas-art" style="background-image: url('${c.cartaBlank}')"></div>
@@ -237,11 +227,8 @@ function abrirModalFichas(ladoId) {
     `;
 
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
-
     document.getElementById('fechar-modal-fichas').addEventListener('click', fecharModalFichas);
-    document.getElementById('overlay-fichas').addEventListener('click', function(e) {
-        if(e.target === this) fecharModalFichas();
-    });
+    document.getElementById('overlay-fichas').addEventListener('click', function(e) { if(e.target === this) fecharModalFichas(); });
 }
 
 function fecharModalFichas() {
@@ -252,9 +239,7 @@ function fecharModalFichas() {
 window.abrirModalAcoesCriatura = function(fullId, criatura) {
     if (document.getElementById('overlay-acoes')) return;
 
-    let botoesHTML = `
-        <button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>
-    `;
+    let botoesHTML = `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
 
     if (criatura.equipamento) {
         if (!criatura.equipamentoRevelado) {
@@ -279,9 +264,7 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
     `;
 
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
-    document.getElementById('overlay-acoes').addEventListener('click', function(e) {
-        if(e.target === this) fecharModalAcoes();
-    });
+    document.getElementById('overlay-acoes').addEventListener('click', function(e) { if(e.target === this) fecharModalAcoes(); });
 }
 
 window.fecharModalAcoes = function() {
@@ -324,6 +307,70 @@ window.verEquipamentoModal = function(fullId) {
         </div>
     `;
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// ==========================================
+// AJUSTE DINÂMICO DE TABULEIRO E GRAVIDADE
+// ==========================================
+window.ajustarTabuleiroBatalha = function(modo) {
+    let opZona = document.querySelector('.lado-oponente .zona-central');
+    let jogZona = document.querySelector('.lado-jogador .zona-central');
+
+    // Captura as fileiras
+    let opLinha3 = document.getElementById('op-c1').parentElement; 
+    let opLinha2 = document.getElementById('op-c4').parentElement; 
+    let opLinha1 = document.getElementById('op-c6').parentElement; 
+    let jogLinha3 = document.getElementById('jog-c1').parentElement; 
+    let jogLinha2 = document.getElementById('jog-c4').parentElement; 
+    let jogLinha1 = document.getElementById('jog-c6').parentElement; 
+    
+    let opMugics = document.querySelectorAll('.lado-oponente .hex-mugic');
+    let jogMugics = document.querySelectorAll('.lado-jogador .hex-mugic');
+
+    // 🔥 CAPTURA AS ZONAS INFERIORES DOS DECKS
+    let jogDecksBottom = document.querySelectorAll('.lado-jogador .zona-lateral > div[style*="bottom: 0"]');
+    let opDecksBottom = document.querySelectorAll('.lado-oponente .zona-lateral > div[style*="bottom: 0"]');
+
+    if (modo === "6x6") {
+        opLinha3.style.display = "flex"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
+        jogLinha3.style.display = "flex"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
+        opMugics.forEach(m => m.style.display = "block");
+        jogMugics.forEach(m => m.style.display = "block");
+
+        // 🛠️ CIRURGIA DO 6X6: Pinças de Posicionamento!
+        // Sobe a pirâmide inteira pra linha divisória
+        if(jogZona) jogZona.style.transform = "translateY(-40px)";
+        // Oponente tá de cabeça pra baixo, então "subir" visualmente é usar o mesmo eixo
+        if(opZona) opZona.style.transform = "translateY(-40px)"; 
+        
+        // Empurra os decks pra baixo pra liberar a tela
+        jogDecksBottom.forEach(el => el.style.transform = "translateY(35px)");
+        opDecksBottom.forEach(el => el.style.transform = "translateY(35px)");
+    } 
+    else if (modo === "3x3") {
+        opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
+        jogLinha3.style.display = "none"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
+        opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
+        jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
+
+        // Reseta os transformadores
+        if(jogZona) jogZona.style.transform = "translateY(0px)";
+        if(opZona) opZona.style.transform = "translateY(0px)";
+        jogDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
+        opDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
+    } 
+    else if (modo && modo.includes("1x1")) {
+        opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
+        jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
+        opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
+        jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
+
+        // Reseta os transformadores
+        if(jogZona) jogZona.style.transform = "translateY(0px)";
+        if(opZona) opZona.style.transform = "translateY(0px)";
+        jogDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
+        opDecksBottom.forEach(el => el.style.transform = "translateY(0px)");
+    }
 }
 
 setTimeout(atualizarTelaBatalha, 500);
@@ -470,11 +517,11 @@ function limparDestaquesMovimento() {
 }
 
 setTimeout(() => {
-    // 🔥 GRAVIDADE CENTRAL: Ajusta o "colchão" da arena pra liberar as mãos e empurra as zonas pro meio!
+    // Removemos os paddings gigantes antigos pra usar as "Pinças de Translação" lá em cima.
     let arena = document.querySelector('.arena-drome-container');
     if (arena) {
-        arena.style.paddingBottom = "110px"; // Afasta as cartas do rodapé pra caber a sua mão
-        arena.style.paddingTop = "70px";     // Afasta as cartas do topo pra caber a mão do oponente
+        arena.style.paddingBottom = "15px"; 
+        arena.style.paddingTop = "15px";    
         arena.style.boxSizing = "border-box";
     }
 
@@ -482,14 +529,11 @@ setTimeout(() => {
         let style = document.createElement('style');
         style.id = "css-movimento";
         style.innerHTML = `
-            /* 🔥 FORÇA A ZONA CENTRAL A ESPREMER AS CARTAS NA LINHA DIVISÓRIA */
             .zona-central {
                 justify-content: flex-start !important; 
                 gap: 5px !important;
             }
-            .linha-formacao-batalha {
-                margin: 0 !important;
-            }
+            .linha-formacao-batalha { margin: 0 !important; }
 
             .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
             .slot-livre-movimento { box-shadow: inset 0 0 25px rgba(0,255,0,0.8), 0 0 15px rgba(0,255,0,0.5) !important; border-color: #00ff00 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
@@ -497,7 +541,6 @@ setTimeout(() => {
             .slot-alvo-combate { box-shadow: inset 0 0 25px rgba(255,0,0,0.8), 0 0 15px rgba(255,0,0,0.5) !important; border-color: #ff0000 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
             .slot-alvo-combate:hover { background: rgba(255,0,0,0.15); transform: scale(1.02); }
             
-            /* CSS DOS EQUIPAMENTOS */
             .mini-card-wrapper { position: relative; }
             .mini-equip-icon { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; z-index: 50; cursor: help; border: 2px solid #ffd700; display:flex; justify-content:center; align-items:center; }
             .mini-equip-icon.revelado { background-size: cover; background-position: center; }
@@ -505,7 +548,6 @@ setTimeout(() => {
             .equip-tooltip { display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); width: 130px; background: rgba(0,10,0,0.95); border: 1px solid #4CAF50; color: white; text-align: center; font-size: 9px; padding: 6px; border-radius: 5px; pointer-events: none; z-index: 200; line-height: 1.3; }
             .mini-equip-icon:hover .equip-tooltip { display: block; }
             
-            /* CSS DOS BOTÕES DO MODAL */
             .btn-acao-modal { background: #112211; border: 1px solid #4CAF50; color: white; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; }
             .btn-acao-modal:hover { background: #4CAF50; color: black; }
             .btn-acao-modal.btn-mover { border-color: #00bcd4; color: #00bcd4; }
@@ -527,7 +569,6 @@ setTimeout(() => {
             if (el) {
                 if (el.parentElement) el.parentElement.style.pointerEvents = "none";
                 el.style.pointerEvents = "auto";
-                
                 el.onclick = (e) => {
                     e.stopPropagation(); 
                     window.lidarComCliqueTabuleiro(`${lado}-${slot}`);
@@ -545,7 +586,6 @@ setTimeout(() => {
         let style = document.createElement('style');
         style.id = "css-mao-cartas";
         style.innerHTML = `
-            /* A SUA MÃO */
             .container-mao-ataques {
                 position: fixed;
                 bottom: -20px; 
@@ -592,7 +632,6 @@ setTimeout(() => {
                 color: #ffd700;
             }
 
-            /* 🔥 A MÃO DO OPONENTE */
             .container-mao-oponente {
                 position: fixed;
                 top: -25px; 
@@ -622,7 +661,6 @@ setTimeout(() => {
         document.head.appendChild(style);
     }
 
-    // 1. Aplica o estilo na SUA mão
     let todasAsCartas = document.querySelectorAll('.carta-mao'); 
     if(todasAsCartas.length > 0) {
         let caixaPai = todasAsCartas[0].parentElement;
@@ -632,7 +670,6 @@ setTimeout(() => {
         });
     }
 
-    // 2. Injeta a mão do OPONENTE dinamicamente na tela
     if(!document.getElementById('mao-oponente-ui')) {
         let maoOp = document.createElement('div');
         maoOp.id = 'mao-oponente-ui';
