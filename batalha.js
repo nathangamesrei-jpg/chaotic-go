@@ -1,4 +1,9 @@
 // ==========================================
+// CONFIGURAÇÕES DE DESIGN (COLOQUE SUA IMAGEM AQUI)
+// ==========================================
+const URL_FUNDO_CARTA = 'cartas/verso.jpg'; // ⚠️ MUDE AQUI PARA O NOME/CAMINHO DA SUA FOTO! ⚠️
+
+// ==========================================
 // MOTOR DA MINI-CARTA (DROME PRO 2.1 - ELEMENTOS ESCONDIDOS E EQUIPAMENTOS)
 // ==========================================
 function desenharMiniCarta(criaturaObj) {
@@ -338,7 +343,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opMugics.forEach(m => m.style.display = "block");
         jogMugics.forEach(m => m.style.display = "block");
 
-        // 🔥 AJUSTE MICRO-FINO 6X6: Subindo mais 2px (-69 para -71)
         if(jogZona) jogZona.style.transform = "translateY(-71px)";
         if(opZona) opZona.style.transform = "translateY(-71px)"; 
         
@@ -531,6 +535,13 @@ setTimeout(() => {
         arena.style.boxSizing = "border-box";
     }
 
+    // 🔥 DETECTA OS DECKS E APLICA A MARCAÇÃO PARA RECEBER A IMAGEM
+    document.querySelectorAll('.box-deck').forEach(deck => {
+        if (deck.textContent.includes('DECK')) {
+            deck.classList.add('fundo-carta-personalizado');
+        }
+    });
+
     if (!document.getElementById("css-movimento")) {
         let style = document.createElement('style');
         style.id = "css-movimento";
@@ -562,6 +573,17 @@ setTimeout(() => {
             .btn-acao-modal.btn-revelar:hover { background: #ffd700; color: black; }
             .btn-acao-modal.btn-cancelar { border-color: #e53935; color: #e53935; margin-top: 10px; }
             .btn-acao-modal.btn-cancelar:hover { background: #e53935; color: white; }
+
+            /* 🔥 FUNDO DE CARTA PERSONALIZADO PARA OS DECKS */
+            .fundo-carta-personalizado {
+                background-image: url('${URL_FUNDO_CARTA}') !important;
+                background-size: cover !important;
+                background-position: center !important;
+                background-color: transparent !important;
+                color: #fff !important;
+                text-shadow: 0px 0px 4px #000, 0px 0px 6px #000 !important;
+                border: 2px solid #555 !important;
+            }
         `;
         document.head.appendChild(style);
     }
@@ -650,10 +672,13 @@ setTimeout(() => {
                 pointer-events: none;
             }
 
+            /* 🔥 APLICANDO O FUNDO ORIGINAL NA MÃO DO INIMIGO */
             .carta-oponente-na-mao {
                 width: 50px; 
                 height: 75px;
-                background: repeating-linear-gradient(45deg, #111, #111 5px, #222 5px, #222 10px); 
+                background-image: url('${URL_FUNDO_CARTA}'); 
+                background-size: cover;
+                background-position: center;
                 border: 2px solid #555;
                 border-radius: 6px;
                 margin: 0 -10px;
