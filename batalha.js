@@ -1,7 +1,7 @@
 // ==========================================
 // CONFIGURAÇÕES DE DESIGN (COLOQUE SUA IMAGEM DO VERSO AQUI)
 // ==========================================
-const URL_FUNDO_CARTA = 'cartas/verso.jpg'; // ⚠️ MUDE AQUI PARA A SUA FOTO DE VERSO! ⚠️
+const URL_FUNDO_CARTA = 'cartas/verso.jpg'; 
 
 // ==========================================
 // MOTOR DA MINI-CARTA (DROME PRO 2.1 - ELEMENTOS ESCONDIDOS E EQUIPAMENTOS)
@@ -98,10 +98,9 @@ function desenharMiniCarta(criaturaObj) {
 // ==========================================
 
 let campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
-window.baralhoAtaques = []; // Armazena as 17 cartas de ataque que sobraram
-window.maoAtaques = [];     // Armazena as 3 cartas na sua mão
+window.baralhoAtaques = []; 
+window.maoAtaques = [];     
 
-// Função que embaralha as cartas de ataque (Mágica pura!)
 function embaralharArray(array) {
     let arr = [...array];
     for (let i = arr.length - 1; i > 0; i--) {
@@ -120,10 +119,9 @@ window.carregarDeckParaBatalha = function() {
     let deck = window.estadoDrome.deckSelecionado;
     if (!deck || !deck.criaturas) return;
 
-    // 🔥 NOVO: SAQUE INICIAL (Pega os ataques, embaralha e saca 3 pra mão!)
     if (deck.ataques && deck.ataques.length > 0) {
-        window.baralhoAtaques = embaralharArray(deck.ataques); // Embaralha as 20
-        window.maoAtaques = window.baralhoAtaques.splice(0, 3); // Remove as 3 primeiras e joga na mão
+        window.baralhoAtaques = embaralharArray(deck.ataques); 
+        window.maoAtaques = window.baralhoAtaques.splice(0, 3); 
     } else {
         window.baralhoAtaques = [];
         window.maoAtaques = [];
@@ -183,27 +181,27 @@ function atualizarTelaBatalha() {
     });
 
     atualizarContadorFichasHabilidade();
-    atualizarDecksEMaoCards(); // 🔥 NOVO: Atualiza a interface gráfica dos Decks e da Mão
+    atualizarDecksEMaoCards(); 
 }
 
-// 🔥 NOVO: RENDERIZA OS TEXTOS NO FUNDO DO DECK E AS IMAGENS NA MÃO
+// 🔥 CORRIGIDO: RENDERIZA OS TEXTOS APENAS NOS DECKS REAIS (Ignora o Contador)
 function atualizarDecksEMaoCards() {
-    // 1. ARRUMA O TEXTO E O FUNDO DOS DECKS
     document.querySelectorAll('.box-deck').forEach(deck => {
         let isPlayer = deck.closest('.lado-jogador') !== null;
-        let htmlAtual = deck.innerHTML.trim();
+        let textoAtual = deck.textContent || ""; // Usando textContent pra ler só o texto puro
 
-        // Se for o Deck de Ataque
-        if (htmlAtual.includes('ATAQUE') || deck.classList.contains('ataque')) {
+        // Se for o Deck de Ataque verdadeiro (Tem que ter 'DECK' no texto)
+        if (textoAtual.includes('DECK') && textoAtual.includes('ATAQUE')) {
             let qtd = (isPlayer && window.baralhoAtaques) ? window.baralhoAtaques.length : 20;
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
-        // Se for o Deck de Locais (O que antigamente estava só 'DECK')
-        else if (htmlAtual === 'DECK' || htmlAtual.includes('LOCAIS')) {
+        // Se for o Deck de Locais puro (Sem confundir com o Lixo)
+        else if (textoAtual.trim() === 'DECK') {
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
+        // O CONTADOR DE ATAQUE FOI SALVO! O SCRIPT VAI IGNORÁ-LO E MANTER ORIGINAL!
     });
 
     // 2. DESENHA A SUA MÃO COM AS CARTAS REAIS
@@ -216,7 +214,7 @@ function atualizarDecksEMaoCards() {
                 el.style.backgroundImage = `url('${cartaOriginal.img}')`;
                 el.style.backgroundSize = 'cover';
                 el.style.backgroundPosition = 'center';
-                el.innerHTML = ''; // Limpa o texto "ATAQUE 1", deixando só a foto bonitona!
+                el.innerHTML = ''; 
             }
         }
     });
@@ -733,7 +731,6 @@ setTimeout(() => {
                 pointer-events: none;
             }
 
-            /* 🔥 APLICANDO O FUNDO ORIGINAL NA MÃO DO INIMIGO */
             .carta-oponente-na-mao {
                 width: 50px; 
                 height: 75px;
