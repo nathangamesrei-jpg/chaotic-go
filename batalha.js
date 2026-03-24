@@ -1,7 +1,7 @@
 // ==========================================
-// CONFIGURAÇÕES DE DESIGN (COLOQUE SUA IMAGEM AQUI)
+// CONFIGURAÇÕES DE DESIGN (COLOQUE SUA IMAGEM DO VERSO AQUI)
 // ==========================================
-const URL_FUNDO_CARTA = 'cartas/verso.jpg'; // ⚠️ MUDE AQUI PARA O NOME/CAMINHO DA SUA FOTO! ⚠️
+const URL_FUNDO_CARTA = 'cartas/verso.jpg'; // ⚠️ MUDE AQUI PARA A SUA FOTO DE VERSO! ⚠️
 
 // ==========================================
 // MOTOR DA MINI-CARTA (DROME PRO 2.1 - ELEMENTOS ESCONDIDOS E EQUIPAMENTOS)
@@ -94,10 +94,22 @@ function desenharMiniCarta(criaturaObj) {
 }
 
 // ==========================================
-// SISTEMA DE CONTADOR INTELIGENTE E CARGA DE DECK
+// SISTEMA DE CONTADOR INTELIGENTE, CARGA DE DECK E COMPRA DE MÃO 🔥
 // ==========================================
 
 let campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
+window.baralhoAtaques = []; // Armazena as 17 cartas de ataque que sobraram
+window.maoAtaques = [];     // Armazena as 3 cartas na sua mão
+
+// Função que embaralha as cartas de ataque (Mágica pura!)
+function embaralharArray(array) {
+    let arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+}
 
 window.carregarDeckParaBatalha = function() {
     campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
@@ -107,6 +119,15 @@ window.carregarDeckParaBatalha = function() {
 
     let deck = window.estadoDrome.deckSelecionado;
     if (!deck || !deck.criaturas) return;
+
+    // 🔥 NOVO: SAQUE INICIAL (Pega os ataques, embaralha e saca 3 pra mão!)
+    if (deck.ataques && deck.ataques.length > 0) {
+        window.baralhoAtaques = embaralharArray(deck.ataques); // Embaralha as 20
+        window.maoAtaques = window.baralhoAtaques.splice(0, 3); // Remove as 3 primeiras e joga na mão
+    } else {
+        window.baralhoAtaques = [];
+        window.maoAtaques = [];
+    }
 
     let chaves = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
     
@@ -162,6 +183,43 @@ function atualizarTelaBatalha() {
     });
 
     atualizarContadorFichasHabilidade();
+    atualizarDecksEMaoCards(); // 🔥 NOVO: Atualiza a interface gráfica dos Decks e da Mão
+}
+
+// 🔥 NOVO: RENDERIZA OS TEXTOS NO FUNDO DO DECK E AS IMAGENS NA MÃO
+function atualizarDecksEMaoCards() {
+    // 1. ARRUMA O TEXTO E O FUNDO DOS DECKS
+    document.querySelectorAll('.box-deck').forEach(deck => {
+        let isPlayer = deck.closest('.lado-jogador') !== null;
+        let htmlAtual = deck.innerHTML.trim();
+
+        // Se for o Deck de Ataque
+        if (htmlAtual.includes('ATAQUE') || deck.classList.contains('ataque')) {
+            let qtd = (isPlayer && window.baralhoAtaques) ? window.baralhoAtaques.length : 20;
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
+            deck.classList.add('fundo-carta-personalizado');
+        }
+        // Se for o Deck de Locais (O que antigamente estava só 'DECK')
+        else if (htmlAtual === 'DECK' || htmlAtual.includes('LOCAIS')) {
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
+            deck.classList.add('fundo-carta-personalizado');
+        }
+    });
+
+    // 2. DESENHA A SUA MÃO COM AS CARTAS REAIS
+    let elsMao = document.querySelectorAll('.carta-na-mao, .carta-mao');
+    elsMao.forEach((el, index) => {
+        if (window.maoAtaques && window.maoAtaques[index]) {
+            let idAtaque = window.maoAtaques[index];
+            let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
+            if (cartaOriginal) {
+                el.style.backgroundImage = `url('${cartaOriginal.img}')`;
+                el.style.backgroundSize = 'cover';
+                el.style.backgroundPosition = 'center';
+                el.innerHTML = ''; // Limpa o texto "ATAQUE 1", deixando só a foto bonitona!
+            }
+        }
+    });
 }
 
 function atualizarContadorFichasHabilidade() {
@@ -535,13 +593,6 @@ setTimeout(() => {
         arena.style.boxSizing = "border-box";
     }
 
-    // 🔥 DETECTA OS DECKS E APLICA A MARCAÇÃO PARA RECEBER A IMAGEM
-    document.querySelectorAll('.box-deck').forEach(deck => {
-        if (deck.textContent.includes('DECK')) {
-            deck.classList.add('fundo-carta-personalizado');
-        }
-    });
-
     if (!document.getElementById("css-movimento")) {
         let style = document.createElement('style');
         style.id = "css-movimento";
@@ -574,7 +625,7 @@ setTimeout(() => {
             .btn-acao-modal.btn-cancelar { border-color: #e53935; color: #e53935; margin-top: 10px; }
             .btn-acao-modal.btn-cancelar:hover { background: #e53935; color: white; }
 
-            /* 🔥 FUNDO DE CARTA PERSONALIZADO PARA OS DECKS */
+            /* 🔥 CSS DOS TEXTOS NO FUNDO DO DECK */
             .fundo-carta-personalizado {
                 background-image: url('${URL_FUNDO_CARTA}') !important;
                 background-size: cover !important;
@@ -583,6 +634,16 @@ setTimeout(() => {
                 color: #fff !important;
                 text-shadow: 0px 0px 4px #000, 0px 0px 6px #000 !important;
                 border: 2px solid #555 !important;
+                position: relative !important;
+            }
+            .texto-deck-baixo {
+                position: absolute;
+                bottom: 5px;
+                left: 0;
+                width: 100%;
+                text-align: center;
+                line-height: 1.2;
+                font-size: 8px; /* Fonte ajustada para caber bonito embaixo */
             }
         `;
         document.head.appendChild(style);
@@ -714,3 +775,6 @@ setTimeout(() => {
     }
 
 }, 1200);
+
+// Faz um re-check após os estilos carregarem pra garantir que a mão puxe as imagens do deck!
+setTimeout(atualizarDecksEMaoCards, 1300);
