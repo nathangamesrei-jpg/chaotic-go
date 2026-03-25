@@ -665,14 +665,25 @@ setTimeout(() => {
             }
             .linha-formacao-batalha { margin: 0 !important; }
 
+            /* AUMENTA A ÁREA DE TOQUE PRA NÃO PRECISAR CLIQUE CIRÚRGICO */
+            [id^="jog-"], [id^="op-"] {
+                touch-action: none !important; /* Impede o celular de dar scroll enquanto arrasta a carta */
+                width: 100%;
+                height: 100%;
+                min-height: 100px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            }
+
             .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
             .slot-livre-movimento { box-shadow: inset 0 0 25px rgba(0,255,0,0.8), 0 0 15px rgba(0,255,0,0.5) !important; border-color: #00ff00 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
             .slot-livre-movimento:hover { background: rgba(0,255,0,0.15); transform: scale(1.02); }
             .slot-alvo-combate { box-shadow: inset 0 0 25px rgba(255,0,0,0.8), 0 0 15px rgba(255,0,0,0.5) !important; border-color: #ff0000 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
             .slot-alvo-combate:hover { background: rgba(255,0,0,0.15); transform: scale(1.02); }
             
-            .mini-card-wrapper { position: relative; }
-            .mini-equip-icon { position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; z-index: 50; cursor: help; border: 2px solid #ffd700; display:flex; justify-content:center; align-items:center; }
+            .mini-card-wrapper { position: relative; pointer-events: none; } /* Deixa o clique vazar pro Container Maior */
+            .mini-equip-icon { pointer-events: auto; position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; z-index: 50; cursor: help; border: 2px solid #ffd700; display:flex; justify-content:center; align-items:center; }
             .mini-equip-icon.revelado { background-size: cover; background-position: center; }
             .mini-equip-icon.oculto { background: #222; color: #fff; font-weight: bold; font-size: 14px; border-color: #aaa; }
             .equip-tooltip { display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); width: 130px; background: rgba(0,10,0,0.95); border: 1px solid #4CAF50; color: white; text-align: center; font-size: 9px; padding: 6px; border-radius: 5px; pointer-events: none; z-index: 200; line-height: 1.3; }
@@ -713,16 +724,134 @@ setTimeout(() => {
     let zonas = document.querySelectorAll('.zona-central');
     if (zonas) zonas.forEach(z => z.style.pointerEvents = "none"); 
 
+    // ==========================================
+    // 🔥 NOVO MOTOR DE ARRASTAR E SOLTAR (DRAG & DROP TOUCH) 🔥
+    // ==========================================
+    let interacao = { idOrigem: null, isDragging: false, clone: null, startX: 0, startY: 0 };
+
+    window.iniciarInteracaoSlot = function(e, fullId) {
+        if (e.button === 2) return; 
+        
+        let pointer = e.touches ? e.touches[0] : e; 
+        
+        interacao.idOrigem = fullId;
+        interacao.isDragging = false;
+        interacao.startX = pointer.clientX;
+        interacao.startY = pointer.clientY;
+
+        let criatura = obterCriaturaNoSlot(fullId);
+
+        // Se clicou na SUA criatura, prepara o elevador fantasma pra arrastar
+        if (criatura && criatura.dono === 'jogador') {
+            let elOriginal = document.getElementById(fullId);
+            let rect = elOriginal.getBoundingClientRect();
+            
+            interacao.clone = elOriginal.cloneNode(true);
+            interacao.clone.style.position = 'fixed';
+            interacao.clone.style.left = rect.left + 'px';
+            interacao.clone.style.top = rect.top + 'px';
+            interacao.clone.style.width = rect.width + 'px';
+            interacao.clone.style.height = rect.height + 'px';
+            interacao.clone.style.pointerEvents = 'none'; 
+            interacao.clone.style.zIndex = '999999';
+            interacao.clone.style.opacity = '0.9';
+            interacao.clone.style.transform = 'scale(1.1)';
+            interacao.clone.style.display = 'none'; // Escondido até você começar a puxar
+            document.body.appendChild(interacao.clone);
+
+            document.addEventListener('pointermove', moverInteracao, {passive: false});
+            document.addEventListener('touchmove', moverInteracao, {passive: false});
+        }
+        
+        document.addEventListener('pointerup', soltarInteracao);
+        document.addEventListener('touchend', soltarInteracao);
+    };
+
+    function moverInteracao(e) {
+        if (!interacao.idOrigem || !interacao.clone) return;
+        
+        let pointer = e.touches ? e.touches[0] : e;
+        
+        let moveX = Math.abs(pointer.clientX - interacao.startX);
+        let moveY = Math.abs(pointer.clientY - interacao.startY);
+
+        // Detonou o gatilho de Arraste (moveu o dedo mais de 10px)
+        if (!interacao.isDragging && (moveX > 10 || moveY > 10)) {
+            interacao.isDragging = true;
+            interacao.clone.style.display = 'flex';
+            
+            window.fecharModalAcoes(); // Se tiver janela aberta, some com ela
+            
+            // Ilumina o tabuleiro igual mágica!
+            window.slotSelecionadoMovimento = interacao.idOrigem;
+            destacarAdjacentes(interacao.idOrigem);
+            if(window.tocarSFX) window.tocarSFX('notificacao'); 
+        }
+
+        if (interacao.isDragging) {
+            if(e.cancelable) e.preventDefault(); // Trava a tela pra não bugar o swipe
+            interacao.clone.style.left = (pointer.clientX - interacao.clone.offsetWidth / 2) + 'px';
+            interacao.clone.style.top = (pointer.clientY - interacao.clone.offsetHeight / 2) + 'px';
+        }
+    }
+
+    function soltarInteracao(e) {
+        document.removeEventListener('pointermove', moverInteracao);
+        document.removeEventListener('touchmove', moverInteracao);
+        document.removeEventListener('pointerup', soltarInteracao);
+        document.removeEventListener('touchend', soltarInteracao);
+
+        let origem = interacao.idOrigem;
+        
+        if (interacao.isDragging) {
+            let pointer = e.changedTouches ? e.changedTouches[0] : e;
+            
+            // Esconde o fantasma rapidinho pra ver em qual Casa/Slot o dedo parou
+            interacao.clone.style.display = 'none';
+            let elementoAbaixo = document.elementFromPoint(pointer.clientX, pointer.clientY);
+            
+            let slotDestino = null;
+            if (elementoAbaixo) {
+                let hitBox = elementoAbaixo.closest('[id^="jog-"], [id^="op-"]');
+                if (hitBox) slotDestino = hitBox.id;
+            }
+
+            interacao.clone.remove();
+            interacao = { idOrigem: null, isDragging: false, clone: null };
+
+            // Soltou na casa certa? EXECUTA O GOLPE!
+            if (slotDestino && slotDestino !== origem) {
+                if (obterAdjacencias(origem).includes(slotDestino)) {
+                    window.slotSelecionadoMovimento = origem;
+                    window.lidarComCliqueTabuleiro(slotDestino);
+                } else {
+                    limparDestaquesMovimento();
+                    window.slotSelecionadoMovimento = null;
+                }
+            } else {
+                limparDestaquesMovimento();
+                window.slotSelecionadoMovimento = null;
+            }
+
+        } else {
+            // Foi só um clique normal! Abre as opções.
+            if (interacao.clone) interacao.clone.remove();
+            interacao = { idOrigem: null, isDragging: false, clone: null };
+            
+            window.lidarComCliqueTabuleiro(origem);
+        }
+    }
+
     ['jog', 'op'].forEach(lado => {
         ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
             let el = document.getElementById(`${lado}-${slot}`);
             if (el) {
                 if (el.parentElement) el.parentElement.style.pointerEvents = "none";
                 el.style.pointerEvents = "auto";
-                el.onclick = (e) => {
-                    e.stopPropagation(); 
-                    window.lidarComCliqueTabuleiro(`${lado}-${slot}`);
-                };
+                
+                // Conecta o novo sensor de toque no slot
+                el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+                el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
             }
         });
     });
