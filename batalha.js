@@ -849,7 +849,7 @@ setTimeout(() => {
                 if (el.parentElement) el.parentElement.style.pointerEvents = "none";
                 el.style.pointerEvents = "auto";
                 
-                // Conecta o novo sensor de toque no slot
+                // Conecta o novo sensor de toque/arrastar no slot (substitui o el.onclick antigo)
                 el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
                 el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
             }
