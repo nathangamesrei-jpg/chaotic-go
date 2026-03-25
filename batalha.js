@@ -100,6 +100,7 @@ function desenharMiniCarta(criaturaObj) {
 let campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
 window.baralhoAtaques = []; 
 window.maoAtaques = [];     
+window.jogadorMugics = []; // 🔥 NOVO: Armazena os Mugics carregados
 
 function embaralharArray(array) {
     let arr = [...array];
@@ -114,6 +115,8 @@ window.carregarDeckParaBatalha = function() {
     campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     window.slotSelecionadoMovimento = null;
+    window.jogadorMugics = []; // Zera os mugics ao iniciar
+
     if (typeof limparDestaquesMovimento === "function") limparDestaquesMovimento();
 
     let deck = window.estadoDrome.deckSelecionado;
@@ -125,6 +128,16 @@ window.carregarDeckParaBatalha = function() {
     } else {
         window.baralhoAtaques = [];
         window.maoAtaques = [];
+    }
+
+    // 🔥 NOVO: Carrega os Mugics do Deck pro Motor do Jogo
+    if (deck.mugics && deck.mugics.length > 0) {
+        deck.mugics.forEach(idMagia => {
+            if (idMagia) {
+                let magiaReal = window.inventario.find(c => c.id == idMagia);
+                if (magiaReal) window.jogadorMugics.push(magiaReal);
+            }
+        });
     }
 
     let chaves = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
@@ -182,29 +195,53 @@ function atualizarTelaBatalha() {
 
     atualizarContadorFichasHabilidade();
     atualizarDecksEMaoCards(); 
+    atualizarMugicsDaTela(); // 🔥 NOVO: Atualiza a interface gráfica dos Mugics
 }
 
-// 🔥 CORRIGIDO: RENDERIZA OS TEXTOS APENAS NOS DECKS REAIS (Ignora o Contador)
+// 🔥 NOVO: RENDERIZA OS MUGICS NOS HEPTÁGONOS DA LATERAL
+function atualizarMugicsDaTela() {
+    // Carrega os do Jogador (Com as imagens reais e clique)
+    let slotsJogador = document.querySelectorAll('.lado-jogador .hex-mugic');
+    slotsJogador.forEach((slot, index) => {
+        let mugic = window.jogadorMugics[index];
+        if (mugic) {
+            slot.style.backgroundImage = `url('${mugic.img}')`;
+            slot.style.backgroundSize = 'cover';
+            slot.style.backgroundPosition = 'center';
+            slot.style.cursor = 'pointer';
+            slot.onclick = () => window.verMugicModal(index);
+        } else {
+            slot.style.backgroundImage = 'none';
+            slot.style.cursor = 'default';
+            slot.onclick = null;
+        }
+    });
+
+    // Carrega os do Oponente (Ocultos com a textura da carta)
+    let slotsOponente = document.querySelectorAll('.lado-oponente .hex-mugic');
+    slotsOponente.forEach((slot) => {
+        slot.style.backgroundImage = `url('${URL_FUNDO_CARTA}')`;
+        slot.style.backgroundSize = 'cover';
+        slot.style.backgroundPosition = 'center';
+    });
+}
+
 function atualizarDecksEMaoCards() {
     document.querySelectorAll('.box-deck').forEach(deck => {
         let isPlayer = deck.closest('.lado-jogador') !== null;
-        let textoAtual = deck.textContent || ""; // Usando textContent pra ler só o texto puro
+        let textoAtual = deck.textContent || ""; 
 
-        // Se for o Deck de Ataque verdadeiro (Tem que ter 'DECK' no texto)
         if (textoAtual.includes('DECK') && textoAtual.includes('ATAQUE')) {
             let qtd = (isPlayer && window.baralhoAtaques) ? window.baralhoAtaques.length : 20;
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
-        // Se for o Deck de Locais puro (Sem confundir com o Lixo)
         else if (textoAtual.trim() === 'DECK') {
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
-        // O CONTADOR DE ATAQUE FOI SALVO! O SCRIPT VAI IGNORÁ-LO E MANTER ORIGINAL!
     });
 
-    // 2. DESENHA A SUA MÃO COM AS CARTAS REAIS
     let elsMao = document.querySelectorAll('.carta-na-mao, .carta-mao');
     elsMao.forEach((el, index) => {
         if (window.maoAtaques && window.maoAtaques[index]) {
@@ -248,7 +285,7 @@ function atualizarContadorFichasHabilidade() {
 }
 
 // --------------------------------------------------
-// SISTEMA DE MODAL DETALHADO E EQUIPAMENTOS
+// SISTEMA DE MODAL DETALHADO E EQUIPAMENTOS/MUGICS
 // --------------------------------------------------
 
 function abrirModalFichas(ladoId) {
@@ -364,6 +401,26 @@ window.verEquipamentoModal = function(fullId) {
                 <div style="width:120px;height:120px;margin:0 auto 15px auto;background-image:url('${equip.img}');background-size:cover;border:2px solid #ffd700;border-radius:10px;"></div>
                 <h4 style="color:#fff;margin-bottom:5px;">${equip.nome}</h4>
                 <p style="font-size:11px;color:#ccc;line-height:1.4;">${equip.efeito}</p>
+            </div>
+        </div>
+    `;
+    document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
+}
+
+// 🔥 NOVO: MODAL PARA VER O MUGIC CLICADO
+window.verMugicModal = function(index) {
+    let mugic = window.jogadorMugics[index];
+    if (!mugic) return;
+    
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-ver-mugic">
+            <div class="modal-content-fichas" style="text-align:center; border: 2px solid #00bcd4;">
+                <span class="fechar-modal-fichas" onclick="document.getElementById('overlay-ver-mugic').remove()">×</span>
+                <h3 style="color:#00bcd4;margin-bottom:15px;">Magia (Mugic)</h3>
+                <div style="width:120px;height:170px;margin:0 auto 15px auto;background-image:url('${mugic.img}');background-size:cover;background-position:center;border:2px solid #00bcd4;border-radius:8px;box-shadow: 0 0 15px rgba(0,188,212,0.5);"></div>
+                <h4 style="color:#fff;margin-bottom:5px;">${mugic.nome}</h4>
+                <p style="font-size:11px;color:#ccc;line-height:1.4;">${mugic.efeito || 'Use suas fichas de habilidade para conjurar.'}</p>
+                <button class="btn-acao-modal" style="background:#00bcd4;color:#000;border:none;margin-top:15px;" onclick="document.getElementById('overlay-ver-mugic').remove()">FECHAR</button>
             </div>
         </div>
     `;
@@ -591,6 +648,12 @@ setTimeout(() => {
         arena.style.boxSizing = "border-box";
     }
 
+    document.querySelectorAll('.box-deck').forEach(deck => {
+        if (deck.textContent.includes('DECK')) {
+            deck.classList.add('fundo-carta-personalizado');
+        }
+    });
+
     if (!document.getElementById("css-movimento")) {
         let style = document.createElement('style');
         style.id = "css-movimento";
@@ -623,7 +686,6 @@ setTimeout(() => {
             .btn-acao-modal.btn-cancelar { border-color: #e53935; color: #e53935; margin-top: 10px; }
             .btn-acao-modal.btn-cancelar:hover { background: #e53935; color: white; }
 
-            /* 🔥 CSS DOS TEXTOS NO FUNDO DO DECK */
             .fundo-carta-personalizado {
                 background-image: url('${URL_FUNDO_CARTA}') !important;
                 background-size: cover !important;
@@ -641,7 +703,7 @@ setTimeout(() => {
                 width: 100%;
                 text-align: center;
                 line-height: 1.2;
-                font-size: 8px; /* Fonte ajustada para caber bonito embaixo */
+                font-size: 8px; 
             }
         `;
         document.head.appendChild(style);
@@ -773,5 +835,7 @@ setTimeout(() => {
 
 }, 1200);
 
-// Faz um re-check após os estilos carregarem pra garantir que a mão puxe as imagens do deck!
-setTimeout(atualizarDecksEMaoCards, 1300);
+setTimeout(() => {
+    atualizarDecksEMaoCards();
+    atualizarMugicsDaTela();
+}, 1300);
