@@ -130,7 +130,6 @@ window.carregarDeckParaBatalha = function() {
         window.maoAtaques = [];
     }
 
-    // 🔥 NOVO: Carrega os Mugics do Deck pro Motor do Jogo
     if (deck.mugics && deck.mugics.length > 0) {
         deck.mugics.forEach(idMagia => {
             if (idMagia) {
@@ -166,8 +165,8 @@ window.carregarDeckParaBatalha = function() {
                     },
                     hpAtual: cartaOriginal.stats?.e || 0,
                     
-                    // 🔥 CORREÇÃO AQUI: Puxando o valor REAL da carta (se não tiver, fica 0)
-                    fichasHabilidade: cartaOriginal.fichasHabilidade !== undefined ? cartaOriginal.fichasHabilidade : 0,
+                    // 🔥 CORREÇÃO: Forçando o JS a ler como NÚMERO!
+                    fichasHabilidade: Number(cartaOriginal.fichasHabilidade) || 0,
                     
                     equipamento: equipOriginal ? { 
                         nome: equipOriginal.nome, 
@@ -199,37 +198,10 @@ function atualizarTelaBatalha() {
 
     atualizarContadorFichasHabilidade();
     atualizarDecksEMaoCards(); 
-    atualizarMugicsDaTela(); // 🔥 NOVO: Atualiza a interface gráfica dos Mugics
+    atualizarMugicsDaTela(); 
 }
 
-// 🔥 NOVO: RENDERIZA OS MUGICS NOS HEPTÁGONOS DA LATERAL
-function atualizarMugicsDaTela() {
-    // Carrega os do Jogador (Com as imagens reais e clique)
-    let slotsJogador = document.querySelectorAll('.lado-jogador .hex-mugic');
-    slotsJogador.forEach((slot, index) => {
-        let mugic = window.jogadorMugics[index];
-        if (mugic) {
-            slot.style.backgroundImage = `url('${mugic.img}')`;
-            slot.style.backgroundSize = 'cover';
-            slot.style.backgroundPosition = 'center';
-            slot.style.cursor = 'pointer';
-            slot.onclick = () => window.verMugicModal(index);
-        } else {
-            slot.style.backgroundImage = 'none';
-            slot.style.cursor = 'default';
-            slot.onclick = null;
-        }
-    });
-
-    // Carrega os do Oponente (Ocultos com a textura da carta)
-    let slotsOponente = document.querySelectorAll('.lado-oponente .hex-mugic');
-    slotsOponente.forEach((slot) => {
-        slot.style.backgroundImage = `url('${URL_FUNDO_CARTA}')`;
-        slot.style.backgroundSize = 'cover';
-        slot.style.backgroundPosition = 'center';
-    });
-}
-
+// 🔥 CORREÇÃO DO TEXTO ENCAVALADO NOS DECKS
 function atualizarDecksEMaoCards() {
     document.querySelectorAll('.box-deck').forEach(deck => {
         let isPlayer = deck.closest('.lado-jogador') !== null;
@@ -237,11 +209,13 @@ function atualizarDecksEMaoCards() {
 
         if (textoAtual.includes('DECK') && textoAtual.includes('ATAQUE')) {
             let qtd = (isPlayer && window.baralhoAtaques) ? window.baralhoAtaques.length : 20;
-            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
+            deck.innerHTML = ''; // Limpa tudo pra não encavalar
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK ATAQUE<br><span style="font-size:10px; color:#ffd700; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
         else if (textoAtual.trim() === 'DECK') {
-            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
+            deck.innerHTML = ''; // Limpa tudo pra não encavalar
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK LOCAIS</span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
     });
@@ -261,6 +235,7 @@ function atualizarDecksEMaoCards() {
     });
 }
 
+// 🔥 CORREÇÃO DO CÁLCULO (FORÇANDO A SOMA DE NÚMEROS)
 function atualizarContadorFichasHabilidade() {
     function renderizarBotaoFichas(seletorLado, ladoId, totalFichas) {
         const containerFichas = document.querySelector(`${seletorLado} .container-fichas-js`);
@@ -282,13 +257,13 @@ function atualizarContadorFichasHabilidade() {
     let totalJogador = 0;
     let totalOponente = 0;
     
-    // 🔥 CORREÇÃO: Junta as cartas do tabuleiro inteiro para checar o 'dono' de verdade
     let todasAsCartas = [...Object.values(campoJogador), ...Object.values(window.campoOponente)];
 
     todasAsCartas.forEach(c => { 
-        if (c && c.fichasHabilidade) {
-            if (c.dono === 'jogador') totalJogador += c.fichasHabilidade;
-            else if (c.dono === 'oponente') totalOponente += c.fichasHabilidade;
+        if (c && c.fichasHabilidade !== undefined) {
+            let numFichas = Number(c.fichasHabilidade) || 0; // Garante que seja lido como número
+            if (c.dono === 'jogador') totalJogador += numFichas;
+            else if (c.dono === 'oponente') totalOponente += numFichas;
         }
     });
 
