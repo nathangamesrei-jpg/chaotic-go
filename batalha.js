@@ -115,7 +115,7 @@ window.carregarDeckParaBatalha = function() {
     campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     window.slotSelecionadoMovimento = null;
-    window.jogadorMugics = []; // Zera os mugics ao iniciar
+    window.jogadorMugics = []; 
 
     if (typeof limparDestaquesMovimento === "function") limparDestaquesMovimento();
 
@@ -130,7 +130,6 @@ window.carregarDeckParaBatalha = function() {
         window.maoAtaques = [];
     }
 
-    // 🔥 NOVO: Carrega os Mugics do Deck pro Motor do Jogo
     if (deck.mugics && deck.mugics.length > 0) {
         deck.mugics.forEach(idMagia => {
             if (idMagia) {
@@ -151,6 +150,14 @@ window.carregarDeckParaBatalha = function() {
             let equipOriginal = idEquip ? window.inventario.find(c => c.id == idEquip) : null; 
             
             if (cartaOriginal) {
+                // 🔥 A MÁGICA AQUI: Vai buscar a carta no banco de dados oficial (cartas.js) pra não depender do cache velho!
+                let dadosOficiaisDB = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.id == idCarta) : null;
+                
+                // Se achar no banco oficial, pega de lá. Se não, tenta do inventário. Se não tiver em nenhum, é 0.
+                let fichasReais = dadosOficiaisDB && dadosOficiaisDB.fichasHabilidade !== undefined 
+                                  ? dadosOficiaisDB.fichasHabilidade 
+                                  : (cartaOriginal.fichasHabilidade ? parseInt(cartaOriginal.fichasHabilidade) : 0);
+
                 campoJogador[chave] = {
                     dono: 'jogador',
                     nome: cartaOriginal.nome,
@@ -166,8 +173,8 @@ window.carregarDeckParaBatalha = function() {
                     },
                     hpAtual: cartaOriginal.stats?.e || 0,
                     
-                    // 🔥 CORREÇÃO: Força a leitura exata do número do banco de dados. Se não achar, é 0.
-                    fichasHabilidade: cartaOriginal.fichasHabilidade ? parseInt(cartaOriginal.fichasHabilidade) : 0,
+                    // 🔥 Agora as fichas puxam o valor real cravado do Banco de Dados!
+                    fichasHabilidade: fichasReais,
                     
                     equipamento: equipOriginal ? { 
                         nome: equipOriginal.nome, 
@@ -183,6 +190,8 @@ window.carregarDeckParaBatalha = function() {
     atualizarTelaBatalha(); 
     setTimeout(() => { window.abrirJokenpo(); }, 800); 
 };
+
+
 function atualizarTelaBatalha() {
     const slots = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
     slots.forEach(slotId => {
