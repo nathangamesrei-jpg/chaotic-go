@@ -562,6 +562,8 @@ function setarCriaturaNoSlot(fullId, criatura) {
 }
 
 window.lidarComCliqueTabuleiro = function(fullId) {
+    if (window.estadoTurno.jogadorAtual !== 'jogador') return;
+
     let criaturaAlvo = obterCriaturaNoSlot(fullId);
     let el = document.getElementById(fullId);
     
@@ -570,6 +572,10 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     if (!window.slotSelecionadoMovimento) {
         if (criaturaAlvo) {
             if (criaturaAlvo.dono === 'jogador') {
+                if (criaturaAlvo.moveuNesteTurno) {
+                    window.mostrarMensagemScanner("Esta criatura já agiu neste turno!");
+                    return;
+                }
                 if (criaturaAlvo.equipamento) {
                     window.abrirModalAcoesCriatura(fullId, criaturaAlvo);
                 } else {
@@ -592,6 +598,12 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     }
 
     if (criaturaAlvo && criaturaAlvo.dono === 'jogador') {
+        if (criaturaAlvo.moveuNesteTurno) {
+            window.mostrarMensagemScanner("Esta criatura já agiu neste turno!");
+            limparDestaquesMovimento();
+            window.slotSelecionadoMovimento = null;
+            return;
+        }
         limparDestaquesMovimento();
         window.slotSelecionadoMovimento = fullId;
         destacarAdjacentes(fullId);
@@ -608,8 +620,10 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     if (!criaturaAlvo) {
         setarCriaturaNoSlot(fullId, criaturaOrigem); 
         setarCriaturaNoSlot(idOrigem, null); 
+        criaturaOrigem.moveuNesteTurno = true; // 🔥 GASTA O MOVIMENTO!
         window.mostrarMensagemScanner("Avançando pelo tabuleiro!");
     } else if (criaturaAlvo.dono === 'oponente') {
+        criaturaOrigem.moveuNesteTurno = true; // 🔥 GASTA O MOVIMENTO!
         window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
     }
 
@@ -725,6 +739,12 @@ setTimeout(() => {
 
     window.iniciarInteracaoSlot = function(e, fullId) {
         if (e.button === 2) return; 
+
+        // 🚨 BLOQUEIO DE TURNO
+        if (window.estadoTurno.jogadorAtual !== 'jogador') {
+            window.mostrarMensagemScanner("TURNO DO OPONENTE! Aguarde a sua vez.");
+            return;
+        }
         
         let pointer = e.touches ? e.touches[0] : e; 
         
@@ -737,6 +757,14 @@ setTimeout(() => {
 
         // Se clicou na SUA criatura, prepara o elevador fantasma pra arrastar
         if (criatura && criatura.dono === 'jogador') {
+            
+            // 🚨 BLOQUEIO DE CANSAÇO
+            if (criatura.moveuNesteTurno) {
+                window.mostrarMensagemScanner("Esta criatura já agiu neste turno!");
+                interacao.idOrigem = null;
+                return;
+            }
+
             let elOriginal = document.getElementById(fullId);
             let rect = elOriginal.getBoundingClientRect();
             
@@ -850,7 +878,6 @@ setTimeout(() => {
         });
     });
 }, 1000);
-
 // ==========================================
 // EFEITO 3D DAS MÃOS DE CARTAS (O SEU LEQUE E O DO INIMIGO)
 // ==========================================
@@ -1121,13 +1148,127 @@ window.iniciarTurnoReal = function(primeiroJogador) {
     window.estadoTurno.turnoNumero = 1;
     window.estadoTurno.fase = 'principal';
 
+    // 🔥 Adicionado: Garante que as criaturas comecem com a energia "renovada" no turno
+    Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
+    if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
+
+    // 🔥 Adicionado: Mostra e configura o Botão de Passar Turno
+    let btnTurno = document.getElementById('btn-passar-turno');
+    if (btnTurno) btnTurno.style.display = 'block';
+
     if (primeiroJogador === 'jogador') {
+        if(btnTurno) { btnTurno.disabled = false; btnTurno.innerHTML = "PASSAR<br>TURNO"; }
         window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
             window.mostrarMensagemScanner("Seu turno começou! Selecione uma ação.");
         });
     } else {
+        if(btnTurno) { btnTurno.disabled = true; btnTurno.innerHTML = "TURNO<br>OPONENTE"; }
         window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
             window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
+            // 🔥 Adicionado: Simula o Oponente "pensando" e depois passando o turno de volta pra você
+            setTimeout(() => { window.passarTurno(); }, 4000);
         });
     }
+    
+    atualizarTelaBatalha();
+};
+
+// 🔥 Adicionado: A função ativada pelo botão para trocar os turnos
+window.passarTurno = function() {
+    if (window.estadoTurno.jogadorAtual === 'jogador') {
+        // Você clicou no botão! Passa pro inimigo.
+        window.estadoTurno.jogadorAtual = 'oponente';
+        window.estadoTurno.turnoNumero++;
+        if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        
+        let btn = document.getElementById('btn-passar-turno');
+        if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
+        
+        window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
+            window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
+            // O bot finge que jogou e devolve pra você em 4 segundos
+            setTimeout(() => { window.passarTurno(); }, 4000);
+        });
+    } else {
+        // O Bot devolveu pra você!
+        window.estadoTurno.jogadorAtual = 'jogador';
+        window.estadoTurno.turnoNumero++;
+        Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        
+        let btn = document.getElementById('btn-passar-turno');
+        if(btn) { btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
+        
+        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
+            window.mostrarMensagemScanner("Seu turno começou! Selecione uma ação.");
+        });
+    }
+    atualizarTelaBatalha();
+};
+
+
+// ==========================================
+// 🔥 SISTEMA DE PASSAR TURNO E CSS 🔥
+// ==========================================
+setTimeout(() => {
+    if (!document.getElementById("css-botao-turno")) {
+        let style = document.createElement('style');
+        style.id = "css-botao-turno";
+        style.innerHTML = `
+            #btn-passar-turno {
+                position: absolute;
+                right: 5%; /* Fica no canto direito, acima do seu Local Ativo */
+                top: 45%;
+                width: 90px;
+                height: 50px;
+                background: #4CAF50;
+                color: black;
+                font-family: 'Arial Black', sans-serif;
+                font-size: 11px;
+                font-weight: bold;
+                border: 2px solid #fff;
+                border-radius: 8px;
+                cursor: pointer;
+                z-index: 10000;
+                box-shadow: 0 0 15px #4CAF50;
+                transition: 0.3s;
+                display: none; /* Só aparece depois do Jokenpo */
+                text-align: center;
+                line-height: 1.2;
+            }
+            #btn-passar-turno:hover:not(:disabled) {
+                transform: scale(1.1);
+                background: #fff;
+            }
+            #btn-passar-turno:disabled {
+                background: #e53935 !important;
+                color: white !important;
+                box-shadow: 0 0 15px #e53935 !important;
+                cursor: not-allowed;
+            }
+            /* Filtro para a carta que já andou/atacou no turno */
+            .esgotado {
+                filter: grayscale(80%) brightness(0.6);
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Injeta o botão na tela se ele não existir
+    if (!document.getElementById('btn-passar-turno')) {
+        let btn = document.createElement('button');
+        btn.id = 'btn-passar-turno';
+        btn.onclick = window.passarTurno;
+        document.getElementById('tela-batalha').appendChild(btn);
+    }
+}, 1500);
+
+// Substitui a função desenharMiniCarta para aplicar o filtro "esgotado"
+const desenharMiniCartaOriginal = desenharMiniCarta;
+window.desenharMiniCarta = function(criaturaObj) {
+    let html = desenharMiniCartaOriginal(criaturaObj);
+    if (criaturaObj && criaturaObj.moveuNesteTurno) {
+        // Injeta a classe esgotado na primeira div que achar
+        html = html.replace('class="mini-card-wrapper"', 'class="mini-card-wrapper esgotado"');
+    }
+    return html;
 };
