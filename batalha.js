@@ -274,14 +274,22 @@ function atualizarContadorFichasHabilidade() {
         }
     }
 
-    let totalJogador = 0;
-    Object.values(campoJogador).forEach(c => { if(c && c.fichasHabilidade) totalJogador += c.fichasHabilidade; });
-    renderizarBotaoFichas('.lado-jogador', 'jogador', totalJogador);
-
     if(!window.campoOponente) window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
 
+    let totalJogador = 0;
     let totalOponente = 0;
-    Object.values(window.campoOponente).forEach(c => { if(c && c.fichasHabilidade) totalOponente += c.fichasHabilidade; });
+    
+    // 🔥 CORREÇÃO: Junta as cartas do tabuleiro inteiro para checar o 'dono' de verdade
+    let todasAsCartas = [...Object.values(campoJogador), ...Object.values(window.campoOponente)];
+
+    todasAsCartas.forEach(c => { 
+        if (c && c.fichasHabilidade) {
+            if (c.dono === 'jogador') totalJogador += c.fichasHabilidade;
+            else if (c.dono === 'oponente') totalOponente += c.fichasHabilidade;
+        }
+    });
+
+    renderizarBotaoFichas('.lado-jogador', 'jogador', totalJogador);
     renderizarBotaoFichas('.lado-oponente', 'oponente', totalOponente);
 }
 
@@ -291,11 +299,13 @@ function atualizarContadorFichasHabilidade() {
 
 function abrirModalFichas(ladoId) {
     let listaHTML = '';
-    const campoAlvo = ladoId === 'oponente' ? window.campoOponente : campoJogador;
     const tituloModal = ladoId === 'oponente' ? 'FICHAS DO OPONENTE' : 'MINHAS FICHAS';
     
-    Object.values(campoAlvo).forEach(c => {
-        if(c) {
+    // 🔥 CORREÇÃO: Busca em todo o tabuleiro e filtra pelo 'dono'
+    let todasAsCartas = [...Object.values(campoJogador), ...Object.values(window.campoOponente)];
+    
+    todasAsCartas.forEach(c => {
+        if (c && c.dono === ladoId) {
             const fichas = c.fichasHabilidade || 0;
             const semFichasClass = fichas === 0 ? 'sem-fichas' : '';
             listaHTML += `
@@ -427,7 +437,6 @@ window.verMugicModal = function(index) {
     `;
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
 }
-
 // ==========================================
 // AJUSTE DINÂMICO DE TABULEIRO E GRAVIDADE
 // ==========================================
