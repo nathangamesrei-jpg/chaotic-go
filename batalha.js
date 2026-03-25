@@ -166,8 +166,8 @@ window.carregarDeckParaBatalha = function() {
                     },
                     hpAtual: cartaOriginal.stats?.e || 0,
                     
-                    // 🔥 CORREÇÃO AQUI: Puxando o valor REAL da carta (se não tiver, fica 0)
-                    fichasHabilidade: cartaOriginal.fichasHabilidade !== undefined ? cartaOriginal.fichasHabilidade : 0,
+                    // 🔥 CORREÇÃO: Força a leitura exata do número do banco de dados. Se não achar, é 0.
+                    fichasHabilidade: cartaOriginal.fichasHabilidade ? parseInt(cartaOriginal.fichasHabilidade) : 0,
                     
                     equipamento: equipOriginal ? { 
                         nome: equipOriginal.nome, 
@@ -183,7 +183,6 @@ window.carregarDeckParaBatalha = function() {
     atualizarTelaBatalha(); 
     setTimeout(() => { window.abrirJokenpo(); }, 800); 
 };
-
 function atualizarTelaBatalha() {
     const slots = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
     slots.forEach(slotId => {
