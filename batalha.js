@@ -665,15 +665,9 @@ setTimeout(() => {
             }
             .linha-formacao-batalha { margin: 0 !important; }
 
-            /* AUMENTA A ÁREA DE TOQUE PRA NÃO PRECISAR CLIQUE CIRÚRGICO */
+            /* 🔥 CORREÇÃO: Removido o display:flex que esmagava a arte da carta! */
             [id^="jog-"], [id^="op-"] {
                 touch-action: none !important; /* Impede o celular de dar scroll enquanto arrasta a carta */
-                width: 100%;
-                height: 100%;
-                min-height: 100px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
             }
 
             .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
