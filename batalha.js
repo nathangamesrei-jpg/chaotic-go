@@ -150,16 +150,22 @@ window.carregarDeckParaBatalha = function() {
             let equipOriginal = idEquip ? window.inventario.find(c => c.id == idEquip) : null; 
             
             if (cartaOriginal) {
-                
-                // 🔥 A MÁGICA DEFINITIVA: Busca a carta pelo NOME exato no banco de dados original (MONSTROS)
                 let fichasReais = 0;
+                let temEfeitoReal = false;
+                let textoCartaReal = "";
+
+                // 🔥 Busca as infos completas no banco de dados original (MONSTROS)
                 if (typeof MONSTROS !== 'undefined') {
                     let cartaDB = MONSTROS.find(m => m.nome === cartaOriginal.nome);
-                    if (cartaDB && cartaDB.fichasHabilidade !== undefined) {
-                        fichasReais = parseInt(cartaDB.fichasHabilidade);
+                    if (cartaDB) {
+                        if (cartaDB.fichasHabilidade !== undefined) fichasReais = parseInt(cartaDB.fichasHabilidade);
+                        temEfeitoReal = cartaDB.temEfeito || false;
+                        textoCartaReal = cartaDB.textoCarta || "";
                     }
-                } else if (cartaOriginal.fichasHabilidade !== undefined) {
-                    fichasReais = parseInt(cartaOriginal.fichasHabilidade);
+                } else {
+                    if (cartaOriginal.fichasHabilidade !== undefined) fichasReais = parseInt(cartaOriginal.fichasHabilidade);
+                    temEfeitoReal = cartaOriginal.temEfeito || false;
+                    textoCartaReal = cartaOriginal.textoCarta || "";
                 }
 
                 campoJogador[chave] = {
@@ -176,9 +182,11 @@ window.carregarDeckParaBatalha = function() {
                         energia: cartaOriginal.stats?.e || 0 
                     },
                     hpAtual: cartaOriginal.stats?.e || 0,
-                    
-                    // 🔥 Agora ele joga o número exato que achou no seu cartas.js
                     fichasHabilidade: fichasReais,
+                    
+                    // 🔥 Salvando o efeito para o Modal poder ler depois!
+                    temEfeito: temEfeitoReal,
+                    textoCarta: textoCartaReal,
                     
                     equipamento: equipOriginal ? { 
                         nome: equipOriginal.nome, 
@@ -361,10 +369,26 @@ function fecharModalFichas() {
     if(el) el.remove();
 }
 
+
+
+
 window.abrirModalAcoesCriatura = function(fullId, criatura) {
     if (document.getElementById('overlay-acoes')) return;
 
     let botoesHTML = `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
+
+    // 🔥 LÓGICA DE HABILIDADE: Só mostra se tiver efeito, tiver ficha, e se o texto exigir descarte (Habilidade Ativa)
+    let textoMinusculo = (criatura.textoCarta || "").toLowerCase();
+    let habilidadeAtiva = textoMinusculo.includes('descarte') || textoMinusculo.includes('gaste') || textoMinusculo.includes('ficha');
+    
+    if (criatura.temEfeito && habilidadeAtiva && criatura.fichasHabilidade > 0) {
+        botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff9800; color: #ff9800;" onclick="window.usarHabilidade('${fullId}')">Usar Habilidade</button>`;
+    }
+
+    // 🔥 LÓGICA DE MUGIC: Só mostra se a criatura ainda tiver ficha de habilidade pra gastar
+    if (criatura.fichasHabilidade > 0) {
+        botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4;" onclick="window.prepararMugic('${fullId}')">Usar Mugic</button>`;
+    }
 
     if (criatura.equipamento) {
         if (!criatura.equipamentoRevelado) {
@@ -378,9 +402,14 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
 
     const modalHTML = `
         <div class="modal-overlay" id="overlay-acoes">
-            <div class="modal-content-fichas" style="text-align:center;">
+            <div class="modal-content-fichas" style="text-align:center; max-height: 90vh; overflow-y: auto;">
                 <h3 style="color:#4CAF50;margin-bottom:5px;">${criatura.nome}</h3>
-                <p style="font-size:10px;color:#aaa;margin-bottom:20px;">O que deseja fazer?</p>
+                
+                <div style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${criatura.cartaBlank}');background-size:cover;background-position:center;border:2px solid #4CAF50;border-radius:10px;box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);"></div>
+                
+                <p style="font-size:14px; color:#ffd700; margin-bottom:5px;">Fichas Atuais: <b style="font-size:18px;">${criatura.fichasHabilidade}</b></p>
+                <p style="font-size:10px;color:#aaa;margin-bottom:15px;line-height:1.3;">${criatura.textoCarta || 'Sem efeito especial.'}</p>
+                
                 <div style="display:flex;flex-direction:column;gap:10px;">
                     ${botoesHTML}
                 </div>
@@ -395,6 +424,32 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
 window.fecharModalAcoes = function() {
     const el = document.getElementById('overlay-acoes');
     if(el) el.remove();
+}
+
+// 🔥 FUNÇÃO DE ESQUELETO: Gastar a Habilidade
+window.usarHabilidade = function(fullId) {
+    window.fecharModalAcoes();
+    let criatura = obterCriaturaNoSlot(fullId);
+    
+    if(criatura && criatura.fichasHabilidade > 0) {
+        // Por enquanto, gasta 1 ficha como teste (depois programamos pra ler o custo exato do texto)
+        criatura.fichasHabilidade -= 1; 
+        window.mostrarMensagemScanner(`🔥 ${criatura.nome} ativou sua Habilidade Especial! (-1 Ficha)`);
+        atualizarTelaBatalha();
+    }
+}
+
+// 🔥 FUNÇÃO DE ESQUELETO: Preparar para tocar Mugic
+window.prepararMugic = function(fullId) {
+    window.fecharModalAcoes();
+    let criatura = obterCriaturaNoSlot(fullId);
+    
+    if(criatura && criatura.fichasHabilidade > 0) {
+        // Por enquanto, gasta 1 ficha como teste pra simular a magia
+        criatura.fichasHabilidade -= 1; 
+        window.mostrarMensagemScanner(`🎵 ${criatura.nome} conjurou um Mugic! (-1 Ficha)`);
+        atualizarTelaBatalha();
+    }
 }
 
 window.selecionarParaMovimento = function(fullId) {
@@ -433,6 +488,9 @@ window.verEquipamentoModal = function(fullId) {
     `;
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
 }
+
+
+
 
 // 🔥 NOVO: MODAL PARA VER O MUGIC CLICADO
 window.verMugicModal = function(index) {
