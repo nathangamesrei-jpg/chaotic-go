@@ -139,9 +139,6 @@ window.carregarDeckParaBatalha = function() {
         });
     }
 
-    // 🔥 DICIONÁRIO DE EMERGÊNCIA: Passa por cima do cache do navegador!
-    const dicionarioFichas = { 1: 2, 2: 3, 3: 5, 4: 1, 5: 0, 6: 1, 7: 0, 8: 2, 9: 0, 10: 1, 11: 1, 12: 3, 13: 2, 14: 1, 15: 2, 16: 4 };
-
     let chaves = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
     
     chaves.forEach((chave, index) => {
@@ -153,8 +150,17 @@ window.carregarDeckParaBatalha = function() {
             let equipOriginal = idEquip ? window.inventario.find(c => c.id == idEquip) : null; 
             
             if (cartaOriginal) {
-                // Tenta puxar o valor real. Se o navegador bugar, usa o dicionário de emergência!
-                let fichaReal = dicionarioFichas[idCarta] !== undefined ? dicionarioFichas[idCarta] : 0;
+                
+                // 🔥 A MÁGICA DEFINITIVA: Busca a carta pelo NOME exato no banco de dados original (MONSTROS)
+                let fichasReais = 0;
+                if (typeof MONSTROS !== 'undefined') {
+                    let cartaDB = MONSTROS.find(m => m.nome === cartaOriginal.nome);
+                    if (cartaDB && cartaDB.fichasHabilidade !== undefined) {
+                        fichasReais = parseInt(cartaDB.fichasHabilidade);
+                    }
+                } else if (cartaOriginal.fichasHabilidade !== undefined) {
+                    fichasReais = parseInt(cartaOriginal.fichasHabilidade);
+                }
 
                 campoJogador[chave] = {
                     dono: 'jogador',
@@ -171,8 +177,8 @@ window.carregarDeckParaBatalha = function() {
                     },
                     hpAtual: cartaOriginal.stats?.e || 0,
                     
-                    // 🔥 Agora as fichas NUNCA mais vão zerar se não deveriam!
-                    fichasHabilidade: fichaReal,
+                    // 🔥 Agora ele joga o número exato que achou no seu cartas.js
+                    fichasHabilidade: fichasReais,
                     
                     equipamento: equipOriginal ? { 
                         nome: equipOriginal.nome, 
@@ -188,7 +194,6 @@ window.carregarDeckParaBatalha = function() {
     atualizarTelaBatalha(); 
     setTimeout(() => { window.abrirJokenpo(); }, 800); 
 };
-
 
 
 
