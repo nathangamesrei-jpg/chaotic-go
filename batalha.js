@@ -165,7 +165,10 @@ window.carregarDeckParaBatalha = function() {
                         energia: cartaOriginal.stats?.e || 0 
                     },
                     hpAtual: cartaOriginal.stats?.e || 0,
-                    fichasHabilidade: 2,
+                    
+                    // 🔥 CORREÇÃO AQUI: Puxando o valor REAL da carta (se não tiver, fica 0)
+                    fichasHabilidade: cartaOriginal.fichasHabilidade !== undefined ? cartaOriginal.fichasHabilidade : 0,
+                    
                     equipamento: equipOriginal ? { 
                         nome: equipOriginal.nome, 
                         img: equipOriginal.img, 
