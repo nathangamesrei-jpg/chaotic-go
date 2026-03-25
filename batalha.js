@@ -178,6 +178,7 @@ window.carregarDeckParaBatalha = function() {
     });
 
     atualizarTelaBatalha(); 
+    setTimeout(() => { window.abrirJokenpo(); }, 800); 
 };
 
 function atualizarTelaBatalha() {
@@ -839,3 +840,171 @@ setTimeout(() => {
     atualizarDecksEMaoCards();
     atualizarMugicsDaTela();
 }, 1300);
+
+
+// ==========================================
+// SISTEMA DE TURNOS, JOKENPO E BANNERS TCG 🔥
+// ==========================================
+
+window.estadoTurno = {
+    jogadorAtual: null, // 'jogador' ou 'oponente'
+    turnoNumero: 0,
+    fase: 'pre-jogo'
+};
+
+// 1. INJETA OS ESTILOS DO JOKENPO E BANNERS
+setTimeout(() => {
+    if (!document.getElementById("css-turnos-tcg")) {
+        let style = document.createElement('style');
+        style.id = "css-turnos-tcg";
+        style.innerHTML = `
+            /* BANNERS ÉPICOS ESTILO ANIME/TCG */
+            .tcg-banner-container {
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                display: flex; justify-content: center; align-items: center;
+                pointer-events: none; z-index: 100000; overflow: hidden;
+            }
+            .tcg-banner-bg {
+                position: absolute; width: 100%; height: 150px;
+                background: linear-gradient(90deg, transparent, rgba(0,0,0,0.9), transparent);
+                transform: scaleY(0); transition: transform 0.2s;
+            }
+            .tcg-banner-texto {
+                font-family: 'Arial Black', sans-serif; font-size: 45px; font-weight: 900;
+                color: transparent; -webkit-text-stroke: 2px #fff;
+                text-transform: uppercase; letter-spacing: 15px;
+                transform: translateX(150vw) skewX(-15deg); text-shadow: 0 0 20px rgba(255,255,255,0);
+            }
+            
+            /* ANIMAÇÃO DO BANNER */
+            .banner-ativo .tcg-banner-bg { transform: scaleY(1); }
+            .banner-ativo .tcg-banner-texto {
+                animation: rasgarTela 2.5s cubic-bezier(0.1, 0.8, 0.1, 1) forwards;
+            }
+            @keyframes rasgarTela {
+                0% { transform: translateX(150vw) skewX(-15deg); color: transparent; text-shadow: 0 0 0px transparent; }
+                20% { transform: translateX(0) skewX(-15deg); color: #fff; text-shadow: 0 0 30px currentColor; }
+                80% { transform: translateX(-20px) skewX(-15deg); color: #fff; text-shadow: 0 0 10px currentColor; }
+                100% { transform: translateX(-150vw) skewX(-15deg); color: transparent; text-shadow: 0 0 0px transparent; }
+            }
+
+            /* MODAL DO JOKENPO */
+            .jokenpo-btn {
+                font-size: 40px; background: #222; border: 3px solid #4CAF50;
+                border-radius: 50%; width: 80px; height: 80px; cursor: pointer;
+                transition: 0.2s; color: white; display: flex; justify-content: center; align-items: center;
+            }
+            .jokenpo-btn:hover { background: #4CAF50; transform: scale(1.2); box-shadow: 0 0 20px #4CAF50; }
+        `;
+        document.head.appendChild(style);
+    }
+}, 1000);
+
+// 2. FUNÇÃO QUE CHAMA O BANNER ANIMADO
+window.mostrarBannerTCG = function(texto, corCorpo, corBorda, callback) {
+    const container = document.createElement('div');
+    container.className = 'tcg-banner-container banner-ativo';
+    container.innerHTML = `
+        <div class="tcg-banner-bg" style="border-top: 3px solid ${corBorda}; border-bottom: 3px solid ${corBorda}; background: linear-gradient(90deg, transparent, ${corCorpo}, transparent);"></div>
+        <div class="tcg-banner-texto" style="-webkit-text-stroke: 2px ${corBorda};">${texto}</div>
+    `;
+    document.getElementById('tela-batalha').appendChild(container);
+    
+    if(window.tocarSFX) window.tocarSFX('notificacao'); // Efeito sonoro do impacto
+
+    setTimeout(() => {
+        container.remove();
+        if(callback) callback();
+    }, 2500); // Remove depois da animação terminar
+};
+
+// 3. A TELA DE JOKENPO
+window.abrirJokenpo = function() {
+    window.estadoTurno.fase = 'jokenpo';
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-jokenpo" style="z-index: 99990; background: rgba(0,0,0,0.9);">
+            <div style="text-align:center; display: flex; flex-direction: column; align-items: center;">
+                <h2 style="color:#ffd700; font-size:24px; margin-bottom:10px; text-shadow: 0 0 10px #ffd700;">DECIDA QUEM COMEÇA!</h2>
+                <p id="jokenpo-status" style="color:#fff; margin-bottom: 30px; font-family: monospace;">Escolha sua arma...</p>
+                
+                <div style="display:flex; gap: 20px; margin-bottom: 30px;">
+                    <button class="jokenpo-btn" onclick="resolverJokenpo('pedra')">✊</button>
+                    <button class="jokenpo-btn" onclick="resolverJokenpo('papel')">✋</button>
+                    <button class="jokenpo-btn" onclick="resolverJokenpo('tesoura')">✌️</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
+};
+
+// 4. LÓGICA DO JOKENPO
+window.resolverJokenpo = function(escolhaJogador) {
+    const opcoes = ['pedra', 'papel', 'tesoura'];
+    const emojis = { 'pedra': '✊', 'papel': '✋', 'tesoura': '✌️' };
+    const escolhaOp = opcoes[Math.floor(Math.random() * opcoes.length)];
+    
+    const statusEl = document.getElementById('jokenpo-status');
+    statusEl.innerHTML = `Você: ${emojis[escolhaJogador]} <br> Oponente: ${emojis[escolhaOp]}`;
+
+    setTimeout(() => {
+        if (escolhaJogador === escolhaOp) {
+            statusEl.innerHTML = `<span style="color:#ff9800; font-weight:bold; font-size:18px;">EMPATE! JOGUE DE NOVO!</span>`;
+            // Treme a tela
+            document.getElementById('overlay-jokenpo').style.animation = "shake 0.5s";
+            setTimeout(() => document.getElementById('overlay-jokenpo').style.animation = "", 500);
+        } 
+        else if (
+            (escolhaJogador === 'pedra' && escolhaOp === 'tesoura') ||
+            (escolhaJogador === 'papel' && escolhaOp === 'pedra') ||
+            (escolhaJogador === 'tesoura' && escolhaOp === 'papel')
+        ) {
+            statusEl.innerHTML = `<span style="color:#4CAF50; font-weight:bold; font-size:24px;">VOCÊ VENCEU!</span>`;
+            abrirEscolhaDeTurno('jogador');
+        } 
+        else {
+            statusEl.innerHTML = `<span style="color:#e53935; font-weight:bold; font-size:24px;">OPONENTE VENCEU!</span>`;
+            // Como é um bot por enquanto, ele sempre escolhe começar jogando
+            setTimeout(() => {
+                document.getElementById('overlay-jokenpo').remove();
+                iniciarTurnoReal('oponente');
+            }, 1500);
+        }
+    }, 1000);
+};
+
+// 5. VENCEDOR ESCOLHE QUEM COMEÇA
+window.abrirEscolhaDeTurno = function(vencedor) {
+    const modal = document.getElementById('overlay-jokenpo');
+    modal.innerHTML = `
+        <div style="text-align:center; display: flex; flex-direction: column; align-items: center;">
+            <h2 style="color:#4CAF50; font-size:24px; margin-bottom:10px;">VITÓRIA!</h2>
+            <p style="color:#fff; margin-bottom: 30px;">Você ganhou o direito de escolha:</p>
+            <div style="display:flex; gap: 20px;">
+                <button class="btn-acao-modal" style="width: 120px;" onclick="iniciarTurnoReal('jogador')">EU COMEÇO</button>
+                <button class="btn-acao-modal" style="width: 120px; border-color:#e53935; color:#e53935;" onclick="iniciarTurnoReal('oponente')">OPONENTE COMEÇA</button>
+            </div>
+        </div>
+    `;
+};
+
+// 6. INICIA O TURNO COM O BANNER ANIMADO
+window.iniciarTurnoReal = function(primeiroJogador) {
+    let modal = document.getElementById('overlay-jokenpo');
+    if (modal) modal.remove();
+
+    window.estadoTurno.jogadorAtual = primeiroJogador;
+    window.estadoTurno.turnoNumero = 1;
+    window.estadoTurno.fase = 'principal';
+
+    if (primeiroJogador === 'jogador') {
+        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
+            window.mostrarMensagemScanner("Seu turno começou! Selecione uma ação.");
+        });
+    } else {
+        window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
+            window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
+        });
+    }
+};
