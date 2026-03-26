@@ -377,7 +377,7 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
 
     let botoesHTML = `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
 
-    // 🔥 LÓGICA DE HABILIDADE: Só mostra se tiver efeito, tiver ficha, e se o texto exigir descarte (Habilidade Ativa)
+    // 🔥 LÓGICA DE HABILIDADE
     let textoMinusculo = (criatura.textoCarta || "").toLowerCase();
     let habilidadeAtiva = textoMinusculo.includes('descarte') || textoMinusculo.includes('gaste') || textoMinusculo.includes('ficha');
     
@@ -385,7 +385,7 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
         botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff9800; color: #ff9800;" onclick="window.usarHabilidade('${fullId}')">Usar Habilidade</button>`;
     }
 
-    // 🔥 LÓGICA DE MUGIC: Só mostra se a criatura ainda tiver ficha de habilidade pra gastar
+    // 🔥 LÓGICA DE MUGIC
     if (criatura.fichasHabilidade > 0) {
         botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4;" onclick="window.prepararMugic('${fullId}')">Usar Mugic</button>`;
     }
@@ -405,7 +405,11 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
             <div class="modal-content-fichas" style="text-align:center; max-height: 90vh; overflow-y: auto;">
                 <h3 style="color:#4CAF50;margin-bottom:5px;">${criatura.nome}</h3>
                 
-                <div style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${criatura.cartaBlank}');background-size:cover;background-position:center;border:2px solid #4CAF50;border-radius:10px;box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);"></div>
+                <div onclick="window.ampliarCartaClicada('${criatura.cartaBlank}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${criatura.cartaBlank}');background-size:cover;background-position:center;border:2px solid #4CAF50;border-radius:10px;box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); cursor: pointer;">
+                    <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); border-radius: 8px; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+                        <span style="color: white; font-weight: bold; font-size: 12px;">🔍 AMPLIAR</span>
+                    </div>
+                </div>
                 
                 <p style="font-size:14px; color:#ffd700; margin-bottom:5px;">Fichas Atuais: <b style="font-size:18px;">${criatura.fichasHabilidade}</b></p>
                 <p style="font-size:10px;color:#aaa;margin-bottom:15px;line-height:1.3;">${criatura.textoCarta || 'Sem efeito especial.'}</p>
@@ -421,10 +425,23 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
     document.getElementById('overlay-acoes').addEventListener('click', function(e) { if(e.target === this) fecharModalAcoes(); });
 }
 
+// 🔥 FUNÇÃO NOVA: Amplia a carta na tela inteira
+window.ampliarCartaClicada = function(imgUrl) {
+    const modalAmpliadoHTML = `
+        <div class="modal-overlay" id="overlay-carta-ampliada" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; flex-direction: column;" onclick="this.remove()">
+            <img src="${imgUrl}" style="max-width: 95vw; max-height: 85vh; border-radius: 15px; box-shadow: 0 0 30px rgba(76, 175, 80, 0.8);">
+            <p style="color: #aaa; margin-top: 15px; font-size: 12px; font-family: monospace;">Toque em qualquer lugar para fechar</p>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalAmpliadoHTML);
+};
+
 window.fecharModalAcoes = function() {
     const el = document.getElementById('overlay-acoes');
     if(el) el.remove();
 }
+
+
 
 // 🔥 FUNÇÃO DE ESQUELETO: Gastar a Habilidade
 window.usarHabilidade = function(fullId) {
