@@ -659,6 +659,16 @@ function setarCriaturaNoSlot(fullId, criatura) {
     if (fullId.startsWith('op-')) window.campoOponente[fullId.replace('op-', '')] = criatura;
 }
 
+
+
+
+
+
+
+// ==========================================
+// 🔥 NOVO MOTOR DE CLIQUE (SEMPRE ABRE O MODAL)
+// ==========================================
+
 window.lidarComCliqueTabuleiro = function(fullId) {
     if (window.estadoTurno.jogadorAtual !== 'jogador') return;
 
@@ -667,6 +677,7 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     
     if (!el || el.parentElement.style.display === 'none') return;
 
+    // SE AINDA NÃO SELECIONOU NINGUÉM PARA ANDAR (Primeiro Clique)
     if (!window.slotSelecionadoMovimento) {
         if (criaturaAlvo) {
             if (criaturaAlvo.dono === 'jogador') {
@@ -674,18 +685,22 @@ window.lidarComCliqueTabuleiro = function(fullId) {
                     window.mostrarMensagemScanner("Esta criatura já agiu neste turno!");
                     return;
                 }
-                if (criaturaAlvo.equipamento) {
-                    window.abrirModalAcoesCriatura(fullId, criaturaAlvo);
-                } else {
-                    window.selecionarParaMovimento(fullId);
+                // 🔥 CORREÇÃO AQUI: Removemos a trava. Agora SEMPRE abre o Modal para as suas cartas!
+                window.abrirModalAcoesCriatura(fullId, criaturaAlvo);
+
+            } else if (criaturaAlvo.dono === 'oponente') {
+                // 🔥 BÔNUS: Se clicar no inimigo pra xeretar, amplia a carta dele pra você ler!
+                if (criaturaAlvo.equipamento && criaturaAlvo.equipamentoRevelado) {
+                    window.verEquipamentoModal(fullId);
+                } else if (typeof window.ampliarCartaClicada === 'function') {
+                    window.ampliarCartaClicada(criaturaAlvo.cartaBlank);
                 }
-            } else if (criaturaAlvo.dono === 'oponente' && criaturaAlvo.equipamento && criaturaAlvo.equipamentoRevelado) {
-                window.verEquipamentoModal(fullId);
             }
         }
         return;
     }
 
+    // SE JÁ TINHA ALGUÉM SELECIONADO (Segundo Clique: Andar ou Atacar)
     let idOrigem = window.slotSelecionadoMovimento;
     let criaturaOrigem = obterCriaturaNoSlot(idOrigem);
 
@@ -724,14 +739,21 @@ window.lidarComCliqueTabuleiro = function(fullId) {
         criaturaOrigem.moveuNesteTurno = true; // 🔥 GASTA O MOVIMENTO!
         window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
         
-        // 🔥 A MÁGICA ACONTECE AQUI! Chama a tela de VS
-        window.iniciarCombate(idOrigem, fullId);
+        // Chama a tela de VS
+        if(typeof window.iniciarCombate === 'function') {
+            window.iniciarCombate(idOrigem, fullId);
+        }
     }
 
     limparDestaquesMovimento();
     window.slotSelecionadoMovimento = null;
     atualizarTelaBatalha(); 
 }
+
+
+
+
+
 
 function destacarAdjacentes(fullId) {
     limparDestaquesMovimento();
