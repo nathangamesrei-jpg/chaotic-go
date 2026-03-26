@@ -1491,39 +1491,47 @@ window.mostrarMensagemScanner = function(msg) {
 
 
 
-// 🔥 RASTREADOR INTELIGENTE: Acha as caixas de local em qualquer lugar da tela
+
+
+
+// 🔥 RASTREADOR RECALIBRADO: Mira a laser só nas caixas laterais!
 function atualizarLocaisAtivosNaMesa() {
-    let todasAsDivs = document.querySelectorAll('div');
+    // Procura apenas dentro das zonas laterais ou divs que já foram marcadas
+    let candidatos = document.querySelectorAll('.zona-lateral > div, .box-local-ativo-js');
     let boxesLocais = [];
 
-    todasAsDivs.forEach(div => {
-        // Rastreador: Acha a div pelo texto "LOCAL ATIVO" ou pela classe marcadora
-        if ((div.innerText && div.innerText.includes('LOCAL ATIVO')) || div.classList.contains('box-local-ativo-js')) {
-            // Pega apenas as caixas principais (ignora textos pequenos perdidos)
-            if (!boxesLocais.includes(div) && div.tagName === 'DIV') {
+    candidatos.forEach(div => {
+        let texto = div.innerText || div.textContent || "";
+        
+        // Se a caixa tiver a palavra LOCAL ATIVO e não for o Deck nem o Lixo
+        if (texto.includes('LOCAL ATIVO') || div.classList.contains('box-local-ativo-js')) {
+            if (!boxesLocais.includes(div)) {
                 boxesLocais.push(div);
             }
         }
     });
 
     boxesLocais.forEach(box => {
-        box.classList.add('box-local-ativo-js'); // Marca a caixa pra não perder ela depois que apagar o texto
+        box.classList.add('box-local-ativo-js'); // Marca pra não perder ela na próxima vez
         
         if (window.localAtivoAtual) {
             box.style.backgroundImage = `url('${window.localAtivoAtual}')`;
-            box.style.backgroundSize = 'cover';
+            box.style.backgroundSize = '100% 100%'; // Força a imagem a caber perfeitamente na caixa deitada
             box.style.backgroundPosition = 'center';
+            box.style.backgroundRepeat = 'no-repeat';
             box.style.border = "2px solid #ffd700";
             box.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.4)";
-            box.innerHTML = ''; // Apaga o texto pra imagem ficar limpa
+            box.innerHTML = ''; // Limpa o texto
         } else {
             box.style.backgroundImage = 'none';
             box.style.border = "1px solid #4CAF50";
             box.style.boxShadow = "none";
-            box.innerHTML = '<span style="font-size: 10px; color: white; font-family: monospace; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">LOCAL ATIVO</span>';
+            box.innerHTML = '<span style="font-size: 10px; color: white; font-family: monospace; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; text-align: center;">LOCAL ATIVO</span>';
         }
     });
 }
+
+
 
 
 
