@@ -1391,21 +1391,32 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
     let deck = window.estadoDrome.deckSelecionado;
     let imagensLocais = [];
     
-    // 1. Tenta puxar as cartas de local do deck montado
+    // 1. Tenta puxar as cartas de local EXCLUSIVAMENTE do deck montado
     if (deck && deck.locais && deck.locais.length > 0) {
         imagensLocais = deck.locais.map(id => {
-            let l = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB.find(x => x.id == id) : null;
-            return l ? l.img : null;
-        }).filter(img => img !== null);
+            let localEncontrado = null;
+            
+            // Procura no LOCAIS_DB oficial
+            if (typeof LOCAIS_DB !== 'undefined') {
+                localEncontrado = LOCAIS_DB.find(x => x.id == id || x.nome == id);
+            }
+            // Se não achar, procura no inventário geral
+            if (!localEncontrado && window.inventario) {
+                localEncontrado = window.inventario.find(x => x.id == id || x.nome == id);
+            }
+            
+            return localEncontrado ? (localEncontrado.img || localEncontrado.cartaBlank) : null;
+        }).filter(img => img !== null && img !== undefined);
     }
 
-    // 2. TRAVA DE SEGURANÇA: Se o deck não tiver locais salvos, pega TODOS os locais do banco de dados pra roleta girar bonita!
-    if (imagensLocais.length === 0 && typeof LOCAIS_DB !== 'undefined') {
-        imagensLocais = LOCAIS_DB.map(l => l.img);
-    }
+    // ❌ TRAVA DE SEGURANÇA FOI DESATIVADA AQUI! ❌
+    // Se a lista 'imagensLocais' estiver vazia, ele NÃO VAI MAIS buscar no banco de dados.
 
-    // 3. Fallback de emergência total
-    if (imagensLocais.length === 0) imagensLocais = [URL_FUNDO_CARTA];
+    // 2. Se falhar, mostra o Verso da Carta (Isso vai provar que o Deck não está salvando os locais)
+    if (imagensLocais.length === 0) {
+        console.error("⚠️ DEBBUG: Nenhum local encontrado no Deck Salvo! Mostrando apenas o verso.");
+        imagensLocais = [URL_FUNDO_CARTA];
+    }
 
     const roletaHTML = `
         <div class="modal-overlay" id="overlay-roleta-local" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
@@ -1420,14 +1431,14 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
     let giros = 0;
     let indexSorteio = 0;
 
-    if(window.tocarSFX) window.tocarSFX('notificacao'); // Toca som se existir
+    if(window.tocarSFX) window.tocarSFX('notificacao');
 
     function girar() {
         indexSorteio = Math.floor(Math.random() * imagensLocais.length);
         divImagem.style.backgroundImage = `url('${imagensLocais[indexSorteio]}')`;
         
         giros++;
-        tempo += 10; // Vai ficando mais lento
+        tempo += 10; 
 
         if (giros < 25) {
             setTimeout(girar, tempo);
@@ -1440,17 +1451,20 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
             
             // Salva na memória o local e plota no tabuleiro!
             window.localAtivoAtual = imagensLocais[indexSorteio];
-            atualizarLocaisAtivosNaMesa();
+            if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
 
             setTimeout(() => {
-                document.getElementById('overlay-roleta-local').remove();
+                let modal = document.getElementById('overlay-roleta-local');
+                if (modal) modal.remove();
                 if(callback) callback();
-            }, 2000); // 2 segundos contemplando a carta antes de sumir
+            }, 2000); 
         }
     }
     
-    girar(); // Inicia a roleta
+    girar(); 
 };
+
+
 
 // 🔥 RASTREADOR INTELIGENTE: Acha as caixas de local em qualquer lugar da tela
 function atualizarLocaisAtivosNaMesa() {
