@@ -154,7 +154,6 @@ window.carregarDeckParaBatalha = function() {
                 let temEfeitoReal = false;
                 let textoCartaReal = "";
 
-                // 🔥 Busca as infos completas no banco de dados original (MONSTROS)
                 if (typeof MONSTROS !== 'undefined') {
                     let cartaDB = MONSTROS.find(m => m.nome === cartaOriginal.nome);
                     if (cartaDB) {
@@ -168,6 +167,7 @@ window.carregarDeckParaBatalha = function() {
                     textoCartaReal = cartaOriginal.textoCarta || "";
                 }
 
+                // 1. Cria a Carta do Jogador
                 campoJogador[chave] = {
                     dono: 'jogador',
                     nome: cartaOriginal.nome,
@@ -183,18 +183,16 @@ window.carregarDeckParaBatalha = function() {
                     },
                     hpAtual: cartaOriginal.stats?.e || 0,
                     fichasHabilidade: fichasReais,
-                    
-                    // 🔥 Salvando o efeito para o Modal poder ler depois!
                     temEfeito: temEfeitoReal,
                     textoCarta: textoCartaReal,
-                    
-                    equipamento: equipOriginal ? { 
-                        nome: equipOriginal.nome, 
-                        img: equipOriginal.img, 
-                        efeito: equipOriginal.efeito 
-                    } : null,
+                    equipamento: equipOriginal ? { nome: equipOriginal.nome, img: equipOriginal.img, efeito: equipOriginal.efeito } : null,
                     equipamentoRevelado: false
                 };
+
+                // 🔥 2. CLONA a exata mesma carta para o Bot! (Inverte o dono para 'oponente')
+                window.campoOponente[chave] = JSON.parse(JSON.stringify(campoJogador[chave]));
+                window.campoOponente[chave].dono = 'oponente';
+                window.campoOponente[chave].equipamentoRevelado = false; // Começa com o equipamento escondido
             }
         }
     });
@@ -725,6 +723,9 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     } else if (criaturaAlvo.dono === 'oponente') {
         criaturaOrigem.moveuNesteTurno = true; // 🔥 GASTA O MOVIMENTO!
         window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
+        
+        // 🔥 A MÁGICA ACONTECE AQUI! Chama a tela de VS
+        window.iniciarCombate(idOrigem, fullId);
     }
 
     limparDestaquesMovimento();
@@ -1248,30 +1249,37 @@ window.iniciarTurnoReal = function(primeiroJogador) {
     window.estadoTurno.turnoNumero = 1;
     window.estadoTurno.fase = 'principal';
 
-    // 🔥 Adicionado: Garante que as criaturas comecem com a energia "renovada" no turno
     Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
     if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
 
-    // 🔥 Adicionado: Mostra e configura o Botão de Passar Turno
     let btnTurno = document.getElementById('btn-passar-turno');
     if (btnTurno) btnTurno.style.display = 'block';
 
+    // 🔥 GATILHO DA ROLETA: Mostra o banner TCG, e depois gira a roleta ANTES de liberar o jogo!
+    let iniciarOpc = () => {
+        window.sortearLocalAnimado(primeiroJogador, () => {
+            if (primeiroJogador === 'jogador') {
+                window.mostrarMensagemScanner("Seu turno começou! Selecione uma ação.");
+            } else {
+                window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
+                setTimeout(() => { window.passarTurno(); }, 3000);
+            }
+        });
+    };
+
     if (primeiroJogador === 'jogador') {
         if(btnTurno) { btnTurno.disabled = false; btnTurno.innerHTML = "PASSAR<br>TURNO"; }
-        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
-            window.mostrarMensagemScanner("Seu turno começou! Selecione uma ação.");
-        });
+        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', iniciarOpc);
     } else {
         if(btnTurno) { btnTurno.disabled = true; btnTurno.innerHTML = "TURNO<br>OPONENTE"; }
-        window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
-            window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
-            // 🔥 Adicionado: Simula o Oponente "pensando" e depois passando o turno de volta pra você
-            setTimeout(() => { window.passarTurno(); }, 4000);
-        });
+        window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', iniciarOpc);
     }
     
     atualizarTelaBatalha();
 };
+
+
+
 
 // 🔥 Adicionado: A função ativada pelo botão para trocar os turnos
 window.passarTurno = function() {
@@ -1372,3 +1380,124 @@ window.desenharMiniCarta = function(criaturaObj) {
     }
     return html;
 };
+
+// ==========================================
+// 🔥 ANIMAÇÃO DE ROLETA DE LOCAIS E COMBATE (VS)
+// ==========================================
+
+window.localAtivoAtual = null;
+
+window.sortearLocalAnimado = function(jogadorDaVez, callback) {
+    let deck = window.estadoDrome.deckSelecionado;
+    let locais = deck.locais || [501, 502]; // IDs de Locais caso o player não tenha salvo
+    
+    // Pega as imagens dos locais do banco de dados
+    let imagensLocais = locais.map(id => {
+        let l = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB.find(x => x.id == id) : null;
+        return l ? l.img : URL_FUNDO_CARTA;
+    });
+
+    if (imagensLocais.length === 0) imagensLocais = [URL_FUNDO_CARTA];
+
+    const roletaHTML = `
+        <div class="modal-overlay" id="overlay-roleta-local" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif; letter-spacing: 5px; text-shadow: 0 0 15px #00bcd4; margin-bottom: 20px; animation: pulse 1s infinite;">SORTEANDO LOCAL...</h2>
+            <div id="roleta-imagem" style="width: 250px; height: 350px; background-size: cover; background-position: center; border: 4px solid #fff; border-radius: 15px; box-shadow: 0 0 40px #fff; transition: background-image 0.1s;"></div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', roletaHTML);
+
+    let divImagem = document.getElementById('roleta-imagem');
+    let tempo = 50; 
+    let giros = 0;
+    let indexSorteio = 0;
+
+    if(window.tocarSFX) window.tocarSFX('notificacao'); // Toca som se existir
+
+    function girar() {
+        indexSorteio = Math.floor(Math.random() * imagensLocais.length);
+        divImagem.style.backgroundImage = `url('${imagensLocais[indexSorteio]}')`;
+        
+        giros++;
+        tempo += 10; // Vai ficando mais lento
+
+        if (giros < 25) {
+            setTimeout(girar, tempo);
+        } else {
+            // TERMINOU DE GIRAR!
+            divImagem.style.borderColor = "#ffd700";
+            divImagem.style.boxShadow = "0 0 50px #ffd700";
+            document.querySelector('#overlay-roleta-local h2').innerText = "LOCAL DEFINIDO!";
+            document.querySelector('#overlay-roleta-local h2').style.color = "#ffd700";
+            
+            // Salva na memória o local e plota no tabuleiro!
+            window.localAtivoAtual = imagensLocais[indexSorteio];
+            atualizarLocaisAtivosNaMesa();
+
+            setTimeout(() => {
+                document.getElementById('overlay-roleta-local').remove();
+                if(callback) callback();
+            }, 2000); // 2 segundos contemplando a carta antes de sumir
+        }
+    }
+    
+    girar(); // Inicia a roleta
+};
+
+// Plota a imagem nos retângulos verdes do tabuleiro
+function atualizarLocaisAtivosNaMesa() {
+    let boxesLocais = document.querySelectorAll('.zona-central > div[style*="width: 320px"]'); 
+    boxesLocais.forEach(box => {
+        if (window.localAtivoAtual) {
+            box.style.backgroundImage = `url('${window.localAtivoAtual}')`;
+            box.style.backgroundSize = 'cover';
+            box.style.backgroundPosition = 'center';
+            box.style.border = "2px solid #ffd700";
+            box.innerHTML = ''; // Apaga o texto "LOCAL ATIVO"
+        } else {
+            box.style.backgroundImage = 'none';
+            box.innerHTML = '<span style="font-size: 8px; color: white;">LOCAL ATIVO</span>';
+        }
+    });
+}
+
+// A Tela de "VS" Épica que vai carregar o Motor de Batalha no futuro
+window.iniciarCombate = function(idAtacante, idDefensor) {
+    let atacante = obterCriaturaNoSlot(idAtacante);
+    let defensor = obterCriaturaNoSlot(idDefensor);
+
+    const vsHTML = `
+        <div class="modal-overlay" id="overlay-combate-vs" style="z-index: 1000000; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: space-around; width: 100vw;">
+            <div style="text-align: center; animation: slideInLeft 0.5s forwards;">
+                <div style="width: 150px; height: 220px; background-image: url('${atacante.cartaBlank}'); background-size: cover; background-position: center; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50;"></div>
+                <h3 style="color: #4CAF50; margin-top: 10px;">${atacante.nome}</h3>
+            </div>
+
+            <div style="font-family: 'Arial Black', sans-serif; font-size: 70px; color: #e53935; text-shadow: 0 0 20px #e53935, 2px 2px 0px #fff; transform: scale(0); animation: popIn 0.5s 0.3s forwards;">VS</div>
+
+            <div style="text-align: center; animation: slideInRight 0.5s forwards;">
+                <div style="width: 150px; height: 220px; background-image: url('${defensor.cartaBlank}'); background-size: cover; background-position: center; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935;"></div>
+                <h3 style="color: #e53935; margin-top: 10px;">${defensor.nome}</h3>
+            </div>
+            
+            <button onclick="encerrarCombateProvisorio('${idAtacante}', '${idDefensor}')" style="position: absolute; bottom: 50px; padding: 15px 30px; font-size: 16px; font-weight: bold; background: #fff; border: none; border-radius: 8px; cursor: pointer; animation: fadeIn 1s 1s forwards; opacity: 0;">SAIR DO COMBATE</button>
+        </div>
+        <style>
+            @keyframes slideInLeft { from { transform: translateX(-100vw); } to { transform: translateX(0); } }
+            @keyframes slideInRight { from { transform: translateX(100vw); } to { transform: translateX(0); } }
+            @keyframes popIn { to { transform: scale(1) rotate(-10deg); } }
+            @keyframes fadeIn { to { opacity: 1; } }
+        </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', vsHTML);
+};
+
+// Provisório: quando acabar a luta, zera o local e fecha a tela
+window.encerrarCombateProvisorio = function(idAtacante, idDefensor) {
+    document.getElementById('overlay-combate-vs').remove();
+    window.localAtivoAtual = null; // Apaga o local pra roleta girar de novo no próximo turno
+    atualizarLocaisAtivosNaMesa();
+    window.mostrarMensagemScanner("Combate Finalizado!");
+    window.passarTurno(); // Passa o turno automaticamente após a luta
+};
+
