@@ -1389,14 +1389,22 @@ window.localAtivoAtual = null;
 
 window.sortearLocalAnimado = function(jogadorDaVez, callback) {
     let deck = window.estadoDrome.deckSelecionado;
-    let locais = deck.locais || [501, 502]; // IDs de Locais caso o player não tenha salvo
+    let imagensLocais = [];
     
-    // Pega as imagens dos locais do banco de dados
-    let imagensLocais = locais.map(id => {
-        let l = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB.find(x => x.id == id) : null;
-        return l ? l.img : URL_FUNDO_CARTA;
-    });
+    // 1. Tenta puxar as cartas de local do deck montado
+    if (deck && deck.locais && deck.locais.length > 0) {
+        imagensLocais = deck.locais.map(id => {
+            let l = typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB.find(x => x.id == id) : null;
+            return l ? l.img : null;
+        }).filter(img => img !== null);
+    }
 
+    // 2. TRAVA DE SEGURANÇA: Se o deck não tiver locais salvos, pega TODOS os locais do banco de dados pra roleta girar bonita!
+    if (imagensLocais.length === 0 && typeof LOCAIS_DB !== 'undefined') {
+        imagensLocais = LOCAIS_DB.map(l => l.img);
+    }
+
+    // 3. Fallback de emergência total
     if (imagensLocais.length === 0) imagensLocais = [URL_FUNDO_CARTA];
 
     const roletaHTML = `
@@ -1444,22 +1452,43 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
     girar(); // Inicia a roleta
 };
 
-// Plota a imagem nos retângulos verdes do tabuleiro
+// 🔥 RASTREADOR INTELIGENTE: Acha as caixas de local em qualquer lugar da tela
 function atualizarLocaisAtivosNaMesa() {
-    let boxesLocais = document.querySelectorAll('.zona-central > div[style*="width: 320px"]'); 
+    let todasAsDivs = document.querySelectorAll('div');
+    let boxesLocais = [];
+
+    todasAsDivs.forEach(div => {
+        // Rastreador: Acha a div pelo texto "LOCAL ATIVO" ou pela classe marcadora
+        if ((div.innerText && div.innerText.includes('LOCAL ATIVO')) || div.classList.contains('box-local-ativo-js')) {
+            // Pega apenas as caixas principais (ignora textos pequenos perdidos)
+            if (!boxesLocais.includes(div) && div.tagName === 'DIV') {
+                boxesLocais.push(div);
+            }
+        }
+    });
+
     boxesLocais.forEach(box => {
+        box.classList.add('box-local-ativo-js'); // Marca a caixa pra não perder ela depois que apagar o texto
+        
         if (window.localAtivoAtual) {
             box.style.backgroundImage = `url('${window.localAtivoAtual}')`;
             box.style.backgroundSize = 'cover';
             box.style.backgroundPosition = 'center';
             box.style.border = "2px solid #ffd700";
-            box.innerHTML = ''; // Apaga o texto "LOCAL ATIVO"
+            box.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.4)";
+            box.innerHTML = ''; // Apaga o texto pra imagem ficar limpa
         } else {
             box.style.backgroundImage = 'none';
-            box.innerHTML = '<span style="font-size: 8px; color: white;">LOCAL ATIVO</span>';
+            box.style.border = "1px solid #4CAF50";
+            box.style.boxShadow = "none";
+            box.innerHTML = '<span style="font-size: 10px; color: white; font-family: monospace; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%;">LOCAL ATIVO</span>';
         }
     });
 }
+
+
+
+
 
 // A Tela de "VS" Épica que vai carregar o Motor de Batalha no futuro
 window.iniciarCombate = function(idAtacante, idDefensor) {
