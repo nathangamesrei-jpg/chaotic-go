@@ -1521,11 +1521,30 @@ function atualizarLocaisAtivosNaMesa() {
             box.style.backgroundRepeat = 'no-repeat';
             box.style.border = "2px solid #ffd700";
             box.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.4)";
-            box.innerHTML = ''; // Limpa o texto
+            
+            // 🔥 A MÁGICA DE AMPLIAÇÃO (Clique no Local Ativo)
+            box.style.cursor = 'pointer';
+            box.onclick = function() {
+                if (typeof window.ampliarCartaClicada === 'function') {
+                    if(window.tocarSFX) window.tocarSFX('notificacao'); // Efeitinho sonoro!
+                    window.ampliarCartaClicada(window.localAtivoAtual);
+                }
+            };
+            
+            // 🔥 EFEITO DE HOVER TRANSPARENTE
+            box.innerHTML = `
+                <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+                    <span style="color: white; font-weight: bold; font-size: 14px; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 10px black, 0 0 5px #000;">🔍 LER CARTA</span>
+                </div>
+            `; 
+            
         } else {
+            // Volta pro formato vazio sem clique
             box.style.backgroundImage = 'none';
             box.style.border = "1px solid #4CAF50";
             box.style.boxShadow = "none";
+            box.style.cursor = 'default';
+            box.onclick = null; 
             box.innerHTML = '<span style="font-size: 10px; color: white; font-family: monospace; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; text-align: center;">LOCAL ATIVO</span>';
         }
     });
