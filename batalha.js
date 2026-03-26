@@ -1387,41 +1387,33 @@ window.desenharMiniCarta = function(criaturaObj) {
 
 window.localAtivoAtual = null;
 
+// ==========================================
+// 🔥 ANIMAÇÃO DE ROLETA DE LOCAIS
+// ==========================================
 window.sortearLocalAnimado = function(jogadorDaVez, callback) {
     let deck = window.estadoDrome.deckSelecionado;
     let imagensLocais = [];
     
-    // 1. Tenta puxar as cartas de local EXCLUSIVAMENTE do deck montado
+    // Tenta puxar as cartas de local EXCLUSIVAMENTE do deck montado
     if (deck && deck.locais && deck.locais.length > 0) {
         imagensLocais = deck.locais.map(id => {
             let localEncontrado = null;
-            
-            // Procura no LOCAIS_DB oficial
-            if (typeof LOCAIS_DB !== 'undefined') {
-                localEncontrado = LOCAIS_DB.find(x => x.id == id || x.nome == id);
-            }
-            // Se não achar, procura no inventário geral
-            if (!localEncontrado && window.inventario) {
-                localEncontrado = window.inventario.find(x => x.id == id || x.nome == id);
-            }
-            
+            if (typeof LOCAIS_DB !== 'undefined') localEncontrado = LOCAIS_DB.find(x => x.id == id || x.nome == id);
+            if (!localEncontrado && window.inventario) localEncontrado = window.inventario.find(x => x.id == id || x.nome == id);
             return localEncontrado ? (localEncontrado.img || localEncontrado.cartaBlank) : null;
         }).filter(img => img !== null && img !== undefined);
     }
 
-    // ❌ TRAVA DE SEGURANÇA FOI DESATIVADA AQUI! ❌
-    // Se a lista 'imagensLocais' estiver vazia, ele NÃO VAI MAIS buscar no banco de dados.
-
-    // 2. Se falhar, mostra o Verso da Carta (Isso vai provar que o Deck não está salvando os locais)
     if (imagensLocais.length === 0) {
         console.error("⚠️ DEBBUG: Nenhum local encontrado no Deck Salvo! Mostrando apenas o verso.");
         imagensLocais = [URL_FUNDO_CARTA];
     }
 
+    // 🔥 CORREÇÃO: Formato PAISAGEM (Deitado) para caber o Local perfeitamente!
     const roletaHTML = `
         <div class="modal-overlay" id="overlay-roleta-local" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif; letter-spacing: 5px; text-shadow: 0 0 15px #00bcd4; margin-bottom: 20px; animation: pulse 1s infinite;">SORTEANDO LOCAL...</h2>
-            <div id="roleta-imagem" style="width: 250px; height: 350px; background-size: cover; background-position: center; border: 4px solid #fff; border-radius: 15px; box-shadow: 0 0 40px #fff; transition: background-image 0.1s;"></div>
+            <div id="roleta-imagem" style="width: 400px; height: 280px; background-size: 100% 100%; background-repeat: no-repeat; background-position: center; border: 4px solid #fff; border-radius: 15px; box-shadow: 0 0 40px #fff; transition: background-image 0.1s;"></div>
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', roletaHTML);
@@ -1446,8 +1438,11 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
             // TERMINOU DE GIRAR!
             divImagem.style.borderColor = "#ffd700";
             divImagem.style.boxShadow = "0 0 50px #ffd700";
-            document.querySelector('#overlay-roleta-local h2').innerText = "LOCAL DEFINIDO!";
-            document.querySelector('#overlay-roleta-local h2').style.color = "#ffd700";
+            let titulo = document.querySelector('#overlay-roleta-local h2');
+            if(titulo) {
+                titulo.innerText = "LOCAL DEFINIDO!";
+                titulo.style.color = "#ffd700";
+            }
             
             // Salva na memória o local e plota no tabuleiro!
             window.localAtivoAtual = imagensLocais[indexSorteio];
@@ -1456,13 +1451,43 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
             setTimeout(() => {
                 let modal = document.getElementById('overlay-roleta-local');
                 if (modal) modal.remove();
-                if(callback) callback();
+                
+                // 🔥 PROTEÇÃO ANTI-CRASH: Roda o callback com segurança
+                if(callback) {
+                    try {
+                        callback();
+                    } catch(e) {
+                        console.error("Erro no callback após roleta:", e);
+                    }
+                }
             }, 2000); 
         }
     }
     
     girar(); 
 };
+
+// ==========================================
+// 🔥 BLINDAGEM DO SCANNER (Evita Crash de Tela)
+// ==========================================
+const scannerOriginal = window.mostrarMensagemScanner;
+window.mostrarMensagemScanner = function(msg) {
+    try {
+        // Tenta usar a original do script.js
+        if (typeof scannerOriginal === 'function') {
+            scannerOriginal(msg);
+        }
+    } catch(e) {
+        console.warn("Scanner não encontrado. Usando Toast flutuante. Mensagem:", msg);
+        // Cria um Toast verde flutuante se o Scanner falhar!
+        let toast = document.createElement('div');
+        toast.innerText = msg;
+        toast.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,10,0,0.9); color:#00ff00; padding:10px 20px; border-radius:8px; border:2px solid #00ff00; z-index:999999; font-family:monospace; font-weight:bold; box-shadow:0 0 15px #00ff00;";
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 3500);
+    }
+};
+
 
 
 
