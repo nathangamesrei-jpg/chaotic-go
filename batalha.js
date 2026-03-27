@@ -672,6 +672,12 @@ function setarCriaturaNoSlot(fullId, criatura) {
 window.lidarComCliqueTabuleiro = function(fullId) {
     if (window.estadoTurno.jogadorAtual !== 'jogador') return;
 
+    // 🚨 BLOQUEIO DE COMBATE: Se estiver lutando, não pode arrastar/selecionar outras cartas!
+    if (window.estadoCombate && window.estadoCombate.ativo) {
+        window.mostrarMensagemScanner("COMBATE EM ANDAMENTO! Use suas cartas de ataque da mão!");
+        return;
+    }
+
     let criaturaAlvo = obterCriaturaNoSlot(fullId);
     let el = document.getElementById(fullId);
     
@@ -868,6 +874,12 @@ setTimeout(() => {
             window.mostrarMensagemScanner("TURNO DO OPONENTE! Aguarde a sua vez.");
             return;
         }
+
+        // 🚨 BLOQUEIO DE COMBATE: Se estiver lutando, não pode arrastar/selecionar outras cartas!
+    if (window.estadoCombate && window.estadoCombate.ativo) {
+        window.mostrarMensagemScanner("COMBATE EM ANDAMENTO! Use suas cartas de ataque da mão!");
+        return;
+    }
         
         let pointer = e.touches ? e.touches[0] : e; 
         
@@ -1578,43 +1590,107 @@ function atualizarLocaisAtivosNaMesa() {
 
 
 
-// A Tela de "VS" Épica que vai carregar o Motor de Batalha no futuro
+// ==========================================
+// 🔥 MOTOR DE COMBATE: ANIMAÇÃO DE SCANNER E VS (VERTICAL)
+// ==========================================
+
+window.estadoCombate = { ativo: false, atacante: null, defensor: null };
+window.pontosAtaque = { jogador: 3, oponente: 3 }; // Prepara a base pros ataques
+
 window.iniciarCombate = function(idAtacante, idDefensor) {
     let atacante = obterCriaturaNoSlot(idAtacante);
     let defensor = obterCriaturaNoSlot(idDefensor);
 
+    // Trava o jogo em Modo Combate
+    window.estadoCombate = { ativo: true, atacante: idAtacante, defensor: idDefensor };
+
+    // Descobre o nome do Local Ativo atual para a narração
+    let nomeLocal = "Local Desconhecido";
+    if (window.localAtivoAtual) {
+        let locDB = null;
+        if (typeof LOCAIS_DB !== 'undefined') locDB = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
+        if (!locDB && window.inventario) locDB = window.inventario.find(l => l.img === window.localAtivoAtual);
+        if (locDB) nomeLocal = locDB.nome;
+    }
+
+    // O Texto que vai aparecer e ser falado
+    let textoNarracao = `${atacante.nome} ataca ${defensor.nome} em ${nomeLocal}`;
+
+    // 🔥 1. Ativa a Voz Robótica (Text-to-Speech)
+    try {
+        let vozRobo = new SpeechSynthesisUtterance(textoNarracao);
+        vozRobo.lang = 'pt-BR';
+        vozRobo.rate = 0.9; // Um pouco mais lento e dramático
+        vozRobo.pitch = 0.4; // Voz mais grave/robótica
+        window.speechSynthesis.speak(vozRobo);
+    } catch(e) { console.log("Voz não suportada neste navegador."); }
+
+    // 🔥 2. Constrói a Tela Vertical de Scanner e Raio
     const vsHTML = `
-        <div class="modal-overlay" id="overlay-combate-vs" style="z-index: 1000000; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: space-around; width: 100vw;">
-            <div style="text-align: center; animation: slideInLeft 0.5s forwards;">
-                <div style="width: 150px; height: 220px; background-image: url('${atacante.cartaBlank}'); background-size: cover; background-position: center; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50;"></div>
-                <h3 style="color: #4CAF50; margin-top: 10px;">${atacante.nome}</h3>
-            </div>
-
-            <div style="font-family: 'Arial Black', sans-serif; font-size: 70px; color: #e53935; text-shadow: 0 0 20px #e53935, 2px 2px 0px #fff; transform: scale(0); animation: popIn 0.5s 0.3s forwards;">VS</div>
-
-            <div style="text-align: center; animation: slideInRight 0.5s forwards;">
-                <div style="width: 150px; height: 220px; background-image: url('${defensor.cartaBlank}'); background-size: cover; background-position: center; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935;"></div>
-                <h3 style="color: #e53935; margin-top: 10px;">${defensor.nome}</h3>
-            </div>
+        <div class="modal-overlay" id="overlay-combate-vs" style="z-index: 1000000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; overflow: hidden;">
             
-            <button onclick="encerrarCombateProvisorio('${idAtacante}', '${idDefensor}')" style="position: absolute; bottom: 50px; padding: 15px 30px; font-size: 16px; font-weight: bold; background: #fff; border: none; border-radius: 8px; cursor: pointer; animation: fadeIn 1s 1s forwards; opacity: 0;">SAIR DO COMBATE</button>
+            <div style="position: relative; width: 140px; height: 200px; margin-bottom: 20px; animation: dropInTop 0.8s forwards;">
+                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; overflow: hidden;">
+                    <div class="linha-scan"></div>
+                </div>
+                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: cover; background-position: center; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; opacity: 0; animation: revelarCarta 1s 1.5s forwards;"></div>
+            </div>
+
+            <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; height: 60px;">
+                <div class="raio-horizontal"></div>
+                <div style="font-family: 'Arial Black', sans-serif; font-size: 60px; color: #fff; text-shadow: 0 0 20px #e53935, 0 0 30px #ffd700; z-index: 10; animation: pulseVS 0.5s infinite alternate;">VS</div>
+            </div>
+
+            <div style="position: relative; width: 140px; height: 200px; margin-top: 20px; animation: dropInBottom 0.8s forwards;">
+                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; overflow: hidden;">
+                    <div class="linha-scan"></div>
+                </div>
+                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: cover; background-position: center; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; opacity: 0; animation: revelarCarta 1s 1.5s forwards;"></div>
+            </div>
+
+            <div style="position: absolute; bottom: 10%; width: 90%; text-align: center; font-family: monospace; font-size: 14px; font-weight: bold; color: #00ff00; background: rgba(0, 20, 0, 0.8); padding: 10px; border: 1px solid #00ff00; border-radius: 5px; opacity: 0; animation: revelarCarta 0.5s 2.5s forwards;">
+                > ${textoNarracao.toUpperCase()}
+            </div>
+
         </div>
+
         <style>
-            @keyframes slideInLeft { from { transform: translateX(-100vw); } to { transform: translateX(0); } }
-            @keyframes slideInRight { from { transform: translateX(100vw); } to { transform: translateX(0); } }
-            @keyframes popIn { to { transform: scale(1) rotate(-10deg); } }
-            @keyframes fadeIn { to { opacity: 1; } }
+            @keyframes dropInTop { from { transform: translateY(-100vh); } to { transform: translateY(0); } }
+            @keyframes dropInBottom { from { transform: translateY(100vh); } to { transform: translateY(0); } }
+            @keyframes revelarCarta { to { opacity: 1; } }
+            @keyframes pulseVS { from { transform: scale(1); } to { transform: scale(1.2); } }
+            
+            /* Animação do laser do scanner descendo e subindo */
+            .linha-scan {
+                position: absolute; width: 100%; height: 5px; background: #00bcd4; box-shadow: 0 0 15px #00bcd4;
+                animation: scanBar 1.5s ease-in-out infinite alternate;
+            }
+            @keyframes scanBar { 0% { top: 0%; } 100% { top: 100%; } }
+
+            /* Animação do Raio cortando a tela */
+            .raio-horizontal {
+                position: absolute; width: 150vw; height: 10px; background: #fff; box-shadow: 0 0 20px #e53935, 0 0 40px #ffd700, 0 0 60px #fff;
+                transform: rotate(-5deg); opacity: 0;
+                animation: flashRaio 0.3s 1s forwards;
+            }
+            @keyframes flashRaio { 0% { opacity: 0; width: 0; } 50% { opacity: 1; width: 150vw; } 100% { opacity: 0.8; } }
         </style>
     `;
     document.body.insertAdjacentHTML('beforeend', vsHTML);
+
+    // 🔥 3. Retorna para o Tabuleiro após a narração e Trava a Mesa
+    setTimeout(() => {
+        let telaVS = document.getElementById('overlay-combate-vs');
+        if (telaVS) telaVS.remove();
+        
+        window.pontosAtaque[atacante.dono] += 1; // Dá 1 ponto pro atacante como você pediu
+        window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
+        
+        // Aqui no futuro a gente chama a função que atualiza o Contador de Ataques na tela
+        
+    }, 6000); // 6 segundos de animação e voz
 };
 
-// Provisório: quando acabar a luta, zera o local e fecha a tela
-window.encerrarCombateProvisorio = function(idAtacante, idDefensor) {
-    document.getElementById('overlay-combate-vs').remove();
-    window.localAtivoAtual = null; // Apaga o local pra roleta girar de novo no próximo turno
-    atualizarLocaisAtivosNaMesa();
-    window.mostrarMensagemScanner("Combate Finalizado!");
-    window.passarTurno(); // Passa o turno automaticamente após a luta
-};
+
+
 
