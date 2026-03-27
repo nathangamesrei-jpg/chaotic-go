@@ -1601,10 +1601,8 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
     let atacante = obterCriaturaNoSlot(idAtacante);
     let defensor = obterCriaturaNoSlot(idDefensor);
 
-    // Trava o jogo em Modo Combate
     window.estadoCombate = { ativo: true, atacante: idAtacante, defensor: idDefensor };
 
-    // Descobre o nome do Local Ativo atual para a narração
     let nomeLocal = "Local Desconhecido";
     if (window.localAtivoAtual) {
         let locDB = null;
@@ -1613,27 +1611,29 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         if (locDB) nomeLocal = locDB.nome;
     }
 
-    // O Texto que vai aparecer e ser falado
     let textoNarracao = `${atacante.nome} ataca ${defensor.nome} em ${nomeLocal}`;
 
-    // 🔥 1. Ativa a Voz Robótica (Text-to-Speech)
+    // 🔥 1. VOZ DO DROME TURBINADA: Mais alta, imediata e sem gaguejar!
     try {
+        window.speechSynthesis.cancel(); // Limpa a fila do navegador pra não atrasar
         let vozRobo = new SpeechSynthesisUtterance(textoNarracao);
         vozRobo.lang = 'pt-BR';
-        vozRobo.rate = 0.9; // Um pouco mais lento e dramático
-        vozRobo.pitch = 0.4; // Voz mais grave/robótica
+        vozRobo.rate = 1.0; // Velocidade normal (fala na hora)
+        vozRobo.pitch = 0.5; // Voz de robô grave
+        vozRobo.volume = 1.0; // Volume estourando no 100%
         window.speechSynthesis.speak(vozRobo);
-    } catch(e) { console.log("Voz não suportada neste navegador."); }
+    } catch(e) { console.log("Voz não suportada."); }
 
-    // 🔥 2. Constrói a Tela Vertical de Scanner e Raio
+    // 🔥 2. Constrói a Tela Vertical (Efeito Blur virando a Carta Real)
     const vsHTML = `
         <div class="modal-overlay" id="overlay-combate-vs" style="z-index: 1000000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; overflow: hidden;">
             
-            <div style="position: relative; width: 140px; height: 200px; margin-bottom: 20px; animation: dropInTop 0.8s forwards;">
-                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; overflow: hidden;">
+            <div style="position: relative; width: 160px; height: 230px; margin-bottom: 20px; animation: dropInTop 0.5s forwards;">
+                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: 100% 100%; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
+                
+                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.4); backdrop-filter: blur(4px); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
                     <div class="linha-scan"></div>
                 </div>
-                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: cover; background-position: center; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; opacity: 0; animation: revelarCarta 1s 1.5s forwards;"></div>
             </div>
 
             <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; height: 60px;">
@@ -1641,14 +1641,15 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
                 <div style="font-family: 'Arial Black', sans-serif; font-size: 60px; color: #fff; text-shadow: 0 0 20px #e53935, 0 0 30px #ffd700; z-index: 10; animation: pulseVS 0.5s infinite alternate;">VS</div>
             </div>
 
-            <div style="position: relative; width: 140px; height: 200px; margin-top: 20px; animation: dropInBottom 0.8s forwards;">
-                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; overflow: hidden;">
+            <div style="position: relative; width: 160px; height: 230px; margin-top: 20px; animation: dropInBottom 0.5s forwards;">
+                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: 100% 100%; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
+                
+                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.4); backdrop-filter: blur(4px); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
                     <div class="linha-scan"></div>
                 </div>
-                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: cover; background-position: center; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; opacity: 0; animation: revelarCarta 1s 1.5s forwards;"></div>
             </div>
 
-            <div style="position: absolute; bottom: 10%; width: 90%; text-align: center; font-family: monospace; font-size: 14px; font-weight: bold; color: #00ff00; background: rgba(0, 20, 0, 0.8); padding: 10px; border: 1px solid #00ff00; border-radius: 5px; opacity: 0; animation: revelarCarta 0.5s 2.5s forwards;">
+            <div style="position: absolute; bottom: 5%; width: 90%; text-align: center; font-family: monospace; font-size: 14px; font-weight: bold; color: #00ff00; background: rgba(0, 20, 0, 0.8); padding: 10px; border: 1px solid #00ff00; border-radius: 5px; opacity: 0; animation: revelarCarta 0.5s 0.5s forwards;">
                 > ${textoNarracao.toUpperCase()}
             </div>
 
@@ -1657,17 +1658,19 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         <style>
             @keyframes dropInTop { from { transform: translateY(-100vh); } to { transform: translateY(0); } }
             @keyframes dropInBottom { from { transform: translateY(100vh); } to { transform: translateY(0); } }
+            
+            /* A animação que revela a foto limpa e dissolve o painel azul */
             @keyframes revelarCarta { to { opacity: 1; } }
+            @keyframes fadeOutScan { to { opacity: 0; visibility: hidden; } }
+            
             @keyframes pulseVS { from { transform: scale(1); } to { transform: scale(1.2); } }
             
-            /* Animação do laser do scanner descendo e subindo */
             .linha-scan {
-                position: absolute; width: 100%; height: 5px; background: #00bcd4; box-shadow: 0 0 15px #00bcd4;
-                animation: scanBar 1.5s ease-in-out infinite alternate;
+                position: absolute; width: 100%; height: 6px; background: #fff; box-shadow: 0 0 15px #fff, 0 0 30px #00bcd4;
+                animation: scanBar 0.75s ease-in-out infinite alternate;
             }
             @keyframes scanBar { 0% { top: 0%; } 100% { top: 100%; } }
 
-            /* Animação do Raio cortando a tela */
             .raio-horizontal {
                 position: absolute; width: 150vw; height: 10px; background: #fff; box-shadow: 0 0 20px #e53935, 0 0 40px #ffd700, 0 0 60px #fff;
                 transform: rotate(-5deg); opacity: 0;
@@ -1678,17 +1681,14 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
     `;
     document.body.insertAdjacentHTML('beforeend', vsHTML);
 
-    // 🔥 3. Retorna para o Tabuleiro após a narração e Trava a Mesa
+    // 🔥 3. Retorna para o Tabuleiro (Aumentado para 8 segundos pro áudio tocar sem pressa)
     setTimeout(() => {
         let telaVS = document.getElementById('overlay-combate-vs');
         if (telaVS) telaVS.remove();
         
-        window.pontosAtaque[atacante.dono] += 1; // Dá 1 ponto pro atacante como você pediu
+        window.pontosAtaque[atacante.dono] += 1; 
         window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
-        
-        // Aqui no futuro a gente chama a função que atualiza o Contador de Ataques na tela
-        
-    }, 6000); // 6 segundos de animação e voz
+    }, 8000); 
 };
 
 
