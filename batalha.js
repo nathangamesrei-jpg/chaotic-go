@@ -1613,7 +1613,7 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 
     let textoNarracao = `${atacante.nome} ataca ${defensor.nome} em ${nomeLocal}`;
 
-    // 🔥 1. VOZ DO DROME (INALTERADA COMO PEDIDO)
+    // 🔥 1. VOZ DO DROME (INALTERADA)
     try {
         window.speechSynthesis.cancel(); 
         let vozRobo = new SpeechSynthesisUtterance(textoNarracao);
@@ -1624,7 +1624,7 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         window.speechSynthesis.speak(vozRobo);
     } catch(e) { console.log("Voz não suportada."); }
 
-    // 🔥 BUSCA OS ÍCONES DO MAPA PARA O HOLOGRAMA INICIAL
+    // 🔥 BUSCA OS ÍCONES DA CRIATURA
     let iconeAtacante = atacante.cartaBlank;
     let iconeDefensor = defensor.cartaBlank;
     if (typeof MONSTROS !== 'undefined') {
@@ -1635,19 +1635,19 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         if (dbDef && dbDef.iconeMapa) iconeDefensor = dbDef.iconeMapa;
     }
 
-    // 🔥 2. Constrói a Tela Vertical (Com o Ícone sendo Escaneado primeiro)
+    // 🔥 2. Constrói a Tela Vertical (A CARTA é escaneada e a CRIATURA aparece!)
     const vsHTML = `
         <div class="modal-overlay" id="overlay-combate-vs" style="z-index: 1000000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; overflow: hidden;">
             
             <div style="position: relative; width: 160px; height: 230px; margin-bottom: 20px; animation: dropInTop 0.5s forwards;">
                 
-                <div class="icone-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeDefensor}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 10px #00bcd4) brightness(1.2); animation: fadeOutScan 0.5s 1.5s forwards;"></div>
+                <div class="carta-base" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: 100% 100%; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; animation: fadeOutScan 0.5s 1.5s forwards;"></div>
 
-                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.1); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
+                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.2); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
                     <div class="linha-scan"></div>
                 </div>
 
-                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: 100% 100%; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
+                <div class="criatura-revelada" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeDefensor}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 15px #e53935) brightness(1.2); opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
             </div>
 
             <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; height: 60px;">
@@ -1657,13 +1657,13 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 
             <div style="position: relative; width: 160px; height: 230px; margin-top: 20px; animation: dropInBottom 0.5s forwards;">
                 
-                <div class="icone-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeAtacante}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 10px #00bcd4) brightness(1.2); animation: fadeOutScan 0.5s 1.5s forwards;"></div>
+                <div class="carta-base" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: 100% 100%; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; animation: fadeOutScan 0.5s 1.5s forwards;"></div>
 
-                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.1); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
+                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.2); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
                     <div class="linha-scan"></div>
                 </div>
 
-                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: 100% 100%; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
+                <div class="criatura-revelada" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeAtacante}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 15px #4CAF50) brightness(1.2); opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
             </div>
 
             <div style="position: absolute; bottom: 5%; width: 90%; text-align: center; font-family: monospace; font-size: 14px; font-weight: bold; color: #00ff00; background: rgba(0, 20, 0, 0.8); padding: 10px; border: 1px solid #00ff00; border-radius: 5px; opacity: 0; animation: revelarCarta 0.5s 0.5s forwards;">
@@ -1705,4 +1705,3 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
     }, 8000); 
 };
-
