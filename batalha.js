@@ -1613,27 +1613,41 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 
     let textoNarracao = `${atacante.nome} ataca ${defensor.nome} em ${nomeLocal}`;
 
-    // 🔥 1. VOZ DO DROME TURBINADA: Mais alta, imediata e sem gaguejar!
+    // 🔥 1. VOZ DO DROME (INALTERADA COMO PEDIDO)
     try {
-        window.speechSynthesis.cancel(); // Limpa a fila do navegador pra não atrasar
+        window.speechSynthesis.cancel(); 
         let vozRobo = new SpeechSynthesisUtterance(textoNarracao);
         vozRobo.lang = 'pt-BR';
-        vozRobo.rate = 1.0; // Velocidade normal (fala na hora)
-        vozRobo.pitch = 0.5; // Voz de robô grave
-        vozRobo.volume = 1.0; // Volume estourando no 100%
+        vozRobo.rate = 1.0; 
+        vozRobo.pitch = 0.5; 
+        vozRobo.volume = 1.0; 
         window.speechSynthesis.speak(vozRobo);
     } catch(e) { console.log("Voz não suportada."); }
 
-    // 🔥 2. Constrói a Tela Vertical (Efeito Blur virando a Carta Real)
+    // 🔥 BUSCA OS ÍCONES DO MAPA PARA O HOLOGRAMA INICIAL
+    let iconeAtacante = atacante.cartaBlank;
+    let iconeDefensor = defensor.cartaBlank;
+    if (typeof MONSTROS !== 'undefined') {
+        let dbAta = MONSTROS.find(m => m.nome === atacante.nome);
+        if (dbAta && dbAta.iconeMapa) iconeAtacante = dbAta.iconeMapa;
+        
+        let dbDef = MONSTROS.find(m => m.nome === defensor.nome);
+        if (dbDef && dbDef.iconeMapa) iconeDefensor = dbDef.iconeMapa;
+    }
+
+    // 🔥 2. Constrói a Tela Vertical (Com o Ícone sendo Escaneado primeiro)
     const vsHTML = `
         <div class="modal-overlay" id="overlay-combate-vs" style="z-index: 1000000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; overflow: hidden;">
             
             <div style="position: relative; width: 160px; height: 230px; margin-bottom: 20px; animation: dropInTop 0.5s forwards;">
-                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: 100% 100%; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
                 
-                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.4); backdrop-filter: blur(4px); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
+                <div class="icone-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeDefensor}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 10px #00bcd4) brightness(1.2); animation: fadeOutScan 0.5s 1.5s forwards;"></div>
+
+                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.1); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
                     <div class="linha-scan"></div>
                 </div>
+
+                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: 100% 100%; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
             </div>
 
             <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; height: 60px;">
@@ -1642,11 +1656,14 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
             </div>
 
             <div style="position: relative; width: 160px; height: 230px; margin-top: 20px; animation: dropInBottom 0.5s forwards;">
-                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: 100% 100%; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
                 
-                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.4); backdrop-filter: blur(4px); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
+                <div class="icone-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeAtacante}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 10px #00bcd4) brightness(1.2); animation: fadeOutScan 0.5s 1.5s forwards;"></div>
+
+                <div class="holograma-scan" style="position: absolute; width:100%; height:100%; border: 2px solid #00bcd4; border-radius: 10px; background: rgba(0, 188, 212, 0.1); overflow: hidden; animation: fadeOutScan 0.5s 1.5s forwards;">
                     <div class="linha-scan"></div>
                 </div>
+
+                <div class="carta-real-scan" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: 100% 100%; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
             </div>
 
             <div style="position: absolute; bottom: 5%; width: 90%; text-align: center; font-family: monospace; font-size: 14px; font-weight: bold; color: #00ff00; background: rgba(0, 20, 0, 0.8); padding: 10px; border: 1px solid #00ff00; border-radius: 5px; opacity: 0; animation: revelarCarta 0.5s 0.5s forwards;">
@@ -1659,14 +1676,13 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
             @keyframes dropInTop { from { transform: translateY(-100vh); } to { transform: translateY(0); } }
             @keyframes dropInBottom { from { transform: translateY(100vh); } to { transform: translateY(0); } }
             
-            /* A animação que revela a foto limpa e dissolve o painel azul */
             @keyframes revelarCarta { to { opacity: 1; } }
             @keyframes fadeOutScan { to { opacity: 0; visibility: hidden; } }
             
             @keyframes pulseVS { from { transform: scale(1); } to { transform: scale(1.2); } }
             
             .linha-scan {
-                position: absolute; width: 100%; height: 6px; background: #fff; box-shadow: 0 0 15px #fff, 0 0 30px #00bcd4;
+                position: absolute; width: 100%; height: 4px; background: #fff; box-shadow: 0 0 10px #fff, 0 0 20px #00bcd4;
                 animation: scanBar 0.75s ease-in-out infinite alternate;
             }
             @keyframes scanBar { 0% { top: 0%; } 100% { top: 100%; } }
@@ -1681,7 +1697,6 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
     `;
     document.body.insertAdjacentHTML('beforeend', vsHTML);
 
-    // 🔥 3. Retorna para o Tabuleiro (Aumentado para 8 segundos pro áudio tocar sem pressa)
     setTimeout(() => {
         let telaVS = document.getElementById('overlay-combate-vs');
         if (telaVS) telaVS.remove();
@@ -1690,7 +1705,4 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
     }, 8000); 
 };
-
-
-
 
