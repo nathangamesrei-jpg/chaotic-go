@@ -393,9 +393,19 @@ function fecharModalFichas() {
 window.abrirModalAcoesCriatura = function(fullId, criatura) {
     if (document.getElementById('overlay-acoes')) return;
 
-    let botoesHTML = `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
+    let botoesHTML = "";
+    let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-    // 🔥 LÓGICA DE HABILIDADE
+    // 🔥 INTELIGÊNCIA: Só deixa mover se a mesa estiver livre e a criatura descansada!
+    if (!emCombate && !criatura.moveuNesteTurno) {
+        botoesHTML += `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
+    } else if (!emCombate && criatura.moveuNesteTurno) {
+        botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Esta criatura já se moveu neste turno.</p>`;
+    } else if (emCombate) {
+        botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Movimento bloqueado durante o Combate!</p>`;
+    }
+
+    // LÓGICA DE HABILIDADE
     let textoMinusculo = (criatura.textoCarta || "").toLowerCase();
     let habilidadeAtiva = textoMinusculo.includes('descarte') || textoMinusculo.includes('gaste') || textoMinusculo.includes('ficha');
     
@@ -403,7 +413,7 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
         botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff9800; color: #ff9800;" onclick="window.usarHabilidade('${fullId}')">Usar Habilidade</button>`;
     }
 
-    // 🔥 LÓGICA DE MUGIC
+    // LÓGICA DE MUGIC
     if (criatura.fichasHabilidade > 0) {
         botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4;" onclick="window.prepararMugic('${fullId}')">Usar Mugic</button>`;
     }
@@ -441,7 +451,11 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
 
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
     document.getElementById('overlay-acoes').addEventListener('click', function(e) { if(e.target === this) fecharModalAcoes(); });
-}
+};
+
+
+
+
 
 // 🔥 FUNÇÃO NOVA: Amplia a carta na tela inteira
 window.ampliarCartaClicada = function(imgUrl) {
@@ -652,30 +666,19 @@ function setarCriaturaNoSlot(fullId, criatura) {
 window.lidarComCliqueTabuleiro = function(fullId) {
     if (window.estadoTurno.jogadorAtual !== 'jogador') return;
 
-    // 🚨 BLOQUEIO DE COMBATE: Se estiver lutando, não pode arrastar/selecionar outras cartas!
-    if (window.estadoCombate && window.estadoCombate.ativo) {
-        window.mostrarMensagemScanner("COMBATE EM ANDAMENTO! Use suas cartas de ataque da mão!");
-        return;
-    }
-
     let criaturaAlvo = obterCriaturaNoSlot(fullId);
     let el = document.getElementById(fullId);
     
     if (!el || el.parentElement.style.display === 'none') return;
 
-    // SE AINDA NÃO SELECIONOU NINGUÉM PARA ANDAR (Primeiro Clique)
+    // PRIMEIRO CLIQUE (Abre as opções)
     if (!window.slotSelecionadoMovimento) {
         if (criaturaAlvo) {
             if (criaturaAlvo.dono === 'jogador') {
-                if (criaturaAlvo.moveuNesteTurno) {
-                    window.mostrarMensagemScanner("Esta criatura já agiu neste turno!");
-                    return;
-                }
-                // 🔥 CORREÇÃO AQUI: Removemos a trava. Agora SEMPRE abre o Modal para as suas cartas!
+                // 🔥 CORREÇÃO: Abre o modal de opções mesmo em combate e mesmo se estiver cansada!
                 window.abrirModalAcoesCriatura(fullId, criaturaAlvo);
 
             } else if (criaturaAlvo.dono === 'oponente') {
-                // 🔥 BÔNUS: Se clicar no inimigo pra xeretar, amplia a carta dele pra você ler!
                 if (criaturaAlvo.equipamento && criaturaAlvo.equipamentoRevelado) {
                     window.verEquipamentoModal(fullId);
                 } else if (typeof window.ampliarCartaClicada === 'function') {
@@ -686,7 +689,7 @@ window.lidarComCliqueTabuleiro = function(fullId) {
         return;
     }
 
-    // SE JÁ TINHA ALGUÉM SELECIONADO (Segundo Clique: Andar ou Atacar)
+    // SEGUNDO CLIQUE (Mover/Atacar)
     let idOrigem = window.slotSelecionadoMovimento;
     let criaturaOrigem = obterCriaturaNoSlot(idOrigem);
 
@@ -719,13 +722,12 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     if (!criaturaAlvo) {
         setarCriaturaNoSlot(fullId, criaturaOrigem); 
         setarCriaturaNoSlot(idOrigem, null); 
-        criaturaOrigem.moveuNesteTurno = true; // 🔥 GASTA O MOVIMENTO!
+        criaturaOrigem.moveuNesteTurno = true; 
         window.mostrarMensagemScanner("Avançando pelo tabuleiro!");
     } else if (criaturaAlvo.dono === 'oponente') {
-        criaturaOrigem.moveuNesteTurno = true; // 🔥 GASTA O MOVIMENTO!
+        criaturaOrigem.moveuNesteTurno = true; 
         window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
         
-        // Chama a tela de VS
         if(typeof window.iniciarCombate === 'function') {
             window.iniciarCombate(idOrigem, fullId);
         }
@@ -734,8 +736,7 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     limparDestaquesMovimento();
     window.slotSelecionadoMovimento = null;
     atualizarTelaBatalha(); 
-}
-
+};
 
 
 
@@ -841,158 +842,167 @@ setTimeout(() => {
     let zonas = document.querySelectorAll('.zona-central');
     if (zonas) zonas.forEach(z => z.style.pointerEvents = "none"); 
 
+
+
+
+    
+
     // ==========================================
     // 🔥 NOVO MOTOR DE ARRASTAR E SOLTAR (DRAG & DROP TOUCH) 🔥
     // ==========================================
     let interacao = { idOrigem: null, isDragging: false, clone: null, startX: 0, startY: 0 };
 
     window.iniciarInteracaoSlot = function(e, fullId) {
-        if (e.button === 2) return; 
+        if (e.button === 2) return; 
 
-        // 🚨 BLOQUEIO DE TURNO
-        if (window.estadoTurno.jogadorAtual !== 'jogador') {
-            window.mostrarMensagemScanner("TURNO DO OPONENTE! Aguarde a sua vez.");
-            return;
-        }
+        // 🚨 BLOQUEIO DE TURNO
+        if (window.estadoTurno.jogadorAtual !== 'jogador') {
+            window.mostrarMensagemScanner("TURNO DO OPONENTE! Aguarde a sua vez.");
+            return;
+        }
 
-        // 🚨 BLOQUEIO DE COMBATE: Se estiver lutando, não pode arrastar/selecionar outras cartas!
-    if (window.estadoCombate && window.estadoCombate.ativo) {
-        window.mostrarMensagemScanner("COMBATE EM ANDAMENTO! Use suas cartas de ataque da mão!");
-        return;
-    }
-        
-        let pointer = e.touches ? e.touches[0] : e; 
-        
-        interacao.idOrigem = fullId;
-        interacao.isDragging = false;
-        interacao.startX = pointer.clientX;
-        interacao.startY = pointer.clientY;
+        // 🔥 REMOVIDO DAQUI O BLOQUEIO DE COMBATE PARA NÃO MATAR O CLIQUE!
+        
+        let pointer = e.touches ? e.touches[0] : e; 
+        
+        interacao.idOrigem = fullId;
+        interacao.isDragging = false;
+        interacao.startX = pointer.clientX;
+        interacao.startY = pointer.clientY;
 
-        let criatura = obterCriaturaNoSlot(fullId);
+        let criatura = obterCriaturaNoSlot(fullId);
 
-        // Se clicou na SUA criatura, prepara o elevador fantasma pra arrastar
-        if (criatura && criatura.dono === 'jogador') {
-            
-            // 🚨 BLOQUEIO DE CANSAÇO
-            if (criatura.moveuNesteTurno) {
-                window.mostrarMensagemScanner("Esta criatura já agiu neste turno!");
-                interacao.idOrigem = null;
-                return;
-            }
+        // Se clicou na SUA criatura, prepara o elevador fantasma pra arrastar
+        if (criatura && criatura.dono === 'jogador') {
+            
+            let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-            let elOriginal = document.getElementById(fullId);
-            let rect = elOriginal.getBoundingClientRect();
-            
-            interacao.clone = elOriginal.cloneNode(true);
-            interacao.clone.style.position = 'fixed';
-            interacao.clone.style.left = rect.left + 'px';
-            interacao.clone.style.top = rect.top + 'px';
-            interacao.clone.style.width = rect.width + 'px';
-            interacao.clone.style.height = rect.height + 'px';
-            interacao.clone.style.pointerEvents = 'none'; 
-            interacao.clone.style.zIndex = '999999';
-            interacao.clone.style.opacity = '0.9';
-            interacao.clone.style.transform = 'scale(1.1)';
-            interacao.clone.style.display = 'none'; // Escondido até você começar a puxar
-            document.body.appendChild(interacao.clone);
+            // 🚨 BLOQUEIO DE CANSAÇO (Pode clicar, mas não pode arrastar)
+            if (criatura.moveuNesteTurno && !emCombate) {
+                window.mostrarMensagemScanner("Esta criatura já agiu neste turno!");
+                interacao.idOrigem = null;
+                return;
+            }
+            
+            // 🔥 CORREÇÃO AQUI: Só cria o clone pra ARRASTAR se NÃO estiver em combate e NÃO tiver movido
+            if (!emCombate && !criatura.moveuNesteTurno) {
+                let elOriginal = document.getElementById(fullId);
+                let rect = elOriginal.getBoundingClientRect();
+                
+                interacao.clone = elOriginal.cloneNode(true);
+                interacao.clone.style.position = 'fixed';
+                interacao.clone.style.left = rect.left + 'px';
+                interacao.clone.style.top = rect.top + 'px';
+                interacao.clone.style.width = rect.width + 'px';
+                interacao.clone.style.height = rect.height + 'px';
+                interacao.clone.style.pointerEvents = 'none'; 
+                interacao.clone.style.zIndex = '999999';
+                interacao.clone.style.opacity = '0.9';
+                interacao.clone.style.transform = 'scale(1.1)';
+                interacao.clone.style.display = 'none'; // Escondido até você começar a puxar
+                document.body.appendChild(interacao.clone);
 
-            document.addEventListener('pointermove', moverInteracao, {passive: false});
-            document.addEventListener('touchmove', moverInteracao, {passive: false});
-        }
-        
-        document.addEventListener('pointerup', soltarInteracao);
-        document.addEventListener('touchend', soltarInteracao);
-    };
+                document.addEventListener('pointermove', moverInteracao, {passive: false});
+                document.addEventListener('touchmove', moverInteracao, {passive: false});
+            }
+        }
+        
+        document.addEventListener('pointerup', soltarInteracao);
+        document.addEventListener('touchend', soltarInteracao);
+    };
 
-    function moverInteracao(e) {
-        if (!interacao.idOrigem || !interacao.clone) return;
-        
-        let pointer = e.touches ? e.touches[0] : e;
-        
-        let moveX = Math.abs(pointer.clientX - interacao.startX);
-        let moveY = Math.abs(pointer.clientY - interacao.startY);
+    function moverInteracao(e) {
+        if (!interacao.idOrigem || !interacao.clone) return;
+        
+        let pointer = e.touches ? e.touches[0] : e;
+        
+        let moveX = Math.abs(pointer.clientX - interacao.startX);
+        let moveY = Math.abs(pointer.clientY - interacao.startY);
 
-        // Detonou o gatilho de Arraste (moveu o dedo mais de 10px)
-        if (!interacao.isDragging && (moveX > 10 || moveY > 10)) {
-            interacao.isDragging = true;
-            interacao.clone.style.display = 'flex';
-            
-            window.fecharModalAcoes(); // Se tiver janela aberta, some com ela
-            
-            // Ilumina o tabuleiro igual mágica!
-            window.slotSelecionadoMovimento = interacao.idOrigem;
-            destacarAdjacentes(interacao.idOrigem);
-            if(window.tocarSFX) window.tocarSFX('notificacao'); 
-        }
+        // Detonou o gatilho de Arraste (moveu o dedo mais de 10px)
+        if (!interacao.isDragging && (moveX > 10 || moveY > 10)) {
+            interacao.isDragging = true;
+            interacao.clone.style.display = 'flex';
+            
+            window.fecharModalAcoes(); // Se tiver janela aberta, some com ela
+            
+            // Ilumina o tabuleiro igual mágica!
+            window.slotSelecionadoMovimento = interacao.idOrigem;
+            destacarAdjacentes(interacao.idOrigem);
+            if(window.tocarSFX) window.tocarSFX('notificacao'); 
+        }
 
-        if (interacao.isDragging) {
-            if(e.cancelable) e.preventDefault(); // Trava a tela pra não bugar o swipe
-            interacao.clone.style.left = (pointer.clientX - interacao.clone.offsetWidth / 2) + 'px';
-            interacao.clone.style.top = (pointer.clientY - interacao.clone.offsetHeight / 2) + 'px';
-        }
-    }
+        if (interacao.isDragging) {
+            if(e.cancelable) e.preventDefault(); // Trava a tela pra não bugar o swipe
+            interacao.clone.style.left = (pointer.clientX - interacao.clone.offsetWidth / 2) + 'px';
+            interacao.clone.style.top = (pointer.clientY - interacao.clone.offsetHeight / 2) + 'px';
+        }
+    }
 
-    function soltarInteracao(e) {
-        document.removeEventListener('pointermove', moverInteracao);
-        document.removeEventListener('touchmove', moverInteracao);
-        document.removeEventListener('pointerup', soltarInteracao);
-        document.removeEventListener('touchend', soltarInteracao);
+    function soltarInteracao(e) {
+        document.removeEventListener('pointermove', moverInteracao);
+        document.removeEventListener('touchmove', moverInteracao);
+        document.removeEventListener('pointerup', soltarInteracao);
+        document.removeEventListener('touchend', soltarInteracao);
 
-        let origem = interacao.idOrigem;
-        
-        if (interacao.isDragging) {
-            let pointer = e.changedTouches ? e.changedTouches[0] : e;
-            
-            // Esconde o fantasma rapidinho pra ver em qual Casa/Slot o dedo parou
-            interacao.clone.style.display = 'none';
-            let elementoAbaixo = document.elementFromPoint(pointer.clientX, pointer.clientY);
-            
-            let slotDestino = null;
-            if (elementoAbaixo) {
-                let hitBox = elementoAbaixo.closest('[id^="jog-"], [id^="op-"]');
-                if (hitBox) slotDestino = hitBox.id;
-            }
+        let origem = interacao.idOrigem;
+        
+        if (interacao.isDragging) {
+            let pointer = e.changedTouches ? e.changedTouches[0] : e;
+            
+            // Esconde o fantasma rapidinho pra ver em qual Casa/Slot o dedo parou
+            interacao.clone.style.display = 'none';
+            let elementoAbaixo = document.elementFromPoint(pointer.clientX, pointer.clientY);
+            
+            let slotDestino = null;
+            if (elementoAbaixo) {
+                let hitBox = elementoAbaixo.closest('[id^="jog-"], [id^="op-"]');
+                if (hitBox) slotDestino = hitBox.id;
+            }
 
-            interacao.clone.remove();
-            interacao = { idOrigem: null, isDragging: false, clone: null };
+            interacao.clone.remove();
+            interacao = { idOrigem: null, isDragging: false, clone: null };
 
-            // Soltou na casa certa? EXECUTA O GOLPE!
-            if (slotDestino && slotDestino !== origem) {
-                if (obterAdjacencias(origem).includes(slotDestino)) {
-                    window.slotSelecionadoMovimento = origem;
-                    window.lidarComCliqueTabuleiro(slotDestino);
-                } else {
-                    limparDestaquesMovimento();
-                    window.slotSelecionadoMovimento = null;
-                }
-            } else {
-                limparDestaquesMovimento();
-                window.slotSelecionadoMovimento = null;
-            }
+            // Soltou na casa certa? EXECUTA O GOLPE!
+            if (slotDestino && slotDestino !== origem) {
+                if (obterAdjacencias(origem).includes(slotDestino)) {
+                    window.slotSelecionadoMovimento = origem;
+                    window.lidarComCliqueTabuleiro(slotDestino);
+                } else {
+                    limparDestaquesMovimento();
+                    window.slotSelecionadoMovimento = null;
+                }
+            } else {
+                limparDestaquesMovimento();
+                window.slotSelecionadoMovimento = null;
+            }
 
-        } else {
-            // Foi só um clique normal! Abre as opções.
-            if (interacao.clone) interacao.clone.remove();
-            interacao = { idOrigem: null, isDragging: false, clone: null };
-            
-            window.lidarComCliqueTabuleiro(origem);
-        }
-    }
+        } else {
+            // Foi só um clique normal! Abre as opções.
+            if (interacao.clone) interacao.clone.remove();
+            interacao = { idOrigem: null, isDragging: false, clone: null };
+            
+            window.lidarComCliqueTabuleiro(origem);
+        }
+    }
 
-    ['jog', 'op'].forEach(lado => {
-        ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
-            let el = document.getElementById(`${lado}-${slot}`);
-            if (el) {
-                if (el.parentElement) el.parentElement.style.pointerEvents = "none";
-                el.style.pointerEvents = "auto";
-                
-                // Conecta o novo sensor de toque/arrastar no slot (substitui o el.onclick antigo)
-                el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
-                el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
-            }
-        });
-    });
+    ['jog', 'op'].forEach(lado => {
+        ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
+            let el = document.getElementById(`${lado}-${slot}`);
+            if (el) {
+                if (el.parentElement) el.parentElement.style.pointerEvents = "none";
+                el.style.pointerEvents = "auto";
+                
+                // Conecta o novo sensor de toque/arrastar no slot (substitui o el.onclick antigo)
+                el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+                el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+            }
+        });
+    });
 }, 1000);
+
+
+
 // ==========================================
 // EFEITO 3D DAS MÃOS DE CARTAS (O SEU LEQUE E O DO INIMIGO)
 // ==========================================
