@@ -249,6 +249,12 @@ function atualizarMugicsDaTela() {
     });
 }
 
+
+
+
+
+
+
 function atualizarDecksEMaoCards() {
     document.querySelectorAll('.box-deck').forEach(deck => {
         let isPlayer = deck.closest('.lado-jogador') !== null;
@@ -259,12 +265,13 @@ function atualizarDecksEMaoCards() {
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
-        else if (textoAtual.trim() === 'DECK') {
+        else if (textoAtual.trim() === 'DECK' || textoAtual.includes('LOCAIS')) {
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
     });
 
+    // 🔥 NOVA MÁGICA: Conecta o clique nas cartas da mão ao Modal de Ataque!
     let elsMao = document.querySelectorAll('.carta-na-mao, .carta-mao');
     elsMao.forEach((el, index) => {
         if (window.maoAtaques && window.maoAtaques[index]) {
@@ -275,10 +282,23 @@ function atualizarDecksEMaoCards() {
                 el.style.backgroundSize = 'cover';
                 el.style.backgroundPosition = 'center';
                 el.innerHTML = ''; 
+                el.style.cursor = 'pointer';
+                
+                // Abre o modal de ataque passando o ID e a Posição na mão
+                el.onclick = () => window.abrirModalAtaque(index, idAtaque, cartaOriginal);
             }
+        } else {
+            // Se o espaço na mão estiver vazio, limpa a carta
+            el.style.backgroundImage = 'none';
+            el.onclick = null;
         }
     });
 }
+
+
+
+
+        
 
 function atualizarContadorFichasHabilidade() {
     function renderizarBotaoFichas(seletorLado, ladoId, totalFichas) {
@@ -441,48 +461,8 @@ window.fecharModalAcoes = function() {
 
 
 
-// 🔥 FUNÇÃO DE ESQUELETO: Gastar a Habilidade
-window.usarHabilidade = function(fullId) {
-    window.fecharModalAcoes();
-    let criatura = obterCriaturaNoSlot(fullId);
-    
-    if(criatura && criatura.fichasHabilidade > 0) {
-        // Por enquanto, gasta 1 ficha como teste (depois programamos pra ler o custo exato do texto)
-        criatura.fichasHabilidade -= 1; 
-        window.mostrarMensagemScanner(`🔥 ${criatura.nome} ativou sua Habilidade Especial! (-1 Ficha)`);
-        atualizarTelaBatalha();
-    }
-}
 
-// 🔥 FUNÇÃO DE ESQUELETO: Preparar para tocar Mugic
-window.prepararMugic = function(fullId) {
-    window.fecharModalAcoes();
-    let criatura = obterCriaturaNoSlot(fullId);
-    
-    if(criatura && criatura.fichasHabilidade > 0) {
-        // Por enquanto, gasta 1 ficha como teste pra simular a magia
-        criatura.fichasHabilidade -= 1; 
-        window.mostrarMensagemScanner(`🎵 ${criatura.nome} conjurou um Mugic! (-1 Ficha)`);
-        atualizarTelaBatalha();
-    }
-}
 
-window.selecionarParaMovimento = function(fullId) {
-    window.fecharModalAcoes();
-    window.slotSelecionadoMovimento = fullId;
-    destacarAdjacentes(fullId);
-    if(window.tocarSFX) window.tocarSFX('notificacao'); 
-}
-
-window.revelarEquipamento = function(fullId) {
-    window.fecharModalAcoes();
-    let criatura = obterCriaturaNoSlot(fullId);
-    if (criatura && criatura.equipamento) {
-        criatura.equipamentoRevelado = true;
-        window.mostrarMensagemScanner("🔮 Equipamento Revelado!");
-        atualizarTelaBatalha();
-    }
-}
 
 window.verEquipamentoModal = function(fullId) {
     window.fecharModalAcoes();
@@ -1705,3 +1685,302 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
     }, 8000); 
 };
+
+
+
+
+
+// ==========================================
+// 🔥 MOTOR DE ATAQUE E DANO
+// ==========================================
+
+window.lixoAtaques = []; // Cria o cemitério de ataques
+
+window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
+    if (document.getElementById('overlay-ataque')) return;
+
+    // Busca os dados oficiais do ataque no banco de dados (para pegar Dano e Custo reais)
+    let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === cartaInventario.nome) : null;
+    let custo = ataqueDB ? ataqueDB.custo : 0;
+    let dano = ataqueDB ? ataqueDB.danoBase : 0;
+    let img = ataqueDB ? ataqueDB.img : cartaInventario.img;
+
+    let ptsAtuais = window.pontosAtaque['jogador'] || 0;
+    
+    // Verifica se pode atacar (Se está em combate, no seu turno, e se tem pontos suficientes)
+    let podeAtacar = (window.estadoCombate && window.estadoCombate.ativo && window.estadoTurno.jogadorAtual === 'jogador');
+    let temPontos = (ptsAtuais >= custo);
+
+    let btnUsarHTML = "";
+    if (podeAtacar) {
+        if (temPontos) {
+            btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #e53935; color: #e53935; background: #220000; font-size: 16px;" onclick="window.usarCartaAtaque(${indexMao}, '${idAtaque}', ${custo}, ${dano}, '${cartaInventario.nome}')">💥 USAR ATAQUE (Custo: ${custo})</button>`;
+        } else {
+            btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>Sem Pontos de Ataque suficientes</button>`;
+        }
+    } else {
+        btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Você só pode usar cartas de ataque durante um Combate no seu turno!</p>`;
+    }
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-ataque">
+            <div class="modal-content-fichas" style="text-align:center;">
+                <h3 style="color:#e53935;margin-bottom:5px;">${cartaInventario.nome}</h3>
+                
+                <div onclick="window.ampliarCartaClicada('${img}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${img}');background-size:cover;background-position:center;border:2px solid #e53935;border-radius:10px;box-shadow: 0 0 15px rgba(229, 57, 53, 0.4); cursor: pointer;">
+                    <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); border-radius: 8px; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+                        <span style="color: white; font-weight: bold; font-size: 12px;">🔍 AMPLIAR</span>
+                    </div>
+                </div>
+                
+                <p style="font-size:14px; color:#ffd700; margin-bottom:5px;">Seus Pontos de Ataque: <b style="font-size:18px;">${ptsAtuais}</b></p>
+                <p style="font-size:12px; color:#fff; margin-bottom:15px;">Dano Base: <b>${dano}</b> | Custo: <b>${custo}</b></p>
+                
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    ${btnUsarHTML}
+                    <button class="btn-acao-modal btn-cancelar" onclick="document.getElementById('overlay-ataque').remove()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+
+
+
+
+// 🔥 1. ATAQUE NO BURST
+window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
+    let modalAtaque = document.getElementById('overlay-ataque');
+    if (modalAtaque) modalAtaque.remove();
+
+    // Cobra o custo na hora que declara
+    window.pontosAtaque['jogador'] -= custo;
+    window.maoAtaques.splice(indexMao, 1);
+    window.lixoAtaques.push(idAtaque);
+    atualizarDecksEMaoCards();
+
+    // Cria o pacote pro Burst
+    let acaoDoAtaque = {
+        dono: 'jogador',
+        nomeAcao: nomeAtaque,
+        tipo: 'ataque',
+        executar: function() {
+            let idDefensor = window.estadoCombate.defensor;
+            let alvo = obterCriaturaNoSlot(idDefensor);
+            if (alvo) {
+                alvo.hpAtual -= dano;
+                if(window.tocarSFX) window.tocarSFX('notificacao'); 
+                window.mostrarMensagemScanner(`💥 Dano aplicado! ${alvo.nome} perdeu ${dano} de energia!`);
+                let elAlvo = document.getElementById(idDefensor);
+                if(elAlvo) {
+                    elAlvo.style.animation = "shake 0.5s";
+                    setTimeout(() => { elAlvo.style.animation = ""; }, 500);
+                }
+                if (alvo.hpAtual <= 0) {
+                    alvo.hpAtual = 0;
+                    setTimeout(() => window.encerrarCombateMorte(idDefensor), 1000);
+                }
+                atualizarTelaBatalha();
+            }
+        }
+    };
+    
+    // Envia pra fila!
+    window.adicionarAoBurst(acaoDoAtaque);
+};
+
+// 🔥 2. HABILIDADE NO BURST
+window.usarHabilidade = function(fullId) {
+    window.fecharModalAcoes();
+    let criatura = obterCriaturaNoSlot(fullId);
+    
+    if(criatura && criatura.fichasHabilidade > 0) {
+        criatura.fichasHabilidade -= 1; // Cobra a ficha na hora
+        atualizarTelaBatalha();
+        
+        let acaoHabilidade = {
+            dono: criatura.dono,
+            nomeAcao: `Habilidade de ${criatura.nome}`,
+            tipo: 'habilidade',
+            executar: function() {
+                window.mostrarMensagemScanner(`✨ A Habilidade de ${criatura.nome} foi resolvida!`);
+                // No futuro, os efeitos reais de curar ou dar dano entram aqui!
+            }
+        };
+        window.adicionarAoBurst(acaoHabilidade);
+    }
+};
+
+// 🔥 3. MUGIC NO BURST
+window.prepararMugic = function(fullId) {
+    window.fecharModalAcoes();
+    let criatura = obterCriaturaNoSlot(fullId);
+    
+    if(criatura && criatura.fichasHabilidade > 0) {
+        criatura.fichasHabilidade -= 1; // Cobra a ficha
+        atualizarTelaBatalha();
+        
+        let acaoMugic = {
+            dono: criatura.dono,
+            nomeAcao: `Mugic conjurado por ${criatura.nome}`,
+            tipo: 'mugic',
+            executar: function() {
+                window.mostrarMensagemScanner(`🎵 A melodia do Mugic de ${criatura.nome} fez efeito!`);
+                // Magia real entra aqui no futuro
+            }
+        };
+        window.adicionarAoBurst(acaoMugic);
+    }
+};
+
+// 🔥 4. REVELAR EQUIPAMENTO NO BURST
+window.revelarEquipamento = function(fullId) {
+    window.fecharModalAcoes();
+    let criatura = obterCriaturaNoSlot(fullId);
+    if (criatura && criatura.equipamento) {
+        
+        let acaoEquip = {
+            dono: criatura.dono,
+            nomeAcao: `Revelar Equipamento (${criatura.equipamento.nome})`,
+            tipo: 'equipamento',
+            executar: function() {
+                criatura.equipamentoRevelado = true;
+                window.mostrarMensagemScanner(`🔮 O Equipamento de ${criatura.nome} foi revelado e ativado!`);
+                atualizarTelaBatalha();
+            }
+        };
+        window.adicionarAoBurst(acaoEquip);
+    }
+};
+
+// BÔNUS: Injetar a opção de cancelar o SIM na janela de opções da criatura
+const fecharModalAcoesOriginal = window.fecharModalAcoes;
+window.fecharModalAcoes = function() {
+    fecharModalAcoesOriginal();
+    // Se ele fechar o modal enquanto devia estar respondendo ao burst, cancela a resposta!
+    if (window.aguardandoResposta) {
+        window.cancelarRespostaBurst();
+    }
+};
+
+// 🔥 FUNÇÃO: Mata a criatura e finaliza o combate
+window.encerrarCombateMorte = function(idMorto) {
+    let morto = obterCriaturaNoSlot(idMorto);
+    window.mostrarMensagemScanner(`💀 ${morto.nome} FOI DESTRUÍDO!`);
+    
+    // Apaga a criatura da mesa
+    setarCriaturaNoSlot(idMorto, null);
+    
+    // Destrava a mesa
+    window.estadoCombate.ativo = false;
+    window.estadoCombate.atacante = null;
+    window.estadoCombate.defensor = null;
+    
+    // Na próxima fase vamos colocar a lógica de repor a energia de quem sobreviveu
+    // e resetar a mão, mas por enquanto, volta ao tabuleiro normal!
+    
+    atualizarTelaBatalha();
+};
+
+
+
+
+
+// ==========================================
+// ⚡ MOTOR DE BURST (SISTEMA DE CORRENTES / PILHA)
+// ==========================================
+
+window.pilhaBurst = []; // A fila de espera das ações
+window.aguardandoResposta = false;
+
+// 1. Função que empacota a ação e joga na fila
+window.adicionarAoBurst = function(acaoObj) {
+    window.pilhaBurst.push(acaoObj);
+    window.mostrarMensagemScanner(`⚡ BURST ATIVADO: ${acaoObj.nomeAcao} entrou na corrente!`);
+    
+    // Quem tem que responder é o dono contrário de quem acabou de jogar
+    let jogadorAlvo = acaoObj.dono === 'jogador' ? 'oponente' : 'jogador';
+    
+    setTimeout(() => window.perguntarResposta(jogadorAlvo, acaoObj), 1000);
+};
+
+// 2. A Janela de SIM ou NÃO
+window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
+    window.aguardandoResposta = true;
+    let cor = jogadorAlvo === 'jogador' ? '#4CAF50' : '#e53935';
+    let nomeJogador = jogadorAlvo === 'jogador' ? 'VOCÊ' : 'OPONENTE';
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-burst" style="z-index: 1000000; background: rgba(0,0,0,0.9);">
+            <div class="modal-content-fichas" style="text-align:center; border: 3px solid ${cor}; box-shadow: 0 0 30px ${cor};">
+                <h3 style="color:${cor}; margin-bottom:15px; font-size: 24px; text-shadow: 0 0 10px ${cor};">AÇÃO DO ADVERSÁRIO!</h3>
+                <p style="color:#fff; font-size: 14px; margin-bottom: 20px;">
+                    O adversário usou: <b style="color:#ffd700; font-size: 16px;">${acaoAnterior.nomeAcao}</b><br><br>
+                    <span style="font-size: 18px;">${nomeJogador}, deseja responder a essa ação?</span>
+                </p>
+                <div style="display:flex; gap: 20px; justify-content: center;">
+                    <button class="btn-acao-modal" style="width: 100px; border-color:#00bcd4; color:#00bcd4;" onclick="window.iniciarRespostaBurst('${jogadorAlvo}')">SIM</button>
+                    <button class="btn-acao-modal" style="width: 100px; border-color:#e53935; color:#e53935;" onclick="window.negarRespostaBurst()">NÃO</button>
+                </div>
+                <p style="font-size: 10px; color: #888; margin-top: 15px;">Se clicar em SIM e não fizer nada, basta cancelar na sua carta.</p>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+// 3. Se disser SIM (Libera a mesa para ele jogar a carta por cima)
+window.iniciarRespostaBurst = function(jogadorAlvo) {
+    document.getElementById('overlay-burst').remove();
+    window.mostrarMensagemScanner(`⏳ Aguardando a resposta de ${jogadorAlvo}... Escolha sua ação!`);
+    // O jogo continua travado em "aguardandoResposta", permitindo que ele clique numa carta e ela entre no Burst!
+};
+
+// 4. Se disser NÃO (Fecha a corrente e resolve tudo de trás pra frente)
+window.negarRespostaBurst = function() {
+    let modal = document.getElementById('overlay-burst');
+    if(modal) modal.remove();
+    
+    window.aguardandoResposta = false;
+    window.mostrarMensagemScanner("A corrente foi fechada! Resolvendo as ações...");
+    
+    setTimeout(() => window.resolverBurst(), 1000);
+};
+
+// 5. RESOLUÇÃO DE TRÁS PRA FRENTE (LIFO)
+window.resolverBurst = function() {
+    if (window.pilhaBurst.length === 0) {
+        window.mostrarMensagemScanner("Todas as ações resolvidas.");
+        atualizarTelaBatalha();
+        return;
+    }
+
+    // Puxa a ÚLTIMA ação que entrou na lista
+    let acaoAtual = window.pilhaBurst.pop();
+    
+    window.mostrarMensagemScanner(`✨ Resolvendo: ${acaoAtual.nomeAcao}`);
+    
+    // Executa a mágica da carta!
+    acaoAtual.executar();
+    
+    // Chama a próxima ação da fila depois de 2.5 segundos (pra dar tempo de ver a animação e o dano)
+    setTimeout(() => window.resolverBurst(), 2500);
+};
+
+// 6. CANCELAR O SIM: Se o cara apertou SIM, mas mudou de ideia e quer fechar a corrente
+window.cancelarRespostaBurst = function() {
+    if (window.aguardandoResposta) {
+        window.aguardandoResposta = false;
+        window.mostrarMensagemScanner("Resposta cancelada. Resolvendo a corrente...");
+        window.resolverBurst();
+    }
+};
+
+
+
+
+
+
