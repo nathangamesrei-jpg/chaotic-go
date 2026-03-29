@@ -271,7 +271,7 @@ function atualizarDecksEMaoCards() {
         }
     });
 
-    // 🔥 NOVA MÁGICA: Conecta o clique nas cartas da mão ao Modal de Ataque!
+    // 🔥 NOVA MÁGICA: Blindagem Absoluta para Toque no Celular e Mouse
     let elsMao = document.querySelectorAll('.carta-na-mao, .carta-mao');
     elsMao.forEach((el, index) => {
         if (window.maoAtaques && window.maoAtaques[index]) {
@@ -282,17 +282,38 @@ function atualizarDecksEMaoCards() {
                 el.style.backgroundSize = 'cover';
                 el.style.backgroundPosition = 'center';
                 el.innerHTML = ''; 
-                el.style.cursor = 'pointer';
                 
-                // Abre o modal de ataque passando o ID e a Posição na mão
-                el.onclick = () => window.abrirModalAtaque(index, idAtaque, cartaOriginal);
+                // Força o CSS para habilitar o toque prioritário
+                el.style.pointerEvents = 'auto';
+                el.style.cursor = 'pointer';
+                el.style.zIndex = '10000';
+                
+                // A função que chama o modal
+                let acionarCarta = function(e) {
+                    e.preventDefault(); // Impede duplo clique no celular
+                    e.stopPropagation();
+                    window.abrirModalAtaque(index, idAtaque, cartaOriginal);
+                };
+
+                // Garante que funciona tanto no click quanto no touch
+                el.onclick = acionarCarta;
+                el.ontouchstart = acionarCarta;
             }
         } else {
             // Se o espaço na mão estiver vazio, limpa a carta
             el.style.backgroundImage = 'none';
             el.onclick = null;
+            el.ontouchstart = null;
         }
     });
+
+    // 🔥 Conserta a caixa invisível para não bloquear o toque do celular
+    let caixaMao = document.querySelector('.container-mao-ataques');
+    if (caixaMao) {
+        caixaMao.style.pointerEvents = 'auto';
+        caixaMao.style.width = '200px'; 
+        caixaMao.style.height = '100px';
+    }
 }
 
 
@@ -1704,7 +1725,11 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 // 🔥 MOTOR DE ATAQUE E DANO
 // ==========================================
 
+
 window.lixoAtaques = []; // Cria o cemitério de ataques
+
+
+
 
 window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
     if (document.getElementById('overlay-ataque')) return;
@@ -1717,8 +1742,10 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
 
     let ptsAtuais = window.pontosAtaque['jogador'] || 0;
     
-    // Verifica se pode atacar (Se está em combate, no seu turno, e se tem pontos suficientes)
-    let podeAtacar = (window.estadoCombate && window.estadoCombate.ativo && window.estadoTurno.jogadorAtual === 'jogador');
+    // 🔥 CORREÇÃO DO BURST: Você pode atacar no seu turno OU se estiver respondendo à corrente do oponente!
+    let emCombate = window.estadoCombate && window.estadoCombate.ativo;
+    let temPermissao = (window.estadoTurno.jogadorAtual === 'jogador' || window.aguardandoResposta);
+    let podeAtacar = (emCombate && temPermissao);
     let temPontos = (ptsAtuais >= custo);
 
     let btnUsarHTML = "";
@@ -1729,11 +1756,12 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
             btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>Sem Pontos de Ataque suficientes</button>`;
         }
     } else {
-        btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Você só pode usar cartas de ataque durante um Combate no seu turno!</p>`;
+        btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Você só pode usar cartas de ataque durante um Combate, no seu turno ou como resposta!</p>`;
     }
 
+    // 🔥 Adicionado: onclick="if(event.target === this) this.remove()" para fechar clicando fora!
     const modalHTML = `
-        <div class="modal-overlay" id="overlay-ataque">
+        <div class="modal-overlay" id="overlay-ataque" onclick="if(event.target === this) this.remove()">
             <div class="modal-content-fichas" style="text-align:center;">
                 <h3 style="color:#e53935;margin-bottom:5px;">${cartaInventario.nome}</h3>
                 
