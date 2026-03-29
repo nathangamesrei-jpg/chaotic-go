@@ -271,7 +271,7 @@ function atualizarDecksEMaoCards() {
         }
     });
 
-    // 🔥 NOVA MÁGICA: Blindagem Absoluta para Toque no Celular e Mouse
+    // 🔥 MÁGICA LIMPA: Sem bloqueios pro celular!
     let elsMao = document.querySelectorAll('.carta-na-mao, .carta-mao');
     elsMao.forEach((el, index) => {
         if (window.maoAtaques && window.maoAtaques[index]) {
@@ -283,37 +283,19 @@ function atualizarDecksEMaoCards() {
                 el.style.backgroundPosition = 'center';
                 el.innerHTML = ''; 
                 
-                // Força o CSS para habilitar o toque prioritário
                 el.style.pointerEvents = 'auto';
                 el.style.cursor = 'pointer';
-                el.style.zIndex = '10000';
                 
-                // A função que chama o modal
-                let acionarCarta = function(e) {
-                    e.preventDefault(); // Impede duplo clique no celular
-                    e.stopPropagation();
+                // Apenas o onclick puro. Funciona 100% no celular e no PC!
+                el.onclick = function() {
                     window.abrirModalAtaque(index, idAtaque, cartaOriginal);
                 };
-
-                // Garante que funciona tanto no click quanto no touch
-                el.onclick = acionarCarta;
-                el.ontouchstart = acionarCarta;
             }
         } else {
-            // Se o espaço na mão estiver vazio, limpa a carta
             el.style.backgroundImage = 'none';
             el.onclick = null;
-            el.ontouchstart = null;
         }
     });
-
-    // 🔥 Conserta a caixa invisível para não bloquear o toque do celular
-    let caixaMao = document.querySelector('.container-mao-ataques');
-    if (caixaMao) {
-        caixaMao.style.pointerEvents = 'auto';
-        caixaMao.style.width = '200px'; 
-        caixaMao.style.height = '100px';
-    }
 }
 
 
@@ -1285,7 +1267,12 @@ window.abrirEscolhaDeTurno = function(vencedor) {
     `;
 };
 
-// 6. INICIA O TURNO COM O BANNER ANIMADO
+
+
+
+
+
+
 window.iniciarTurnoReal = function(primeiroJogador) {
     let modal = document.getElementById('overlay-jokenpo');
     if (modal) modal.remove();
@@ -1294,17 +1281,25 @@ window.iniciarTurnoReal = function(primeiroJogador) {
     window.estadoTurno.turnoNumero = 1;
     window.estadoTurno.fase = 'principal';
 
+    // 🔥 REGRA: Começou o jogo, garante a base de 3 e soma +1 Ponto!
+    if (!window.pontosAtaque) window.pontosAtaque = { jogador: 3, oponente: 3 };
+    window.pontosAtaque[primeiroJogador] += 1;
+
+    // 🔥 REGRA: Começou o jogo, compra +1 Carta!
+    if (primeiroJogador === 'jogador' && window.baralhoAtaques && window.baralhoAtaques.length > 0) {
+        window.maoAtaques.push(window.baralhoAtaques.shift());
+    }
+
     Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
     if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
 
     let btnTurno = document.getElementById('btn-passar-turno');
     if (btnTurno) btnTurno.style.display = 'block';
 
-    // 🔥 GATILHO DA ROLETA: Mostra o banner TCG, e depois gira a roleta ANTES de liberar o jogo!
     let iniciarOpc = () => {
         window.sortearLocalAnimado(primeiroJogador, () => {
             if (primeiroJogador === 'jogador') {
-                window.mostrarMensagemScanner("Seu turno começou! Selecione uma ação.");
+                window.mostrarMensagemScanner("Seu turno começou! Você ganhou +1 Ponto de Ataque.");
             } else {
                 window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
                 setTimeout(() => { window.passarTurno(); }, 3000);
@@ -1326,37 +1321,53 @@ window.iniciarTurnoReal = function(primeiroJogador) {
 
 
 
-// 🔥 Adicionado: A função ativada pelo botão para trocar os turnos
+
+
+
+
 window.passarTurno = function() {
     if (window.estadoTurno.jogadorAtual === 'jogador') {
-        // Você clicou no botão! Passa pro inimigo.
+        // Oponente recebe o turno
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
+        // 🔥 REGRA: Oponente ganha +1 Ponto!
+        window.pontosAtaque['oponente'] += 1;
+
         let btn = document.getElementById('btn-passar-turno');
         if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
         
         window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
-            window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
-            // O bot finge que jogou e devolve pra você em 4 segundos
+            window.mostrarMensagemScanner("Turno do oponente... Ele comprou uma carta.");
             setTimeout(() => { window.passarTurno(); }, 4000);
         });
     } else {
-        // O Bot devolveu pra você!
+        // Você recebe o turno
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
         Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
+        // 🔥 REGRA: Você ganha +1 Ponto e +1 Carta do Deck!
+        window.pontosAtaque['jogador'] += 1;
+        if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
+            window.maoAtaques.push(window.baralhoAtaques.shift());
+        }
+
         let btn = document.getElementById('btn-passar-turno');
         if(btn) { btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
         
         window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
-            window.mostrarMensagemScanner("Seu turno começou! Selecione uma ação.");
+            window.mostrarMensagemScanner("Seu turno começou! Você comprou uma carta e ganhou +1 Ponto.");
         });
     }
     atualizarTelaBatalha();
 };
+
+
+
+
+
 
 
 // ==========================================
@@ -1734,7 +1745,6 @@ window.lixoAtaques = []; // Cria o cemitério de ataques
 window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
     if (document.getElementById('overlay-ataque')) return;
 
-    // Busca os dados oficiais do ataque no banco de dados (para pegar Dano e Custo reais)
     let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === cartaInventario.nome) : null;
     let custo = ataqueDB ? ataqueDB.custo : 0;
     let dano = ataqueDB ? ataqueDB.danoBase : 0;
@@ -1742,7 +1752,6 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
 
     let ptsAtuais = window.pontosAtaque['jogador'] || 0;
     
-    // 🔥 CORREÇÃO DO BURST: Você pode atacar no seu turno OU se estiver respondendo à corrente do oponente!
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
     let temPermissao = (window.estadoTurno.jogadorAtual === 'jogador' || window.aguardandoResposta);
     let podeAtacar = (emCombate && temPermissao);
@@ -1751,15 +1760,14 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
     let btnUsarHTML = "";
     if (podeAtacar) {
         if (temPontos) {
-            btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #e53935; color: #e53935; background: #220000; font-size: 16px;" onclick="window.usarCartaAtaque(${indexMao}, '${idAtaque}', ${custo}, ${dano}, '${cartaInventario.nome}')">💥 USAR ATAQUE (Custo: ${custo})</button>`;
+            btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #e53935; color: #e53935; background: #220000; font-size: 16px;" onclick="window.usarCartaAtaque(${indexMao}, '${idAtaque}', ${custo}, ${dano}, '${cartaInventario.nome}')">💥 USAR ATAQUE</button>`;
         } else {
-            btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>Sem Pontos de Ataque suficientes</button>`;
+            btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>Sem Pontos Suficientes</button>`;
         }
     } else {
-        btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Você só pode usar cartas de ataque durante um Combate, no seu turno ou como resposta!</p>`;
+        btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Você só pode usar cartas de ataque durante um Combate!</p>`;
     }
 
-    // 🔥 Adicionado: onclick="if(event.target === this) this.remove()" para fechar clicando fora!
     const modalHTML = `
         <div class="modal-overlay" id="overlay-ataque" onclick="if(event.target === this) this.remove()">
             <div class="modal-content-fichas" style="text-align:center;">
@@ -1767,7 +1775,7 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
                 
                 <div onclick="window.ampliarCartaClicada('${img}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${img}');background-size:cover;background-position:center;border:2px solid #e53935;border-radius:10px;box-shadow: 0 0 15px rgba(229, 57, 53, 0.4); cursor: pointer;">
                     <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); border-radius: 8px; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
-                        <span style="color: white; font-weight: bold; font-size: 12px;">🔍 AMPLIAR</span>
+                        <span style="color: white; font-weight: bold; font-size: 12px;">🔍 VER CARTA</span>
                     </div>
                 </div>
                 
@@ -1784,6 +1792,8 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
 
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 };
+
+
 
 
 
