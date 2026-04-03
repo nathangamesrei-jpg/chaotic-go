@@ -220,28 +220,10 @@ function atualizarTelaBatalha() {
     atualizarDecksEMaoCards(); 
     atualizarMugicsDaTela(); // 🔥 NOVO: Atualiza a interface gráfica dos Mugics
     
-    // 🔥 Adicionado: Atualiza os SEUS contadores de ataque reais da tela
-    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') {
-        window.atualizarSeusContadoresDeAtaque();
-    }
+    
 }
 
-// 🔥 NOVO: Função para atualizar os contadores de ataque do seu HTML
-window.atualizarSeusContadoresDeAtaque = function() {
-    let ptsJogador = window.pontosAtaque ? (window.pontosAtaque['jogador'] || 0) : 0;
-    let ptsOponente = window.pontosAtaque ? (window.pontosAtaque['oponente'] || 0) : 0;
 
-    // 👇 PARCEIRO, COLOQUE AQUI O ID (OU CLASSE) DO SEU CONTADOR DE ATAQUE NO HTML 👇
-    let displayPontosJogador = document.getElementById('COLOQUE_O_ID_DO_SEU_CONTADOR_AQUI');
-    let displayPontosOponente = document.getElementById('COLOQUE_O_ID_DO_CONTADOR_DO_OPONENTE_AQUI');
-
-    if (displayPontosJogador) {
-        displayPontosJogador.innerText = ptsJogador;
-    }
-    if (displayPontosOponente) {
-        displayPontosOponente.innerText = ptsOponente;
-    }
-};
 
 // 🔥 NOVO: RENDERIZA OS MUGICS NOS HEPTÁGONOS DA LATERAL
 function atualizarMugicsDaTela() {
@@ -276,60 +258,6 @@ function atualizarMugicsDaTela() {
 
 
 
-function atualizarDecksEMaoCards() {
-    // 1. Atualiza os textos dos Decks
-    document.querySelectorAll('.box-deck').forEach(deck => {
-        let isPlayer = deck.closest('.lado-jogador') !== null;
-        let textoAtual = deck.textContent || ""; 
-
-        if (textoAtual.includes('DECK') && textoAtual.includes('ATAQUE')) {
-            let qtd = (isPlayer && window.baralhoAtaques) ? window.baralhoAtaques.length : 20;
-            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
-            deck.classList.add('fundo-carta-personalizado');
-        }
-        else if (textoAtual.trim() === 'DECK' || textoAtual.includes('LOCAIS')) {
-            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
-            deck.classList.add('fundo-carta-personalizado');
-        }
-    });
-
-    // 2. Garante que a caixa da mão não bloqueie toques
-    let caixaMao = document.querySelector('.container-mao-ataques');
-    if(caixaMao) {
-        caixaMao.style.pointerEvents = 'none'; // A caixa em si não bloqueia nada
-        caixaMao.style.zIndex = '99999';
-    }
-
-    // 🔥 3. CARTAS NA MÃO CLICÁVEIS (Sem frescura, direto e reto)
-    let elsMao = document.querySelectorAll('.carta-na-mao, .carta-mao');
-    elsMao.forEach((el, index) => {
-        if (window.maoAtaques && window.maoAtaques[index]) {
-            let idAtaque = window.maoAtaques[index];
-            let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
-            
-            if (cartaOriginal) {
-                el.style.backgroundImage = `url('${cartaOriginal.img}')`;
-                el.style.backgroundSize = 'cover';
-                el.style.backgroundPosition = 'center';
-                el.innerHTML = ''; 
-                
-                // Força o clique na carta a funcionar
-                el.style.pointerEvents = 'auto';
-                el.style.cursor = 'pointer';
-                
-                // Removemos o touchstart bugado e deixamos só o onclick puro
-                el.onclick = function(e) {
-                    e.stopPropagation(); // Evita clicar nas coisas atrás da carta
-                    window.abrirModalAtaque(index, idAtaque, cartaOriginal);
-                };
-            }
-        } else {
-            // Limpa slot vazio
-            el.style.backgroundImage = 'none';
-            el.onclick = null;
-        }
-    });
-}
 
 
 
@@ -2062,27 +1990,74 @@ window.cancelarRespostaBurst = function() {
 
 
 
-
-
 window.atualizarSeusContadoresDeAtaque = function() {
     let ptsJogador = window.pontosAtaque ? (window.pontosAtaque['jogador'] || 0) : 0;
     let ptsOponente = window.pontosAtaque ? (window.pontosAtaque['oponente'] || 0) : 0;
 
-    // 👇 PARCEIRO, COLOQUE AQUI O ID (OU CLASSE) DO SEU CONTADOR DE ATAQUE NO HTML 👇
-    let displayPontosJogador = document.getElementById('COLOQUE_O_ID_DO_SEU_CONTADOR_AQUI');
-    let displayPontosOponente = document.getElementById('COLOQUE_O_ID_DO_CONTADOR_DO_OPONENTE_AQUI');
+    let displayPontosJogador = document.getElementById('contador-ataque-jogador');
+    let displayPontosOponente = document.getElementById('contador-ataque-oponente');
 
     if (displayPontosJogador) {
-        displayPontosJogador.innerText = ptsJogador;
+        displayPontosJogador.innerText = `Cont. Ataque: ${ptsJogador}`;
     }
     if (displayPontosOponente) {
-        displayPontosOponente.innerText = ptsOponente;
+        displayPontosOponente.innerText = `Cont. Ataque: ${ptsOponente}`;
     }
 };
 
 
 
 
+function atualizarDecksEMaoCards() {
+    // 1. Atualiza os textos dos Decks
+    document.querySelectorAll('.box-deck').forEach(deck => {
+        let isPlayer = deck.closest('.lado-jogador') !== null;
+        let textoAtual = deck.textContent || ""; 
+
+        if (textoAtual.includes('DECK') && textoAtual.includes('ATAQUE')) {
+            let qtd = (isPlayer && window.baralhoAtaques) ? window.baralhoAtaques.length : 20;
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
+            deck.classList.add('fundo-carta-personalizado');
+        }
+        else if (textoAtual.trim() === 'DECK' || textoAtual.includes('LOCAIS')) {
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
+            deck.classList.add('fundo-carta-personalizado');
+        }
+    });
+
+    // 2. Cria a mão de forma dinâmica
+    let caixaMao = document.querySelector('.container-mao-ataques') || document.querySelector('.mao-jogador');
+    if(caixaMao) {
+        caixaMao.style.pointerEvents = 'none'; 
+        caixaMao.style.zIndex = '99999';
+        
+        caixaMao.innerHTML = ''; // Limpa as "divs fantasmas"
+
+        // 3. Renderiza apenas as cartas que você realmente tem
+        window.maoAtaques.forEach((idAtaque, index) => {
+            let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
+            
+            if (cartaOriginal) {
+                let el = document.createElement('div');
+                el.className = caixaMao.classList.contains('container-mao-ataques') ? 'carta-na-mao' : 'carta-mao';
+                
+                el.style.backgroundImage = `url('${cartaOriginal.img}')`;
+                el.style.backgroundSize = 'cover';
+                el.style.backgroundPosition = 'center';
+                
+                el.style.pointerEvents = 'auto';
+                el.style.cursor = 'pointer';
+                
+                el.onclick = function(e) {
+                    e.stopPropagation(); 
+                    window.abrirModalAtaque(index, idAtaque, cartaOriginal);
+                };
+                
+                caixaMao.appendChild(el);
+            }
+        });
+    }
+}
 
 
 
