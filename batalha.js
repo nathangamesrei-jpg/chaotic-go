@@ -1677,11 +1677,17 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
     `;
     document.body.insertAdjacentHTML('beforeend', vsHTML);
 
-    setTimeout(() => {
+   setTimeout(() => {
         let telaVS = document.getElementById('overlay-combate-vs');
         if (telaVS) telaVS.remove();
         
         window.pontosAtaque[atacante.dono] += 1; 
+        
+        // 🔥 FIX: Manda o HTML atualizar o número na tela AGORA!
+        if (typeof window.atualizarSeusContadoresDeAtaque === 'function') {
+            window.atualizarSeusContadoresDeAtaque();
+        }
+        
         window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
     }, 8000); 
 };
@@ -1755,8 +1761,6 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
 
 
 
-
-
 // 🔥 1. ATAQUE NO BURST
 window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
     let modalAtaque = document.getElementById('overlay-ataque');
@@ -1767,6 +1771,11 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
     window.maoAtaques.splice(indexMao, 1);
     window.lixoAtaques.push(idAtaque);
     atualizarDecksEMaoCards();
+
+    // 🔥 FIX: Atualiza o contador na tela para refletir o gasto!
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') {
+        window.atualizarSeusContadoresDeAtaque();
+    }
 
     // Cria o pacote pro Burst
     let acaoDoAtaque = {
