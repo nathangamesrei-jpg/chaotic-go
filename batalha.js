@@ -1241,14 +1241,8 @@ window.iniciarTurnoReal = function(primeiroJogador) {
     window.estadoTurno.turnoNumero = 1;
     window.estadoTurno.fase = 'principal';
 
-    // 🔥 REGRA: Começou o jogo, garante a base de 3 e soma +1 Ponto!
+    // 🔥 CORREÇÃO: Apenas garante a base de 3 pontos. Nada de ganhar pontos aqui!
     if (!window.pontosAtaque) window.pontosAtaque = { jogador: 3, oponente: 3 };
-    window.pontosAtaque[primeiroJogador] += 1;
-
-    // 🔥 REGRA: Começou o jogo, compra +1 Carta!
-    if (primeiroJogador === 'jogador' && window.baralhoAtaques && window.baralhoAtaques.length > 0) {
-        window.maoAtaques.push(window.baralhoAtaques.shift());
-    }
 
     Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
     if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
@@ -1259,7 +1253,7 @@ window.iniciarTurnoReal = function(primeiroJogador) {
     let iniciarOpc = () => {
         window.sortearLocalAnimado(primeiroJogador, () => {
             if (primeiroJogador === 'jogador') {
-                window.mostrarMensagemScanner("Seu turno começou! Você ganhou +1 Ponto de Ataque.");
+                window.mostrarMensagemScanner("Seu turno começou! Movimente suas criaturas.");
             } else {
                 window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
                 setTimeout(() => { window.passarTurno(); }, 3000);
@@ -1284,41 +1278,45 @@ window.iniciarTurnoReal = function(primeiroJogador) {
 
 
 
-
 window.passarTurno = function() {
+    // 🛡️ O GUARDA-COSTAS: Checa se tem alguém lutando!
+    let emCombate = window.estadoCombate && window.estadoCombate.ativo;
+
     if (window.estadoTurno.jogadorAtual === 'jogador') {
-        // Oponente recebe o turno
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
-        // 🔥 REGRA: Oponente ganha +1 Ponto!
-        window.pontosAtaque['oponente'] += 1;
+        // 🔥 SÓ GANHA PONTO SE ESTIVER NO COMBATE!
+        if (emCombate) {
+            window.pontosAtaque['oponente'] += 1;
+        }
 
         let btn = document.getElementById('btn-passar-turno');
         if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
         
         window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
-            window.mostrarMensagemScanner("Turno do oponente... Ele comprou uma carta.");
+            window.mostrarMensagemScanner(emCombate ? "Turno do oponente no combate..." : "Turno de movimento do oponente...");
             setTimeout(() => { window.passarTurno(); }, 4000);
         });
     } else {
-        // Você recebe o turno
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
         Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
-        // 🔥 REGRA: Você ganha +1 Ponto e +1 Carta do Deck!
-        window.pontosAtaque['jogador'] += 1;
-        if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
-            window.maoAtaques.push(window.baralhoAtaques.shift());
+        // 🔥 SÓ COMPRA CARTA E GANHA PONTO SE ESTIVER NO COMBATE!
+        if (emCombate) {
+            window.pontosAtaque['jogador'] += 1;
+            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
+                window.maoAtaques.push(window.baralhoAtaques.shift());
+            }
         }
 
         let btn = document.getElementById('btn-passar-turno');
         if(btn) { btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
         
         window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
-            window.mostrarMensagemScanner("Seu turno começou! Você comprou uma carta e ganhou +1 Ponto.");
+            window.mostrarMensagemScanner(emCombate ? "Sua vez de atacar! +1 Ponto e +1 Carta." : "Sua vez! Movimente suas criaturas.");
         });
     }
     atualizarTelaBatalha();
@@ -2025,33 +2023,37 @@ function atualizarDecksEMaoCards() {
         }
     });
 
-    // 2. Cria a mão de forma dinâmica e FORÇA O LEQUE FLUTUANTE
     let caixaMao = document.querySelector('.container-mao-ataques') || document.querySelector('.mao-jogador');
     if(caixaMao) {
-        // 🔥 AQUI ESTÁ O FIX VISUAL: Garante que a caixa vire o leque flutuante!
         caixaMao.className = 'container-mao-ataques'; 
-        
         caixaMao.style.pointerEvents = 'none'; 
         caixaMao.style.zIndex = '99999';
-        
-        caixaMao.innerHTML = ''; // Limpa as cartas velhas
+        caixaMao.innerHTML = ''; 
 
-        // 3. Renderiza as cartas clicáveis e com a classe do leque
+        // 🔥 A MÁGICA: Calcula o centro da mão para espalhar as cartas em um leque perfeito
+        let totalCartas = window.maoAtaques.length;
+        let meio = (totalCartas - 1) / 2;
+
         window.maoAtaques.forEach((idAtaque, index) => {
             let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
             
             if (cartaOriginal) {
                 let el = document.createElement('div');
-                
-                // 🔥 AQUI ESTÁ O FIX VISUAL 2: Garante a classe de animação da carta
                 el.className = 'carta-na-mao';
                 
                 el.style.backgroundImage = `url('${cartaOriginal.img}')`;
                 el.style.backgroundSize = 'cover';
                 el.style.backgroundPosition = 'center';
-                
                 el.style.pointerEvents = 'auto';
                 el.style.cursor = 'pointer';
+
+                // 📐 CÁLCULO DINÂMICO DO LEQUE (Funciona com 1 a 10 cartas!)
+                let offset = index - meio;
+                let angulo = offset * 12; // Inclina 12 graus pra cada lado
+                let descida = Math.abs(offset) * 6; // Rebaixa 6px pra não ficar reto
+                
+                el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
+                el.style.zIndex = index + 1;
                 
                 el.onclick = function(e) {
                     e.stopPropagation(); 
