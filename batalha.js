@@ -2025,21 +2025,26 @@ function atualizarDecksEMaoCards() {
         }
     });
 
-    // 2. Cria a mão de forma dinâmica
+    // 2. Cria a mão de forma dinâmica e FORÇA O LEQUE FLUTUANTE
     let caixaMao = document.querySelector('.container-mao-ataques') || document.querySelector('.mao-jogador');
     if(caixaMao) {
+        // 🔥 AQUI ESTÁ O FIX VISUAL: Garante que a caixa vire o leque flutuante!
+        caixaMao.className = 'container-mao-ataques'; 
+        
         caixaMao.style.pointerEvents = 'none'; 
         caixaMao.style.zIndex = '99999';
         
-        caixaMao.innerHTML = ''; // Limpa as "divs fantasmas"
+        caixaMao.innerHTML = ''; // Limpa as cartas velhas
 
-        // 3. Renderiza apenas as cartas que você realmente tem
+        // 3. Renderiza as cartas clicáveis e com a classe do leque
         window.maoAtaques.forEach((idAtaque, index) => {
             let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
             
             if (cartaOriginal) {
                 let el = document.createElement('div');
-                el.className = caixaMao.classList.contains('container-mao-ataques') ? 'carta-na-mao' : 'carta-mao';
+                
+                // 🔥 AQUI ESTÁ O FIX VISUAL 2: Garante a classe de animação da carta
+                el.className = 'carta-na-mao';
                 
                 el.style.backgroundImage = `url('${cartaOriginal.img}')`;
                 el.style.backgroundSize = 'cover';
