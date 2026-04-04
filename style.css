@@ -1133,15 +1133,11 @@ html, body {
     border-radius: 6px;
     background-size: cover;
     background-position: center;
-    
-    /* 🛠️ BLINDAGEM CSS ADICIONADA AQUI: */
     cursor: pointer; 
     position: relative; 
     z-index: 100; 
     transition: transform 0.2s, box-shadow 0.2s; 
 }
-
-/* Efeito de feedback ao jogador */
 .carta-mao:hover, .carta-mao:active {
     transform: translateY(-10px);
     box-shadow: 0 5px 15px rgba(255, 85, 85, 0.6);
