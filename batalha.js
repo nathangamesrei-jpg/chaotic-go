@@ -691,7 +691,7 @@ window.lidarComCliqueTabuleiro = function(fullId) {
         criaturaOrigem.moveuNesteTurno = true; 
         window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
         
-        if(typeof window.iniciarCombate === 'function') {
+        if(typeof window.iniciarCombate_VELHA === 'function') {
             window.iniciarCombate(idOrigem, fullId);
         }
     }
@@ -1233,7 +1233,7 @@ window.abrirEscolhaDeTurno = function(vencedor) {
 
 
 
-window.iniciarTurnoReal = function(primeiroJogador) {
+window.iniciarTurnoReal_VELHA = function(primeiroJogador) {
     let modal = document.getElementById('overlay-jokenpo');
     if (modal) modal.remove();
 
@@ -1278,7 +1278,7 @@ window.iniciarTurnoReal = function(primeiroJogador) {
 
 
 
-window.passarTurno = function() {
+window.passarTurno_VELHA = function() {
     // 🛡️ O GUARDA-COSTAS: Checa se tem alguém lutando!
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
@@ -1577,7 +1577,7 @@ function atualizarLocaisAtivosNaMesa() {
 window.estadoCombate = { ativo: false, atacante: null, defensor: null };
 window.pontosAtaque = { jogador: 3, oponente: 3 }; // Prepara a base pros ataques
 
-window.iniciarCombate = function(idAtacante, idDefensor) {
+window.iniciarCombate_VELHA = function(idAtacante, idDefensor) {
     let atacante = obterCriaturaNoSlot(idAtacante);
     let defensor = obterCriaturaNoSlot(idDefensor);
 
@@ -1684,7 +1684,7 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         window.pontosAtaque[atacante.dono] += 1; 
         
         // 🔥 FIX: Manda o HTML atualizar o número na tela AGORA!
-        if (typeof window.atualizarSeusContadoresDeAtaque === 'function') {
+        if (typeof window.atualizarSeusContadoresDeAtaque_VELHA === 'function') {
             window.atualizarSeusContadoresDeAtaque();
         }
         
@@ -1773,7 +1773,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
     atualizarDecksEMaoCards();
 
     // 🔥 FIX: Atualiza o contador na tela para refletir o gasto!
-    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') {
+    if (typeof window.atualizarSeusContadoresDeAtaque_VELHA === 'function') {
         window.atualizarSeusContadoresDeAtaque();
     }
 
@@ -1997,7 +1997,7 @@ window.cancelarRespostaBurst = function() {
 
 
 
-window.atualizarSeusContadoresDeAtaque = function() {
+window.atualizarSeusContadoresDeAtaque_VELHA = function() {
     let ptsJogador = window.pontosAtaque ? (window.pontosAtaque['jogador'] || 0) : 0;
     let ptsOponente = window.pontosAtaque ? (window.pontosAtaque['oponente'] || 0) : 0;
 
@@ -2015,7 +2015,7 @@ window.atualizarSeusContadoresDeAtaque = function() {
 
 
 
-function atualizarDecksEMaoCards() {
+function atualizarDecksEMaoCards_VELHA_VELHA() {
     // 1. Atualiza os textos dos Decks
     document.querySelectorAll('.box-deck').forEach(deck => {
         let isPlayer = deck.closest('.lado-jogador') !== null;
@@ -2077,5 +2077,202 @@ function atualizarDecksEMaoCards() {
 
 
 
+// ==========================================
+// 🔥 MOTORES NOVOS E BLINDADOS (DROME 2.0) 🔥
+// ==========================================
 
+window.atualizarSeusContadoresDeAtaque = function() {
+    let ptsJogador = window.pontosAtaque ? (window.pontosAtaque['jogador'] || 0) : 0;
+    let ptsOponente = window.pontosAtaque ? (window.pontosAtaque['oponente'] || 0) : 0;
+
+    let displayPontosJogador = document.getElementById('contador-ataque-jogador');
+    let displayPontosOponente = document.getElementById('contador-ataque-oponente');
+
+    if (displayPontosJogador) displayPontosJogador.innerText = `Cont. Ataque: ${ptsJogador}`;
+    if (displayPontosOponente) displayPontosOponente.innerText = `Cont. Ataque: ${ptsOponente}`;
+};
+
+window.iniciarTurnoReal = function(primeiroJogador) {
+    let modal = document.getElementById('overlay-jokenpo');
+    if (modal) modal.remove();
+
+    window.estadoTurno.jogadorAtual = primeiroJogador;
+    window.estadoTurno.turnoNumero = 1;
+    window.estadoTurno.fase = 'principal';
+
+    // Garante que o jogo comece com 3 pontos justos para cada!
+    window.pontosAtaque = { jogador: 3, oponente: 3 };
+
+    Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
+    if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
+
+    let btnTurno = document.getElementById('btn-passar-turno');
+    if (btnTurno) btnTurno.style.display = 'block';
+
+    let iniciarOpc = () => {
+        window.sortearLocalAnimado(primeiroJogador, () => {
+            if (primeiroJogador === 'jogador') {
+                window.mostrarMensagemScanner("Seu turno! Movimente suas criaturas.");
+            } else {
+                window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
+                setTimeout(() => { window.passarTurno(); }, 3000);
+            }
+        });
+    };
+
+    if (primeiroJogador === 'jogador') {
+        if(btnTurno) { btnTurno.disabled = false; btnTurno.innerHTML = "PASSAR<br>TURNO"; }
+        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', iniciarOpc);
+    } else {
+        if(btnTurno) { btnTurno.disabled = true; btnTurno.innerHTML = "TURNO<br>OPONENTE"; }
+        window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', iniciarOpc);
+    }
+    atualizarTelaBatalha(); 
+};
+
+window.passarTurno = function() {
+    let emCombate = window.estadoCombate && window.estadoCombate.ativo;
+
+    if (window.estadoTurno.jogadorAtual === 'jogador') {
+        window.estadoTurno.jogadorAtual = 'oponente';
+        window.estadoTurno.turnoNumero++;
+        if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        
+        if (emCombate) window.pontosAtaque['oponente'] += 1;
+
+        let btn = document.getElementById('btn-passar-turno');
+        if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
+        
+        window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
+            window.mostrarMensagemScanner(emCombate ? "Turno do oponente no combate..." : "Turno de movimento do oponente...");
+            setTimeout(() => { window.passarTurno(); }, 4000);
+        });
+    } else {
+        window.estadoTurno.jogadorAtual = 'jogador';
+        window.estadoTurno.turnoNumero++;
+        Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        
+        if (emCombate) {
+            window.pontosAtaque['jogador'] += 1;
+            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) window.maoAtaques.push(window.baralhoAtaques.shift());
+        }
+
+        let btn = document.getElementById('btn-passar-turno');
+        if(btn) { btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
+        
+        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
+            window.mostrarMensagemScanner(emCombate ? "Sua vez de atacar! +1 Ponto e +1 Carta." : "Sua vez! Movimente suas criaturas.");
+        });
+    }
+    atualizarTelaBatalha(); 
+};
+
+window.iniciarCombate = function(idAtacante, idDefensor) {
+    let atacante = obterCriaturaNoSlot(idAtacante);
+    let defensor = obterCriaturaNoSlot(idDefensor);
+
+    window.estadoCombate = { ativo: true, atacante: idAtacante, defensor: idDefensor };
+
+    let nomeLocal = window.localAtivoAtual ? "Local Ativo" : "Local Desconhecido";
+    let textoNarracao = `${atacante.nome} ataca ${defensor.nome} em ${nomeLocal}`;
+
+    try {
+        window.speechSynthesis.cancel(); 
+        let vozRobo = new SpeechSynthesisUtterance(textoNarracao);
+        vozRobo.lang = 'pt-BR'; vozRobo.rate = 1.0; vozRobo.pitch = 0.5; vozRobo.volume = 1.0; 
+        window.speechSynthesis.speak(vozRobo);
+    } catch(e) {}
+
+    let iconeAtacante = atacante.cartaBlank;
+    let iconeDefensor = defensor.cartaBlank;
+
+    const vsHTML = `
+        <div class="modal-overlay" id="overlay-combate-vs" style="z-index: 1000000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; overflow: hidden;">
+            <div style="position: relative; width: 160px; height: 230px; margin-bottom: 20px; animation: dropInTop 0.5s forwards;">
+                <div class="carta-base" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: 100% 100%; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; animation: fadeOutScan 0.5s 1.5s forwards;"></div>
+                <div class="criatura-revelada" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeDefensor}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 15px #e53935) brightness(1.2); opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
+            </div>
+            <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; height: 60px;">
+                <div style="font-family: 'Arial Black', sans-serif; font-size: 60px; color: #fff; text-shadow: 0 0 20px #e53935, 0 0 30px #ffd700; z-index: 10; animation: pulseVS 0.5s infinite alternate;">VS</div>
+            </div>
+            <div style="position: relative; width: 160px; height: 230px; margin-top: 20px; animation: dropInBottom 0.5s forwards;">
+                <div class="carta-base" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: 100% 100%; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; animation: fadeOutScan 0.5s 1.5s forwards;"></div>
+                <div class="criatura-revelada" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeAtacante}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 15px #4CAF50) brightness(1.2); opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
+            </div>
+        </div>
+        <style>
+            @keyframes dropInTop { from { transform: translateY(-100vh); } to { transform: translateY(0); } }
+            @keyframes dropInBottom { from { transform: translateY(100vh); } to { transform: translateY(0); } }
+            @keyframes revelarCarta { to { opacity: 1; } }
+            @keyframes fadeOutScan { to { opacity: 0; visibility: hidden; } }
+            @keyframes pulseVS { from { transform: scale(1); } to { transform: scale(1.2); } }
+        </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', vsHTML);
+
+    setTimeout(() => {
+        let telaVS = document.getElementById('overlay-combate-vs');
+        if (telaVS) telaVS.remove();
+        
+        window.pontosAtaque[atacante.dono] += 1; 
+        if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+        
+        window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
+    }, 8000); 
+};
+
+function atualizarDecksEMaoCards() {
+    document.querySelectorAll('.box-deck').forEach(deck => {
+        let isPlayer = deck.closest('.lado-jogador') !== null;
+        let textoAtual = deck.textContent || ""; 
+
+        if (textoAtual.includes('DECK') && textoAtual.includes('ATAQUE')) {
+            let qtd = (isPlayer && window.baralhoAtaques) ? window.baralhoAtaques.length : 20;
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
+            deck.classList.add('fundo-carta-personalizado');
+        }
+        else if (textoAtual.trim() === 'DECK' || textoAtual.includes('LOCAIS')) {
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
+            deck.classList.add('fundo-carta-personalizado');
+        }
+    });
+
+    let caixaMao = document.querySelector('.container-mao-ataques') || document.querySelector('.mao-jogador');
+    if(caixaMao) {
+        caixaMao.className = 'container-mao-ataques'; 
+        caixaMao.style.pointerEvents = 'none'; 
+        caixaMao.style.zIndex = '99999';
+        caixaMao.innerHTML = ''; 
+
+        let totalCartas = window.maoAtaques.length;
+        let meio = (totalCartas - 1) / 2;
+
+        window.maoAtaques.forEach((idAtaque, index) => {
+            let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
+            
+            if (cartaOriginal) {
+                let el = document.createElement('div');
+                el.className = 'carta-na-mao';
+                el.style.backgroundImage = `url('${cartaOriginal.img}')`;
+                el.style.backgroundSize = 'cover';
+                el.style.backgroundPosition = 'center';
+                el.style.pointerEvents = 'auto';
+                el.style.cursor = 'pointer';
+
+                let offset = index - meio;
+                let angulo = offset * 12; 
+                let descida = Math.abs(offset) * 6; 
+                
+                el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
+                el.style.zIndex = index + 1;
+                
+                el.onclick = function(e) {
+                    e.stopPropagation(); 
+                    window.abrirModalAtaque(index, idAtaque, cartaOriginal);
+                };
+                caixaMao.appendChild(el);
+            }
+        });
+    }
+}
 
