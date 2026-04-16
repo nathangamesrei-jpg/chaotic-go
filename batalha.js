@@ -2276,3 +2276,221 @@ function atualizarDecksEMaoCards() {
     }
 }
 
+
+// ==========================================
+// 🛠️ PATCH DE CORREÇÃO (Z-INDEX, NARRADOR E PONTOS) 🛠️
+// ==========================================
+
+// 1. CORRIGE A TELA DE VS E O NARRADOR (Restaura as imagens e nomes)
+window.iniciarCombate = function(idAtacante, idDefensor) {
+    let atacante = obterCriaturaNoSlot(idAtacante);
+    let defensor = obterCriaturaNoSlot(idDefensor);
+
+    window.estadoCombate = { ativo: true, atacante: idAtacante, defensor: idDefensor };
+
+    // Restaura a busca do nome do local
+    let nomeLocal = "Local Desconhecido";
+    if (window.localAtivoAtual) {
+        let locDB = null;
+        if (typeof LOCAIS_DB !== 'undefined') locDB = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
+        if (!locDB && window.inventario) locDB = window.inventario.find(l => l.img === window.localAtivoAtual);
+        if (locDB) nomeLocal = locDB.nome;
+    }
+
+    let textoNarracao = `${atacante.nome} ataca ${defensor.nome} em ${nomeLocal}`;
+
+    try {
+        window.speechSynthesis.cancel(); 
+        let vozRobo = new SpeechSynthesisUtterance(textoNarracao);
+        vozRobo.lang = 'pt-BR'; vozRobo.rate = 1.0; vozRobo.pitch = 0.5; vozRobo.volume = 1.0; 
+        window.speechSynthesis.speak(vozRobo);
+    } catch(e) {}
+
+    // Restaura as imagens PNG das criaturas
+    let iconeAtacante = atacante.cartaBlank;
+    let iconeDefensor = defensor.cartaBlank;
+    if (typeof MONSTROS !== 'undefined') {
+        let dbAta = MONSTROS.find(m => m.nome === atacante.nome);
+        if (dbAta && dbAta.iconeMapa) iconeAtacante = dbAta.iconeMapa;
+        let dbDef = MONSTROS.find(m => m.nome === defensor.nome);
+        if (dbDef && dbDef.iconeMapa) iconeDefensor = dbDef.iconeMapa;
+    }
+
+    const vsHTML = `
+        <div class="modal-overlay" id="overlay-combate-vs" style="z-index: 1000000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; overflow: hidden;">
+            <div style="position: relative; width: 160px; height: 230px; margin-bottom: 20px; animation: dropInTop 0.5s forwards;">
+                <div class="carta-base" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: 100% 100%; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; animation: fadeOutScan 0.5s 1.5s forwards;"></div>
+                <div class="criatura-revelada" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeDefensor}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 15px #e53935) brightness(1.2); opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
+            </div>
+            <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; height: 60px;">
+                <div style="font-family: 'Arial Black', sans-serif; font-size: 60px; color: #fff; text-shadow: 0 0 20px #e53935, 0 0 30px #ffd700; z-index: 10; animation: pulseVS 0.5s infinite alternate;">VS</div>
+            </div>
+            <div style="position: relative; width: 160px; height: 230px; margin-top: 20px; animation: dropInBottom 0.5s forwards;">
+                <div class="carta-base" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: 100% 100%; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; animation: fadeOutScan 0.5s 1.5s forwards;"></div>
+                <div class="criatura-revelada" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeAtacante}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 15px #4CAF50) brightness(1.2); opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
+            </div>
+            <div style="position: absolute; bottom: 5%; width: 90%; text-align: center; font-family: monospace; font-size: 14px; font-weight: bold; color: #00ff00; background: rgba(0, 20, 0, 0.8); padding: 10px; border: 1px solid #00ff00; border-radius: 5px; opacity: 0; animation: revelarCarta 0.5s 0.5s forwards;">
+                > ${textoNarracao.toUpperCase()}
+            </div>
+        </div>
+        <style>
+            @keyframes dropInTop { from { transform: translateY(-100vh); } to { transform: translateY(0); } }
+            @keyframes dropInBottom { from { transform: translateY(100vh); } to { transform: translateY(0); } }
+            @keyframes revelarCarta { to { opacity: 1; } }
+            @keyframes fadeOutScan { to { opacity: 0; visibility: hidden; } }
+            @keyframes pulseVS { from { transform: scale(1); } to { transform: scale(1.2); } }
+        </style>
+    `;
+    document.body.insertAdjacentHTML('beforeend', vsHTML);
+
+    setTimeout(() => {
+        let telaVS = document.getElementById('overlay-combate-vs');
+        if (telaVS) telaVS.remove();
+        
+        window.pontosAtaque[atacante.dono] += 1; 
+        if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+        
+        window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
+    }, 8000); 
+};
+
+// 2. CORRIGE O PASSAR TURNO PARA ATUALIZAR O CONTADOR NA TELA!
+window.passarTurno = function() {
+    let emCombate = window.estadoCombate && window.estadoCombate.ativo;
+
+    if (window.estadoTurno.jogadorAtual === 'jogador') {
+        window.estadoTurno.jogadorAtual = 'oponente';
+        window.estadoTurno.turnoNumero++;
+        if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        
+        if (emCombate) window.pontosAtaque['oponente'] += 1;
+
+        let btn = document.getElementById('btn-passar-turno');
+        if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
+        
+        window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
+            window.mostrarMensagemScanner(emCombate ? "Turno do oponente no combate..." : "Turno de movimento do oponente...");
+            setTimeout(() => { window.passarTurno(); }, 4000);
+        });
+    } else {
+        window.estadoTurno.jogadorAtual = 'jogador';
+        window.estadoTurno.turnoNumero++;
+        Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        
+        if (emCombate) {
+            window.pontosAtaque['jogador'] += 1;
+            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) window.maoAtaques.push(window.baralhoAtaques.shift());
+        }
+
+        let btn = document.getElementById('btn-passar-turno');
+        if(btn) { btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
+        
+        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
+            window.mostrarMensagemScanner(emCombate ? "Sua vez de atacar! +1 Ponto e +1 Carta." : "Sua vez! Movimente suas criaturas.");
+        });
+    }
+    atualizarTelaBatalha(); 
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque(); // 🔥 FIX: OBRIGA O CONTADOR A ATUALIZAR
+};
+
+// 3. CORRIGE O MODAL DE ATAQUE (Z-INDEX E LOCAL DE CRIAÇÃO)
+window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
+    if (document.getElementById('overlay-ataque')) return;
+
+    let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === cartaInventario.nome) : null;
+    let custo = ataqueDB ? ataqueDB.custo : 0;
+    let dano = ataqueDB ? ataqueDB.danoBase : 0;
+    let img = ataqueDB ? ataqueDB.img : cartaInventario.img;
+
+    let ptsAtuais = window.pontosAtaque['jogador'] || 0;
+    let emCombate = window.estadoCombate && window.estadoCombate.ativo;
+    let temPermissao = (window.estadoTurno.jogadorAtual === 'jogador' || window.aguardandoResposta);
+    let podeAtacar = (emCombate && temPermissao);
+    let temPontos = (ptsAtuais >= custo);
+
+    let btnUsarHTML = "";
+    if (podeAtacar) {
+        if (temPontos) {
+            btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #e53935; color: #e53935; background: #220000; font-size: 16px;" onclick="window.usarCartaAtaque(${indexMao}, '${idAtaque}', ${custo}, ${dano}, '${cartaInventario.nome}')">💥 USAR ATAQUE</button>`;
+        } else {
+            btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>Sem Pontos Suficientes</button>`;
+        }
+    } else {
+        btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Você só pode usar cartas de ataque durante um Combate!</p>`;
+    }
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-ataque" style="z-index: 9999999;" onclick="if(event.target === this) this.remove()">
+            <div class="modal-content-fichas" style="text-align:center;">
+                <h3 style="color:#e53935;margin-bottom:5px;">${cartaInventario.nome}</h3>
+                <div onclick="window.ampliarCartaClicada('${img}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${img}');background-size:cover;background-position:center;border:2px solid #e53935;border-radius:10px;box-shadow: 0 0 15px rgba(229, 57, 53, 0.4); cursor: pointer;">
+                    <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); border-radius: 8px; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
+                        <span style="color: white; font-weight: bold; font-size: 12px;">🔍 VER CARTA</span>
+                    </div>
+                </div>
+                <p style="font-size:14px; color:#ffd700; margin-bottom:5px;">Seus Pontos de Ataque: <b style="font-size:18px;">${ptsAtuais}</b></p>
+                <p style="font-size:12px; color:#fff; margin-bottom:15px;">Dano Base: <b>${dano}</b> | Custo: <b>${custo}</b></p>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                    ${btnUsarHTML}
+                    <button class="btn-acao-modal btn-cancelar" onclick="document.getElementById('overlay-ataque').remove()">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    `;
+    // 🔥 FIX: Insere dentro do tela-batalha para não ficar escondido pelo Z-Index do tabuleiro!
+    document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
+};
+
+// 4. ATUALIZA OS PONTOS QUANDO USA A CARTA
+window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
+    let modalAtaque = document.getElementById('overlay-ataque');
+    if (modalAtaque) modalAtaque.remove();
+
+    window.pontosAtaque['jogador'] -= custo;
+    window.maoAtaques.splice(indexMao, 1);
+    window.lixoAtaques.push(idAtaque);
+    atualizarDecksEMaoCards();
+    
+    // 🔥 FIX: Força atualização na tela instantaneamente
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+
+    let acaoDoAtaque = {
+        dono: 'jogador',
+        nomeAcao: nomeAtaque,
+        tipo: 'ataque',
+        executar: function() {
+            let idDefensor = window.estadoCombate.defensor;
+            let alvo = obterCriaturaNoSlot(idDefensor);
+            if (alvo) {
+                alvo.hpAtual -= dano;
+                if(window.tocarSFX) window.tocarSFX('notificacao'); 
+                window.mostrarMensagemScanner(`💥 Dano aplicado! ${alvo.nome} perdeu ${dano} de energia!`);
+                let elAlvo = document.getElementById(idDefensor);
+                if(elAlvo) {
+                    elAlvo.style.animation = "shake 0.5s";
+                    setTimeout(() => { elAlvo.style.animation = ""; }, 500);
+                }
+                if (alvo.hpAtual <= 0) {
+                    alvo.hpAtual = 0;
+                    setTimeout(() => window.encerrarCombateMorte(idDefensor), 1000);
+                }
+                atualizarTelaBatalha();
+            }
+        }
+    };
+    window.adicionarAoBurst(acaoDoAtaque);
+};
+
+// 5. RESETA O COMBATE AO SAIR
+let btnSairDrome = document.getElementById("btn-sair-drome");
+if (btnSairDrome) {
+    btnSairDrome.onclick = () => {
+        document.getElementById("tela-batalha").style.display = "none";
+        document.getElementById("tela-menu").style.display = "flex";
+        window.modoMenu = true;
+        // 🔥 FIX: Limpa as variáveis para você poder lutar de novo!
+        window.estadoCombate = { ativo: false, atacante: null, defensor: null };
+        window.estadoTurno = { jogadorAtual: null, turnoNumero: 0, fase: 'pre-jogo' };
+        window.pontosAtaque = { jogador: 3, oponente: 3 };
+    };
+}
