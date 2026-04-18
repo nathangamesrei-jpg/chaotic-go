@@ -380,7 +380,7 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
             <div class="modal-content-fichas" style="text-align:center; max-height: 90vh; overflow-y: auto;">
                 <h3 style="color:#4CAF50;margin-bottom:5px;">${criatura.nome}</h3>
                 
-                <div onclick="window.ampliarCartaClicada('${criatura.cartaBlank}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${criatura.cartaBlank}');background-size:cover;background-position:center;border:2px solid #4CAF50;border-radius:10px;box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); cursor: pointer;">
+                <div onclick="window.ampliarCartaClicada('${criatura.cartaBlank}', '${fullId}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${criatura.cartaBlank}');background-size:cover;background-position:center;border:2px solid #4CAF50;border-radius:10px;box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); cursor: pointer;">
                     <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); border-radius: 8px; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
                         <span style="color: white; font-weight: bold; font-size: 12px;">🔍 AMPLIAR</span>
                     </div>
@@ -400,11 +400,50 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
     document.getElementById('overlay-acoes').addEventListener('click', function(e) { if(e.target === this) fecharModalAcoes(); });
 };
 
-window.ampliarCartaClicada = function(imgUrl) {
+// 🔥 FUNÇÃO NOVA E TURBINADA: Amplia a carta com HUD de Batalha!
+window.ampliarCartaClicada = function(imgUrl, fullId) {
+    let overlayHTML = "";
+    let corBorda = "rgba(76, 175, 80, 0.8)"; // Verde base
+
+    // Se o jogo souber quem é a criatura (veio do tabuleiro), cria o HUD!
+    if (fullId) {
+        let criatura = obterCriaturaNoSlot(fullId);
+        if (criatura) {
+            corBorda = criatura.dono === 'jogador' ? "#4CAF50" : "#e53935"; // Verde ou Vermelho
+            let hpMax = criatura.hpMax || criatura.statsMax?.energia || 0;
+            let hpAtual = criatura.hpAtual !== undefined ? criatura.hpAtual : hpMax;
+            let pct = Math.max(0, Math.min(100, (hpAtual / hpMax) * 100));
+            let corHp = pct > 50 ? 'lime' : pct > 20 ? 'orange' : 'red';
+            
+            let c = criatura.coragem || criatura.statsMax?.coragem || 0;
+            let p = criatura.poder || criatura.statsMax?.poder || 0;
+            let s = criatura.sabedoria || criatura.statsMax?.sabedoria || 0;
+            let v = criatura.velocidade || criatura.statsMax?.velocidade || 0;
+
+            overlayHTML = `
+                <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 350px; background: rgba(0,0,0,0.9); border: 2px solid ${corBorda}; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 0 25px black;">
+                    <div style="width: 100%; background: #222; height: 18px; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #555;">
+                        <div style="width: ${pct}%; background: ${corHp}; height: 100%; transition: width 0.3s;"></div>
+                        <span style="position: absolute; top:0; left:0; width:100%; text-align:center; font-size: 13px; font-weight: bold; color: white; line-height: 18px; text-shadow: 0 0 4px black, 0 0 4px black;">HP: ${hpAtual} / ${hpMax}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-around; font-size: 18px; color: white; font-family: monospace; font-weight: bold; text-shadow: 0 0 5px black;">
+                        <span>❤️ ${c}</span>
+                        <span>⚡ ${p}</span>
+                        <span>👁️ ${s}</span>
+                        <span>💨 ${v}</span>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     const modalAmpliadoHTML = `
         <div class="modal-overlay" id="overlay-carta-ampliada" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; flex-direction: column;" onclick="this.remove()">
-            <img src="${imgUrl}" style="max-width: 95vw; max-height: 85vh; border-radius: 15px; box-shadow: 0 0 30px rgba(76, 175, 80, 0.8);">
-            <p style="color: #aaa; margin-top: 15px; font-size: 12px; font-family: monospace;">Toque em qualquer lugar para fechar</p>
+            <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
+                <img src="${imgUrl}" style="max-width: 95vw; max-height: 75vh; border-radius: 15px; box-shadow: 0 0 30px ${corBorda};">
+                ${overlayHTML}
+            </div>
+            <p style="color: #aaa; font-size: 12px; font-family: monospace; margin-top: 15px;">Toque em qualquer lugar para fechar</p>
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalAmpliadoHTML);
@@ -597,7 +636,8 @@ window.lidarComCliqueTabuleiro = function(fullId) {
                 if (criaturaAlvo.equipamento && criaturaAlvo.equipamentoRevelado) {
                     window.verEquipamentoModal(fullId);
                 } else if (typeof window.ampliarCartaClicada === 'function') {
-                    window.ampliarCartaClicada(criaturaAlvo.cartaBlank);
+                    // 🔥 MANDANDO A ID PRO ZOOM DO OPONENTE
+                    window.ampliarCartaClicada(criaturaAlvo.cartaBlank, fullId);
                 }
             }
         }
