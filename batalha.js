@@ -43,11 +43,13 @@ function desenharMiniCarta(criaturaObj) {
                         <div class="equip-tooltip"><b>${criaturaObj.equipamento.nome}</b><br>${criaturaObj.equipamento.efeito || 'Sem efeito'}</div>
                     </div>
                 `;
-            } else if (criaturaObj.dono === 'jogador') {
+            } else {
+                // O "else" solto garante que QUALQUER equipamento escondido ganhe o "?"
+                let textoTooltip = criaturaObj.dono === 'jogador' ? 'Oponente não pode ver' : 'Você não pode ver';
                 htmlEquipamento = `
                     <div class="mini-equip-icon oculto">
                         ?
-                        <div class="equip-tooltip"><b>Equipamento Oculto</b><br>Oponente não pode ver</div>
+                        <div class="equip-tooltip"><b>Equipamento Oculto</b><br>${textoTooltip}</div>
                     </div>
                 `;
             }
