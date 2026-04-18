@@ -102,7 +102,7 @@ function desenharMiniCarta(criaturaObj) {
 let campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
 window.baralhoAtaques = []; 
 window.maoAtaques = [];     
-window.jogadorMugics = []; // 🔥 NOVO: Armazena os Mugics carregados
+window.jogadorMugics = []; 
 
 function embaralharArray(array) {
     let arr = [...array];
@@ -169,7 +169,6 @@ window.carregarDeckParaBatalha = function() {
                     textoCartaReal = cartaOriginal.textoCarta || "";
                 }
 
-                // 1. Cria a Carta do Jogador
                 campoJogador[chave] = {
                     dono: 'jogador',
                     nome: cartaOriginal.nome,
@@ -191,10 +190,9 @@ window.carregarDeckParaBatalha = function() {
                     equipamentoRevelado: false
                 };
 
-                // 🔥 2. CLONA a exata mesma carta para o Bot! (Inverte o dono para 'oponente')
                 window.campoOponente[chave] = JSON.parse(JSON.stringify(campoJogador[chave]));
                 window.campoOponente[chave].dono = 'oponente';
-                window.campoOponente[chave].equipamentoRevelado = false; // Começa com o equipamento escondido
+                window.campoOponente[chave].equipamentoRevelado = false; 
             }
         }
     });
@@ -202,8 +200,6 @@ window.carregarDeckParaBatalha = function() {
     atualizarTelaBatalha(); 
     setTimeout(() => { window.abrirJokenpo(); }, 800); 
 };
-
-
 
 function atualizarTelaBatalha() {
     const slots = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
@@ -220,16 +216,10 @@ function atualizarTelaBatalha() {
 
     atualizarContadorFichasHabilidade();
     atualizarDecksEMaoCards(); 
-    atualizarMugicsDaTela(); // 🔥 NOVO: Atualiza a interface gráfica dos Mugics
-    
-    
+    atualizarMugicsDaTela(); 
 }
 
-
-
-// 🔥 NOVO: RENDERIZA OS MUGICS NOS HEPTÁGONOS DA LATERAL
 function atualizarMugicsDaTela() {
-    // Carrega os do Jogador (Com as imagens reais e clique)
     let slotsJogador = document.querySelectorAll('.lado-jogador .hex-mugic');
     slotsJogador.forEach((slot, index) => {
         let mugic = window.jogadorMugics[index];
@@ -246,7 +236,6 @@ function atualizarMugicsDaTela() {
         }
     });
 
-    // Carrega os do Oponente (Ocultos com a textura da carta)
     let slotsOponente = document.querySelectorAll('.lado-oponente .hex-mugic');
     slotsOponente.forEach((slot) => {
         slot.style.backgroundImage = `url('${URL_FUNDO_CARTA}')`;
@@ -254,16 +243,6 @@ function atualizarMugicsDaTela() {
         slot.style.backgroundPosition = 'center';
     });
 }
-
-
-
-
-
-
-
-
-
-        
 
 function atualizarContadorFichasHabilidade() {
     function renderizarBotaoFichas(seletorLado, ladoId, totalFichas) {
@@ -286,7 +265,6 @@ function atualizarContadorFichasHabilidade() {
     let totalJogador = 0;
     let totalOponente = 0;
     
-    // 🔥 CORREÇÃO: Junta as cartas do tabuleiro inteiro para checar o 'dono' de verdade
     let todasAsCartas = [...Object.values(campoJogador), ...Object.values(window.campoOponente)];
 
     todasAsCartas.forEach(c => { 
@@ -300,15 +278,10 @@ function atualizarContadorFichasHabilidade() {
     renderizarBotaoFichas('.lado-oponente', 'oponente', totalOponente);
 }
 
-// --------------------------------------------------
-// SISTEMA DE MODAL DETALHADO E EQUIPAMENTOS/MUGICS
-// --------------------------------------------------
-
 function abrirModalFichas(ladoId) {
     let listaHTML = '';
     const tituloModal = ladoId === 'oponente' ? 'FICHAS DO OPONENTE' : 'MINHAS FICHAS';
     
-    // 🔥 CORREÇÃO: Busca em todo o tabuleiro e filtra pelo 'dono'
     let todasAsCartas = [...Object.values(campoJogador), ...Object.values(window.campoOponente)];
     
     todasAsCartas.forEach(c => {
@@ -352,16 +325,12 @@ function fecharModalFichas() {
     if(el) el.remove();
 }
 
-
-
-
 window.abrirModalAcoesCriatura = function(fullId, criatura) {
     if (document.getElementById('overlay-acoes')) return;
 
     let botoesHTML = "";
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-    // 🔥 INTELIGÊNCIA: Só deixa mover se a mesa estiver livre e a criatura descansada!
     if (!emCombate && !criatura.moveuNesteTurno) {
         botoesHTML += `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
     } else if (!emCombate && criatura.moveuNesteTurno) {
@@ -370,7 +339,6 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
         botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Movimento bloqueado durante o Combate!</p>`;
     }
 
-    // LÓGICA DE HABILIDADE
     let textoMinusculo = (criatura.textoCarta || "").toLowerCase();
     let habilidadeAtiva = textoMinusculo.includes('descarte') || textoMinusculo.includes('gaste') || textoMinusculo.includes('ficha');
     
@@ -378,7 +346,6 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
         botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff9800; color: #ff9800;" onclick="window.usarHabilidade('${fullId}')">Usar Habilidade</button>`;
     }
 
-    // LÓGICA DE MUGIC
     if (criatura.fichasHabilidade > 0) {
         botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4;" onclick="window.prepararMugic('${fullId}')">Usar Mugic</button>`;
     }
@@ -418,11 +385,6 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
     document.getElementById('overlay-acoes').addEventListener('click', function(e) { if(e.target === this) fecharModalAcoes(); });
 };
 
-
-
-
-
-// 🔥 FUNÇÃO NOVA: Amplia a carta na tela inteira
 window.ampliarCartaClicada = function(imgUrl) {
     const modalAmpliadoHTML = `
         <div class="modal-overlay" id="overlay-carta-ampliada" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; flex-direction: column;" onclick="this.remove()">
@@ -437,11 +399,6 @@ window.fecharModalAcoes = function() {
     const el = document.getElementById('overlay-acoes');
     if(el) el.remove();
 }
-
-
-
-
-
 
 window.verEquipamentoModal = function(fullId) {
     window.fecharModalAcoes();
@@ -463,10 +420,6 @@ window.verEquipamentoModal = function(fullId) {
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
 }
 
-
-
-
-// 🔥 NOVO: MODAL PARA VER O MUGIC CLICADO
 window.verMugicModal = function(index) {
     let mugic = window.jogadorMugics[index];
     if (!mugic) return;
@@ -485,9 +438,7 @@ window.verMugicModal = function(index) {
     `;
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
 }
-// ==========================================
-// AJUSTE DINÂMICO DE TABULEIRO E GRAVIDADE
-// ==========================================
+
 window.ajustarTabuleiroBatalha = function(modo) {
     let opZona = document.querySelector('.lado-oponente .zona-central');
     let jogZona = document.querySelector('.lado-jogador .zona-central');
@@ -557,10 +508,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
 
 setTimeout(atualizarTelaBatalha, 500);
 
-// ==========================================
-// SISTEMA DE MOVIMENTAÇÃO E COMBATE DINÂMICO
-// ==========================================
-
 const baseAdjacencia = {
     'jog-c1': ['jog-c2', 'jog-c4'],
     'jog-c2': ['jog-c1', 'jog-c3', 'jog-c4', 'jog-c5'],
@@ -618,16 +565,6 @@ function setarCriaturaNoSlot(fullId, criatura) {
     if (fullId.startsWith('op-')) window.campoOponente[fullId.replace('op-', '')] = criatura;
 }
 
-
-
-
-
-
-
-// ==========================================
-// 🔥 NOVO MOTOR DE CLIQUE (SEMPRE ABRE O MODAL)
-// ==========================================
-
 window.lidarComCliqueTabuleiro = function(fullId) {
     if (window.estadoTurno.jogadorAtual !== 'jogador') return;
 
@@ -636,11 +573,9 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     
     if (!el || el.parentElement.style.display === 'none') return;
 
-    // PRIMEIRO CLIQUE (Abre as opções)
     if (!window.slotSelecionadoMovimento) {
         if (criaturaAlvo) {
             if (criaturaAlvo.dono === 'jogador') {
-                // 🔥 CORREÇÃO: Abre o modal de opções mesmo em combate e mesmo se estiver cansada!
                 window.abrirModalAcoesCriatura(fullId, criaturaAlvo);
 
             } else if (criaturaAlvo.dono === 'oponente') {
@@ -654,7 +589,6 @@ window.lidarComCliqueTabuleiro = function(fullId) {
         return;
     }
 
-    // SEGUNDO CLIQUE (Mover/Atacar)
     let idOrigem = window.slotSelecionadoMovimento;
     let criaturaOrigem = obterCriaturaNoSlot(idOrigem);
 
@@ -693,7 +627,7 @@ window.lidarComCliqueTabuleiro = function(fullId) {
         criaturaOrigem.moveuNesteTurno = true; 
         window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
         
-        if(typeof window.iniciarCombate_VELHA === 'function') {
+        if(typeof window.iniciarCombate === 'function') {
             window.iniciarCombate(idOrigem, fullId);
         }
     }
@@ -702,10 +636,6 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     window.slotSelecionadoMovimento = null;
     atualizarTelaBatalha(); 
 };
-
-
-
-
 
 function destacarAdjacentes(fullId) {
     limparDestaquesMovimento();
@@ -754,9 +684,8 @@ setTimeout(() => {
             }
             .linha-formacao-batalha { margin: 0 !important; }
 
-            /* 🔥 CORREÇÃO: Removido o display:flex que esmagava a arte da carta! */
             [id^="jog-"], [id^="op-"] {
-                touch-action: none !important; /* Impede o celular de dar scroll enquanto arrasta a carta */
+                touch-action: none !important; 
             }
 
             .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
@@ -765,7 +694,7 @@ setTimeout(() => {
             .slot-alvo-combate { box-shadow: inset 0 0 25px rgba(255,0,0,0.8), 0 0 15px rgba(255,0,0,0.5) !important; border-color: #ff0000 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
             .slot-alvo-combate:hover { background: rgba(255,0,0,0.15); transform: scale(1.02); }
             
-            .mini-card-wrapper { position: relative; pointer-events: none; } /* Deixa o clique vazar pro Container Maior */
+            .mini-card-wrapper { position: relative; pointer-events: none; } 
             .mini-equip-icon { pointer-events: auto; position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; z-index: 50; cursor: help; border: 2px solid #ffd700; display:flex; justify-content:center; align-items:center; }
             .mini-equip-icon.revelado { background-size: cover; background-position: center; }
             .mini-equip-icon.oculto { background: #222; color: #fff; font-weight: bold; font-size: 14px; border-color: #aaa; }
@@ -807,170 +736,145 @@ setTimeout(() => {
     let zonas = document.querySelectorAll('.zona-central');
     if (zonas) zonas.forEach(z => z.style.pointerEvents = "none"); 
 
-
-
-
-    
-
-    // ==========================================
-    // 🔥 NOVO MOTOR DE ARRASTAR E SOLTAR (DRAG & DROP TOUCH) 🔥
-    // ==========================================
     let interacao = { idOrigem: null, isDragging: false, clone: null, startX: 0, startY: 0 };
 
     window.iniciarInteracaoSlot = function(e, fullId) {
-        if (e.button === 2) return; 
+        if (e.button === 2) return; 
 
-        // 🚨 BLOQUEIO DE TURNO
-        if (window.estadoTurno.jogadorAtual !== 'jogador') {
-            window.mostrarMensagemScanner("TURNO DO OPONENTE! Aguarde a sua vez.");
-            return;
-        }
+        if (window.estadoTurno.jogadorAtual !== 'jogador') {
+            window.mostrarMensagemScanner("TURNO DO OPONENTE! Aguarde a sua vez.");
+            return;
+        }
 
-        // 🔥 REMOVIDO DAQUI O BLOQUEIO DE COMBATE PARA NÃO MATAR O CLIQUE!
-        
-        let pointer = e.touches ? e.touches[0] : e; 
-        
-        interacao.idOrigem = fullId;
-        interacao.isDragging = false;
-        interacao.startX = pointer.clientX;
-        interacao.startY = pointer.clientY;
+        let pointer = e.touches ? e.touches[0] : e; 
+        
+        interacao.idOrigem = fullId;
+        interacao.isDragging = false;
+        interacao.startX = pointer.clientX;
+        interacao.startY = pointer.clientY;
 
-        let criatura = obterCriaturaNoSlot(fullId);
+        let criatura = obterCriaturaNoSlot(fullId);
 
-        // Se clicou na SUA criatura, prepara o elevador fantasma pra arrastar
-        if (criatura && criatura.dono === 'jogador') {
-            
-            let emCombate = window.estadoCombate && window.estadoCombate.ativo;
+        if (criatura && criatura.dono === 'jogador') {
+            
+            let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-            // 🚨 BLOQUEIO DE CANSAÇO (Pode clicar, mas não pode arrastar)
-            if (criatura.moveuNesteTurno && !emCombate) {
-                window.mostrarMensagemScanner("Esta criatura já agiu neste turno!");
-                interacao.idOrigem = null;
-                return;
-            }
-            
-            // 🔥 CORREÇÃO AQUI: Só cria o clone pra ARRASTAR se NÃO estiver em combate e NÃO tiver movido
-            if (!emCombate && !criatura.moveuNesteTurno) {
-                let elOriginal = document.getElementById(fullId);
-                let rect = elOriginal.getBoundingClientRect();
-                
-                interacao.clone = elOriginal.cloneNode(true);
-                interacao.clone.style.position = 'fixed';
-                interacao.clone.style.left = rect.left + 'px';
-                interacao.clone.style.top = rect.top + 'px';
-                interacao.clone.style.width = rect.width + 'px';
-                interacao.clone.style.height = rect.height + 'px';
-                interacao.clone.style.pointerEvents = 'none'; 
-                interacao.clone.style.zIndex = '999999';
-                interacao.clone.style.opacity = '0.9';
-                interacao.clone.style.transform = 'scale(1.1)';
-                interacao.clone.style.display = 'none'; // Escondido até você começar a puxar
-                document.body.appendChild(interacao.clone);
+            if (criatura.moveuNesteTurno && !emCombate) {
+                window.mostrarMensagemScanner("Esta criatura já agiu neste turno!");
+                interacao.idOrigem = null;
+                return;
+            }
+            
+            if (!emCombate && !criatura.moveuNesteTurno) {
+                let elOriginal = document.getElementById(fullId);
+                let rect = elOriginal.getBoundingClientRect();
+                
+                interacao.clone = elOriginal.cloneNode(true);
+                interacao.clone.style.position = 'fixed';
+                interacao.clone.style.left = rect.left + 'px';
+                interacao.clone.style.top = rect.top + 'px';
+                interacao.clone.style.width = rect.width + 'px';
+                interacao.clone.style.height = rect.height + 'px';
+                interacao.clone.style.pointerEvents = 'none'; 
+                interacao.clone.style.zIndex = '999999';
+                interacao.clone.style.opacity = '0.9';
+                interacao.clone.style.transform = 'scale(1.1)';
+                interacao.clone.style.display = 'none'; 
+                document.body.appendChild(interacao.clone);
 
-                document.addEventListener('pointermove', moverInteracao, {passive: false});
-                document.addEventListener('touchmove', moverInteracao, {passive: false});
-            }
-        }
-        
-        document.addEventListener('pointerup', soltarInteracao);
-        document.addEventListener('touchend', soltarInteracao);
-    };
+                document.addEventListener('pointermove', moverInteracao, {passive: false});
+                document.addEventListener('touchmove', moverInteracao, {passive: false});
+            }
+        }
+        
+        document.addEventListener('pointerup', soltarInteracao);
+        document.addEventListener('touchend', soltarInteracao);
+    };
 
-    function moverInteracao(e) {
-        if (!interacao.idOrigem || !interacao.clone) return;
-        
-        let pointer = e.touches ? e.touches[0] : e;
-        
-        let moveX = Math.abs(pointer.clientX - interacao.startX);
-        let moveY = Math.abs(pointer.clientY - interacao.startY);
+    function moverInteracao(e) {
+        if (!interacao.idOrigem || !interacao.clone) return;
+        
+        let pointer = e.touches ? e.touches[0] : e;
+        
+        let moveX = Math.abs(pointer.clientX - interacao.startX);
+        let moveY = Math.abs(pointer.clientY - interacao.startY);
 
-        // Detonou o gatilho de Arraste (moveu o dedo mais de 10px)
-        if (!interacao.isDragging && (moveX > 10 || moveY > 10)) {
-            interacao.isDragging = true;
-            interacao.clone.style.display = 'flex';
-            
-            window.fecharModalAcoes(); // Se tiver janela aberta, some com ela
-            
-            // Ilumina o tabuleiro igual mágica!
-            window.slotSelecionadoMovimento = interacao.idOrigem;
-            destacarAdjacentes(interacao.idOrigem);
-            if(window.tocarSFX) window.tocarSFX('notificacao'); 
-        }
+        if (!interacao.isDragging && (moveX > 10 || moveY > 10)) {
+            interacao.isDragging = true;
+            interacao.clone.style.display = 'flex';
+            
+            window.fecharModalAcoes(); 
+            
+            window.slotSelecionadoMovimento = interacao.idOrigem;
+            destacarAdjacentes(interacao.idOrigem);
+            if(window.tocarSFX) window.tocarSFX('notificacao'); 
+        }
 
-        if (interacao.isDragging) {
-            if(e.cancelable) e.preventDefault(); // Trava a tela pra não bugar o swipe
-            interacao.clone.style.left = (pointer.clientX - interacao.clone.offsetWidth / 2) + 'px';
-            interacao.clone.style.top = (pointer.clientY - interacao.clone.offsetHeight / 2) + 'px';
-        }
-    }
+        if (interacao.isDragging) {
+            if(e.cancelable) e.preventDefault(); 
+            interacao.clone.style.left = (pointer.clientX - interacao.clone.offsetWidth / 2) + 'px';
+            interacao.clone.style.top = (pointer.clientY - interacao.clone.offsetHeight / 2) + 'px';
+        }
+    }
 
-    function soltarInteracao(e) {
-        document.removeEventListener('pointermove', moverInteracao);
-        document.removeEventListener('touchmove', moverInteracao);
-        document.removeEventListener('pointerup', soltarInteracao);
-        document.removeEventListener('touchend', soltarInteracao);
+    function soltarInteracao(e) {
+        document.removeEventListener('pointermove', moverInteracao);
+        document.removeEventListener('touchmove', moverInteracao);
+        document.removeEventListener('pointerup', soltarInteracao);
+        document.removeEventListener('touchend', soltarInteracao);
 
-        let origem = interacao.idOrigem;
-        
-        if (interacao.isDragging) {
-            let pointer = e.changedTouches ? e.changedTouches[0] : e;
-            
-            // Esconde o fantasma rapidinho pra ver em qual Casa/Slot o dedo parou
-            interacao.clone.style.display = 'none';
-            let elementoAbaixo = document.elementFromPoint(pointer.clientX, pointer.clientY);
-            
-            let slotDestino = null;
-            if (elementoAbaixo) {
-                let hitBox = elementoAbaixo.closest('[id^="jog-"], [id^="op-"]');
-                if (hitBox) slotDestino = hitBox.id;
-            }
+        let origem = interacao.idOrigem;
+        
+        if (interacao.isDragging) {
+            let pointer = e.changedTouches ? e.changedTouches[0] : e;
+            
+            interacao.clone.style.display = 'none';
+            let elementoAbaixo = document.elementFromPoint(pointer.clientX, pointer.clientY);
+            
+            let slotDestino = null;
+            if (elementoAbaixo) {
+                let hitBox = elementoAbaixo.closest('[id^="jog-"], [id^="op-"]');
+                if (hitBox) slotDestino = hitBox.id;
+            }
 
-            interacao.clone.remove();
-            interacao = { idOrigem: null, isDragging: false, clone: null };
+            interacao.clone.remove();
+            interacao = { idOrigem: null, isDragging: false, clone: null };
 
-            // Soltou na casa certa? EXECUTA O GOLPE!
-            if (slotDestino && slotDestino !== origem) {
-                if (obterAdjacencias(origem).includes(slotDestino)) {
-                    window.slotSelecionadoMovimento = origem;
-                    window.lidarComCliqueTabuleiro(slotDestino);
-                } else {
-                    limparDestaquesMovimento();
-                    window.slotSelecionadoMovimento = null;
-                }
-            } else {
-                limparDestaquesMovimento();
-                window.slotSelecionadoMovimento = null;
-            }
+            if (slotDestino && slotDestino !== origem) {
+                if (obterAdjacencias(origem).includes(slotDestino)) {
+                    window.slotSelecionadoMovimento = origem;
+                    window.lidarComCliqueTabuleiro(slotDestino);
+                } else {
+                    limparDestaquesMovimento();
+                    window.slotSelecionadoMovimento = null;
+                }
+            } else {
+                limparDestaquesMovimento();
+                window.slotSelecionadoMovimento = null;
+            }
 
-        } else {
-            // Foi só um clique normal! Abre as opções.
-            if (interacao.clone) interacao.clone.remove();
-            interacao = { idOrigem: null, isDragging: false, clone: null };
-            
-            window.lidarComCliqueTabuleiro(origem);
-        }
-    }
+        } else {
+            if (interacao.clone) interacao.clone.remove();
+            interacao = { idOrigem: null, isDragging: false, clone: null };
+            
+            window.lidarComCliqueTabuleiro(origem);
+        }
+    }
 
-    ['jog', 'op'].forEach(lado => {
-        ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
-            let el = document.getElementById(`${lado}-${slot}`);
-            if (el) {
-                if (el.parentElement) el.parentElement.style.pointerEvents = "none";
-                el.style.pointerEvents = "auto";
-                
-                // Conecta o novo sensor de toque/arrastar no slot (substitui o el.onclick antigo)
-                el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
-                el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
-            }
-        });
-    });
+    ['jog', 'op'].forEach(lado => {
+        ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
+            let el = document.getElementById(`${lado}-${slot}`);
+            if (el) {
+                if (el.parentElement) el.parentElement.style.pointerEvents = "none";
+                el.style.pointerEvents = "auto";
+                
+                el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+                el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+            }
+        });
+    });
 }, 1000);
 
-
-
-// ==========================================
-// EFEITO 3D DAS MÃOS DE CARTAS (O SEU LEQUE E O DO INIMIGO)
-// ==========================================
 setTimeout(() => {
     if (!document.getElementById("css-mao-cartas")) {
         let style = document.createElement('style');
@@ -1081,24 +985,17 @@ setTimeout(() => {
     atualizarMugicsDaTela();
 }, 1300);
 
-
-// ==========================================
-// SISTEMA DE TURNOS, JOKENPO E BANNERS TCG 🔥
-// ==========================================
-
 window.estadoTurno = {
-    jogadorAtual: null, // 'jogador' ou 'oponente'
+    jogadorAtual: null, 
     turnoNumero: 0,
     fase: 'pre-jogo'
 };
 
-// 1. INJETA OS ESTILOS DO JOKENPO E BANNERS
 setTimeout(() => {
     if (!document.getElementById("css-turnos-tcg")) {
         let style = document.createElement('style');
         style.id = "css-turnos-tcg";
         style.innerHTML = `
-            /* BANNERS ÉPICOS ESTILO ANIME/TCG */
             .tcg-banner-container {
                 position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
                 display: flex; justify-content: center; align-items: center;
@@ -1116,7 +1013,6 @@ setTimeout(() => {
                 transform: translateX(150vw) skewX(-15deg); text-shadow: 0 0 20px rgba(255,255,255,0);
             }
             
-            /* ANIMAÇÃO DO BANNER */
             .banner-ativo .tcg-banner-bg { transform: scaleY(1); }
             .banner-ativo .tcg-banner-texto {
                 animation: rasgarTela 2.5s cubic-bezier(0.1, 0.8, 0.1, 1) forwards;
@@ -1128,7 +1024,6 @@ setTimeout(() => {
                 100% { transform: translateX(-150vw) skewX(-15deg); color: transparent; text-shadow: 0 0 0px transparent; }
             }
 
-            /* MODAL DO JOKENPO */
             .jokenpo-btn {
                 font-size: 40px; background: #222; border: 3px solid #4CAF50;
                 border-radius: 50%; width: 80px; height: 80px; cursor: pointer;
@@ -1140,7 +1035,6 @@ setTimeout(() => {
     }
 }, 1000);
 
-// 2. FUNÇÃO QUE CHAMA O BANNER ANIMADO
 window.mostrarBannerTCG = function(texto, corCorpo, corBorda, callback) {
     const container = document.createElement('div');
     container.className = 'tcg-banner-container banner-ativo';
@@ -1150,15 +1044,14 @@ window.mostrarBannerTCG = function(texto, corCorpo, corBorda, callback) {
     `;
     document.getElementById('tela-batalha').appendChild(container);
     
-    if(window.tocarSFX) window.tocarSFX('notificacao'); // Efeito sonoro do impacto
+    if(window.tocarSFX) window.tocarSFX('notificacao'); 
 
     setTimeout(() => {
         container.remove();
         if(callback) callback();
-    }, 2500); // Remove depois da animação terminar
+    }, 2500); 
 };
 
-// 3. A TELA DE JOKENPO
 window.abrirJokenpo = function() {
     window.estadoTurno.fase = 'jokenpo';
 
@@ -1179,7 +1072,6 @@ window.abrirJokenpo = function() {
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
 };
 
-// 4. LÓGICA DO JOKENPO
 window.resolverJokenpo = function(escolhaJogador) {
     const opcoes = ['pedra', 'papel', 'tesoura'];
     const emojis = { 'pedra': '✊', 'papel': '✋', 'tesoura': '✌️' };
@@ -1191,7 +1083,6 @@ window.resolverJokenpo = function(escolhaJogador) {
     setTimeout(() => {
         if (escolhaJogador === escolhaOp) {
             statusEl.innerHTML = `<span style="color:#ff9800; font-weight:bold; font-size:18px;">EMPATE! JOGUE DE NOVO!</span>`;
-            // Treme a tela
             document.getElementById('overlay-jokenpo').style.animation = "shake 0.5s";
             setTimeout(() => document.getElementById('overlay-jokenpo').style.animation = "", 500);
         } 
@@ -1205,7 +1096,6 @@ window.resolverJokenpo = function(escolhaJogador) {
         } 
         else {
             statusEl.innerHTML = `<span style="color:#e53935; font-weight:bold; font-size:24px;">OPONENTE VENCEU!</span>`;
-            // Como é um bot por enquanto, ele sempre escolhe começar jogando
             setTimeout(() => {
                 document.getElementById('overlay-jokenpo').remove();
                 iniciarTurnoReal('oponente');
@@ -1214,7 +1104,6 @@ window.resolverJokenpo = function(escolhaJogador) {
     }, 1000);
 };
 
-// 5. VENCEDOR ESCOLHE QUEM COMEÇA
 window.abrirEscolhaDeTurno = function(vencedor) {
     const modal = document.getElementById('overlay-jokenpo');
     modal.innerHTML = `
@@ -1229,16 +1118,6 @@ window.abrirEscolhaDeTurno = function(vencedor) {
     `;
 };
 
-
-
-
-
-
-
-
-// ==========================================
-// 🔥 SISTEMA DE PASSAR TURNO E CSS 🔥
-// ==========================================
 setTimeout(() => {
     if (!document.getElementById("css-botao-turno")) {
         let style = document.createElement('style');
@@ -1246,7 +1125,7 @@ setTimeout(() => {
         style.innerHTML = `
             #btn-passar-turno {
                 position: absolute;
-                right: 5%; /* Fica no canto direito, acima do seu Local Ativo */
+                right: 5%; 
                 top: 45%;
                 width: 90px;
                 height: 50px;
@@ -1261,7 +1140,7 @@ setTimeout(() => {
                 z-index: 10000;
                 box-shadow: 0 0 15px #4CAF50;
                 transition: 0.3s;
-                display: none; /* Só aparece depois do Jokenpo */
+                display: none; 
                 text-align: center;
                 line-height: 1.2;
             }
@@ -1275,7 +1154,6 @@ setTimeout(() => {
                 box-shadow: 0 0 15px #e53935 !important;
                 cursor: not-allowed;
             }
-            /* Filtro para a carta que já andou/atacou no turno */
             .esgotado {
                 filter: grayscale(80%) brightness(0.6);
             }
@@ -1283,7 +1161,6 @@ setTimeout(() => {
         document.head.appendChild(style);
     }
 
-    // Injeta o botão na tela se ele não existir
     if (!document.getElementById('btn-passar-turno')) {
         let btn = document.createElement('button');
         btn.id = 'btn-passar-turno';
@@ -1292,31 +1169,21 @@ setTimeout(() => {
     }
 }, 1500);
 
-// Substitui a função desenharMiniCarta para aplicar o filtro "esgotado"
 const desenharMiniCartaOriginal = desenharMiniCarta;
 window.desenharMiniCarta = function(criaturaObj) {
     let html = desenharMiniCartaOriginal(criaturaObj);
     if (criaturaObj && criaturaObj.moveuNesteTurno) {
-        // Injeta a classe esgotado na primeira div que achar
         html = html.replace('class="mini-card-wrapper"', 'class="mini-card-wrapper esgotado"');
     }
     return html;
 };
 
-// ==========================================
-// 🔥 ANIMAÇÃO DE ROLETA DE LOCAIS E COMBATE (VS)
-// ==========================================
-
 window.localAtivoAtual = null;
 
-// ==========================================
-// 🔥 ANIMAÇÃO DE ROLETA DE LOCAIS
-// ==========================================
 window.sortearLocalAnimado = function(jogadorDaVez, callback) {
     let deck = window.estadoDrome.deckSelecionado;
     let imagensLocais = [];
     
-    // Tenta puxar as cartas de local EXCLUSIVAMENTE do deck montado
     if (deck && deck.locais && deck.locais.length > 0) {
         imagensLocais = deck.locais.map(id => {
             let localEncontrado = null;
@@ -1331,7 +1198,6 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
         imagensLocais = [URL_FUNDO_CARTA];
     }
 
-    // 🔥 CORREÇÃO: Formato PAISAGEM (Deitado) para caber o Local perfeitamente!
     const roletaHTML = `
         <div class="modal-overlay" id="overlay-roleta-local" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif; letter-spacing: 5px; text-shadow: 0 0 15px #00bcd4; margin-bottom: 20px; animation: pulse 1s infinite;">SORTEANDO LOCAL...</h2>
@@ -1357,7 +1223,6 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
         if (giros < 25) {
             setTimeout(girar, tempo);
         } else {
-            // TERMINOU DE GIRAR!
             divImagem.style.borderColor = "#ffd700";
             divImagem.style.boxShadow = "0 0 50px #ffd700";
             let titulo = document.querySelector('#overlay-roleta-local h2');
@@ -1366,7 +1231,6 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
                 titulo.style.color = "#ffd700";
             }
             
-            // Salva na memória o local e plota no tabuleiro!
             window.localAtivoAtual = imagensLocais[indexSorteio];
             if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
 
@@ -1374,7 +1238,6 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
                 let modal = document.getElementById('overlay-roleta-local');
                 if (modal) modal.remove();
                 
-                // 🔥 PROTEÇÃO ANTI-CRASH: Roda o callback com segurança
                 if(callback) {
                     try {
                         callback();
@@ -1389,19 +1252,14 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback) {
     girar(); 
 };
 
-// ==========================================
-// 🔥 BLINDAGEM DO SCANNER (Evita Crash de Tela)
-// ==========================================
 const scannerOriginal = window.mostrarMensagemScanner;
 window.mostrarMensagemScanner = function(msg) {
     try {
-        // Tenta usar a original do script.js
         if (typeof scannerOriginal === 'function') {
             scannerOriginal(msg);
         }
     } catch(e) {
         console.warn("Scanner não encontrado. Usando Toast flutuante. Mensagem:", msg);
-        // Cria um Toast verde flutuante se o Scanner falhar!
         let toast = document.createElement('div');
         toast.innerText = msg;
         toast.style.cssText = "position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:rgba(0,10,0,0.9); color:#00ff00; padding:10px 20px; border-radius:8px; border:2px solid #00ff00; z-index:999999; font-family:monospace; font-weight:bold; box-shadow:0 0 15px #00ff00;";
@@ -1410,22 +1268,13 @@ window.mostrarMensagemScanner = function(msg) {
     }
 };
 
-
-
-
-
-
-
-// 🔥 RASTREADOR RECALIBRADO: Mira a laser só nas caixas laterais!
 function atualizarLocaisAtivosNaMesa() {
-    // Procura apenas dentro das zonas laterais ou divs que já foram marcadas
     let candidatos = document.querySelectorAll('.zona-lateral > div, .box-local-ativo-js');
     let boxesLocais = [];
 
     candidatos.forEach(div => {
         let texto = div.innerText || div.textContent || "";
         
-        // Se a caixa tiver a palavra LOCAL ATIVO e não for o Deck nem o Lixo
         if (texto.includes('LOCAL ATIVO') || div.classList.contains('box-local-ativo-js')) {
             if (!boxesLocais.includes(div)) {
                 boxesLocais.push(div);
@@ -1434,26 +1283,24 @@ function atualizarLocaisAtivosNaMesa() {
     });
 
     boxesLocais.forEach(box => {
-        box.classList.add('box-local-ativo-js'); // Marca pra não perder ela na próxima vez
+        box.classList.add('box-local-ativo-js'); 
         
         if (window.localAtivoAtual) {
             box.style.backgroundImage = `url('${window.localAtivoAtual}')`;
-            box.style.backgroundSize = '100% 100%'; // Força a imagem a caber perfeitamente na caixa deitada
+            box.style.backgroundSize = '100% 100%'; 
             box.style.backgroundPosition = 'center';
             box.style.backgroundRepeat = 'no-repeat';
             box.style.border = "2px solid #ffd700";
             box.style.boxShadow = "0 0 15px rgba(255, 215, 0, 0.4)";
             
-            // 🔥 A MÁGICA DE AMPLIAÇÃO (Clique no Local Ativo)
             box.style.cursor = 'pointer';
             box.onclick = function() {
                 if (typeof window.ampliarCartaClicada === 'function') {
-                    if(window.tocarSFX) window.tocarSFX('notificacao'); // Efeitinho sonoro!
+                    if(window.tocarSFX) window.tocarSFX('notificacao'); 
                     window.ampliarCartaClicada(window.localAtivoAtual);
                 }
             };
             
-            // 🔥 EFEITO DE HOVER TRANSPARENTE
             box.innerHTML = `
                 <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
                     <span style="color: white; font-weight: bold; font-size: 14px; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 10px black, 0 0 5px #000;">🔍 LER CARTA</span>
@@ -1461,7 +1308,6 @@ function atualizarLocaisAtivosNaMesa() {
             `; 
             
         } else {
-            // Volta pro formato vazio sem clique
             box.style.backgroundImage = 'none';
             box.style.border = "1px solid #4CAF50";
             box.style.boxShadow = "none";
@@ -1472,48 +1318,205 @@ function atualizarLocaisAtivosNaMesa() {
     });
 }
 
+window.estadoCombate = { ativo: false, atacante: null, defensor: null };
 
+window.encerrarCombateMorte = function(idMorto) {
+    let morto = obterCriaturaNoSlot(idMorto);
+    window.mostrarMensagemScanner(`💀 ${morto.nome} FOI DESTRUÍDO!`);
+    
+    setarCriaturaNoSlot(idMorto, null);
+    
+    window.estadoCombate.ativo = false;
+    window.estadoCombate.atacante = null;
+    window.estadoCombate.defensor = null;
+    
+    atualizarTelaBatalha();
+};
 
-
-
-
-
-// ==========================================
-// ⚡ MOTOR DE BURST (SISTEMA DE CORRENTES / PILHA)
-// ==========================================
-
-window.pilhaBurst = []; // A fila de espera das ações
+window.pilhaBurst = []; 
 window.aguardandoResposta = false;
 
-// 1. Função que empacota a ação e joga na fila
 window.adicionarAoBurst = function(acaoObj) {
     window.pilhaBurst.push(acaoObj);
     window.mostrarMensagemScanner(`⚡ BURST ATIVADO: ${acaoObj.nomeAcao} entrou na corrente!`);
     
-    // Quem tem que responder é o dono contrário de quem acabou de jogar
     let jogadorAlvo = acaoObj.dono === 'jogador' ? 'oponente' : 'jogador';
     
     setTimeout(() => window.perguntarResposta(jogadorAlvo, acaoObj), 1000);
 };
 
+window.iniciarRespostaBurst = function(jogadorAlvo) {
+    document.getElementById('overlay-burst').remove();
+    window.mostrarMensagemScanner(`⏳ Aguardando a resposta de ${jogadorAlvo}... Escolha sua ação!`);
+};
 
+window.negarRespostaBurst = function() {
+    let modal = document.getElementById('overlay-burst');
+    if(modal) modal.remove();
+    
+    window.aguardandoResposta = false;
+    window.mostrarMensagemScanner("A corrente foi fechada! Resolvendo as ações...");
+    
+    setTimeout(() => window.resolverBurst(), 1000);
+};
 
+window.resolverBurst = function() {
+    if (window.pilhaBurst.length === 0) {
+        window.mostrarMensagemScanner("Todas as ações resolvidas.");
+        atualizarTelaBatalha();
+        return;
+    }
 
+    let acaoAtual = window.pilhaBurst.pop();
+    
+    window.mostrarMensagemScanner(`✨ Resolvendo: ${acaoAtual.nomeAcao}`);
+    
+    acaoAtual.executar();
+    
+    setTimeout(() => window.resolverBurst(), 2500);
+};
 
+window.cancelarRespostaBurst = function() {
+    if (window.aguardandoResposta) {
+        window.aguardandoResposta = false;
+        window.mostrarMensagemScanner("Resposta cancelada. Resolvendo a corrente...");
+        window.resolverBurst();
+    }
+};
 
+window.atualizarSeusContadoresDeAtaque = function() {
+    let ptsJogador = window.pontosAtaque ? (window.pontosAtaque['jogador'] || 0) : 0;
+    let ptsOponente = window.pontosAtaque ? (window.pontosAtaque['oponente'] || 0) : 0;
 
-// ==========================================
-// 🛠️ PATCH DE CORREÇÃO (Z-INDEX, NARRADOR E PONTOS) 🛠️
-// ==========================================
+    let displayPontosJogador = document.getElementById('contador-ataque-jogador');
+    let displayPontosOponente = document.getElementById('contador-ataque-oponente');
 
-// 1. CORRIGE A TELA DE VS E O NARRADOR (Restaura as imagens e nomes)
+    if (displayPontosJogador) displayPontosJogador.innerText = `Cont. Ataque: ${ptsJogador}`;
+    if (displayPontosOponente) displayPontosOponente.innerText = `Cont. Ataque: ${ptsOponente}`;
+};
+
+window.iniciarTurnoReal = function(primeiroJogador) {
+    let modal = document.getElementById('overlay-jokenpo');
+    if (modal) modal.remove();
+
+    window.estadoTurno.jogadorAtual = primeiroJogador;
+    window.estadoTurno.turnoNumero = 1;
+    window.estadoTurno.fase = 'principal';
+
+    window.pontosAtaque = { jogador: 3, oponente: 3 };
+    
+    window.qtdMaoOponente = 3;
+    window.qtdBaralhoOponente = 17;
+
+    Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
+    if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
+
+    let btnTurno = document.getElementById('btn-passar-turno');
+    if (btnTurno) btnTurno.style.display = 'block';
+
+    let iniciarOpc = () => {
+        window.sortearLocalAnimado(primeiroJogador, () => {
+            if (primeiroJogador === 'jogador') {
+                window.mostrarMensagemScanner("Seu turno! Movimente suas criaturas.");
+            } else {
+                window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
+                setTimeout(() => { window.passarTurno(); }, 3000);
+            }
+        });
+    };
+
+    if (primeiroJogador === 'jogador') {
+        if(btnTurno) { btnTurno.disabled = false; btnTurno.innerHTML = "PASSAR<br>TURNO"; }
+        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', iniciarOpc);
+    } else {
+        if(btnTurno) { btnTurno.disabled = true; btnTurno.innerHTML = "TURNO<br>OPONENTE"; }
+        window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', iniciarOpc);
+    }
+    atualizarTelaBatalha(); 
+};
+
+function atualizarDecksEMaoCards() {
+    document.querySelectorAll('.box-deck').forEach(deck => {
+        let isPlayer = deck.closest('.lado-jogador') !== null;
+        let textoAtual = deck.textContent || ""; 
+
+        if (textoAtual.includes('DECK') && textoAtual.includes('ATAQUE')) {
+            let qtd = isPlayer ? (window.baralhoAtaques ? window.baralhoAtaques.length : 20) : (window.qtdBaralhoOponente !== undefined ? window.qtdBaralhoOponente : 17);
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
+            deck.classList.add('fundo-carta-personalizado');
+        }
+        else if (textoAtual.trim() === 'DECK' || textoAtual.includes('LOCAIS')) {
+            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
+            deck.classList.add('fundo-carta-personalizado');
+        }
+    });
+
+    let caixaMao = document.querySelector('.container-mao-ataques') || document.querySelector('.mao-jogador');
+    if(caixaMao) {
+        caixaMao.className = 'container-mao-ataques'; 
+        caixaMao.style.pointerEvents = 'none'; 
+        caixaMao.style.zIndex = '99999';
+        caixaMao.innerHTML = ''; 
+
+        let totalCartas = window.maoAtaques.length;
+        let meio = (totalCartas - 1) / 2;
+
+        window.maoAtaques.forEach((idAtaque, index) => {
+            let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
+            if (cartaOriginal) {
+                let el = document.createElement('div');
+                el.className = 'carta-na-mao';
+                el.style.backgroundImage = `url('${cartaOriginal.img}')`;
+                el.style.backgroundSize = 'cover';
+                el.style.backgroundPosition = 'center';
+                el.style.pointerEvents = 'auto';
+                el.style.cursor = 'pointer';
+
+                let offset = index - meio;
+                let angulo = offset * 12; 
+                let descida = Math.abs(offset) * 6; 
+                
+                el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
+                el.style.zIndex = index + 1;
+                
+                el.onclick = function(e) {
+                    e.stopPropagation(); 
+                    window.abrirModalAtaque(index, idAtaque, cartaOriginal);
+                };
+                caixaMao.appendChild(el);
+            }
+        });
+    }
+
+    let caixaMaoOp = document.getElementById('mao-oponente-ui');
+    if (caixaMaoOp) {
+        caixaMaoOp.innerHTML = ''; 
+        
+        let totalOp = window.qtdMaoOponente !== undefined ? window.qtdMaoOponente : 3;
+        let meioOp = (totalOp - 1) / 2;
+        
+        for(let i = 0; i < totalOp; i++) {
+            let el = document.createElement('div');
+            el.className = 'carta-oponente-na-mao';
+            
+            let offset = i - meioOp;
+            let angulo = offset * 12; 
+            let descida = Math.abs(offset) * 6; 
+            
+            el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
+            el.style.zIndex = i + 1;
+            
+            caixaMaoOp.appendChild(el);
+        }
+    }
+}
+
 window.iniciarCombate = function(idAtacante, idDefensor) {
     let atacante = obterCriaturaNoSlot(idAtacante);
     let defensor = obterCriaturaNoSlot(idDefensor);
 
     window.estadoCombate = { ativo: true, atacante: idAtacante, defensor: idDefensor };
 
-    // Restaura a busca do nome do local
     let nomeLocal = "Local Desconhecido";
     if (window.localAtivoAtual) {
         let locDB = null;
@@ -1531,7 +1534,6 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         window.speechSynthesis.speak(vozRobo);
     } catch(e) {}
 
-    // Restaura as imagens PNG das criaturas
     let iconeAtacante = atacante.cartaBlank;
     let iconeDefensor = defensor.cartaBlank;
     if (typeof MONSTROS !== 'undefined') {
@@ -1579,26 +1581,22 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
     }, 8000); 
 };
 
-// 2. CORRIGE O PASSAR TURNO PARA ATUALIZAR O CONTADOR NA TELA!
 window.passarTurno = function() {
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-    // 🩹 SISTEMA DE AUTO-CURA: Se o Bot estiver sem memória do baralho, o jogo conserta na hora!
     if (typeof window.qtdMaoOponente === 'undefined') window.qtdMaoOponente = 3;
     if (typeof window.qtdBaralhoOponente === 'undefined') window.qtdBaralhoOponente = 17;
 
     if (window.estadoTurno.jogadorAtual === 'jogador') {
-        // Passando a bola pro Oponente
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
-        // 🔥 O BOT SÓ COMPRA SE ESTIVER NO COMBATE!
         if (emCombate) {
             window.pontosAtaque['oponente'] += 1;
             if (window.qtdBaralhoOponente > 0) {
-                window.qtdMaoOponente++; // Ganha +1 na mão
-                window.qtdBaralhoOponente--; // Perde -1 do deck
+                window.qtdMaoOponente++; 
+                window.qtdBaralhoOponente--; 
             }
         }
 
@@ -1610,12 +1608,10 @@ window.passarTurno = function() {
             setTimeout(() => { window.passarTurno(); }, 4000);
         });
     } else {
-        // Voltando a bola pra VOCÊ
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
         Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
-        // 🔥 VOCÊ SÓ COMPRA SE ESTIVER NO COMBATE!
         if (emCombate) {
             window.pontosAtaque['jogador'] += 1;
             if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
@@ -1635,7 +1631,6 @@ window.passarTurno = function() {
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 };
 
-// 3. CORRIGE O MODAL DE ATAQUE (Z-INDEX E LOCAL DE CRIAÇÃO)
 window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
     if (document.getElementById('overlay-ataque')) return;
 
@@ -1679,11 +1674,9 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
             </div>
         </div>
     `;
-    // 🔥 FIX: Insere dentro do tela-batalha para não ficar escondido pelo Z-Index do tabuleiro!
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
 };
 
-// 4. ATUALIZA OS PONTOS QUANDO USA A CARTA
 window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
     let modalAtaque = document.getElementById('overlay-ataque');
     if (modalAtaque) modalAtaque.remove();
@@ -1693,7 +1686,6 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
     window.lixoAtaques.push(idAtaque);
     atualizarDecksEMaoCards();
     
-    // 🔥 FIX: Força atualização na tela instantaneamente
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
     let acaoDoAtaque = {
@@ -1723,45 +1715,31 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
     window.adicionarAoBurst(acaoDoAtaque);
 };
 
-// 5. RESETA O COMBATE AO SAIR
 let btnSairDrome = document.getElementById("btn-sair-drome");
 if (btnSairDrome) {
     btnSairDrome.onclick = () => {
         document.getElementById("tela-batalha").style.display = "none";
         document.getElementById("tela-menu").style.display = "flex";
         window.modoMenu = true;
-        // 🔥 FIX: Limpa as variáveis para você poder lutar de novo!
         window.estadoCombate = { ativo: false, atacante: null, defensor: null };
         window.estadoTurno = { jogadorAtual: null, turnoNumero: 0, fase: 'pre-jogo' };
         window.pontosAtaque = { jogador: 3, oponente: 3 };
     };
 }
 
-
-
-
-
-
-
-// ==========================================
-// 🔥 CORREÇÃO: O BOT AGORA RESPONDE SOZINHO AO BURST 🔥
-// ==========================================
-
 window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
-    // 🧠 A MÁGICA DA IA: Se for a vez do bot responder, ele toma a decisão sozinho!
     if (jogadorAlvo === 'oponente') {
         window.mostrarMensagemScanner("Oponente pensando...");
         
         setTimeout(() => {
             window.mostrarMensagemScanner("Oponente não tem respostas! O ataque vai acertar!");
             window.aguardandoResposta = false;
-            window.resolverBurst(); // Resolve o dano no inimigo!
+            window.resolverBurst(); 
         }, 2000);
         
-        return; // 🛑 ABORTA AQUI! Impede que a tela vermelha abra na sua cara!
+        return; 
     }
 
-    // Se for a SUA vez de responder a um ataque do inimigo, a tela vermelha abre normal:
     window.aguardandoResposta = true;
     let cor = jogadorAlvo === 'jogador' ? '#4CAF50' : '#e53935';
     let nomeJogador = jogadorAlvo === 'jogador' ? 'VOCÊ' : 'OPONENTE';
@@ -1784,3 +1762,5 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
     `;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 };
+
+
