@@ -1447,11 +1447,23 @@ function atualizarDecksEMaoCards() {
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
-        // 🔥 NOVO: Atualiza a Caixa Tracejada do Lixo!
+        // 🔥 CORREÇÃO VISUAL DO LIXO E ADIÇÃO DO CLIQUE
         else if (textoAtual.includes('LIXO')) {
             let qtdLixo = isPlayer ? (window.lixoAtaques ? window.lixoAtaques.length : 0) : (window.lixoAtaquesOponente || 0);
-            deck.innerHTML = `<span class="texto-deck-baixo">LIXO<br><span style="font-size:12px; color:#fff; text-shadow: 0 0 3px black;">${qtdLixo}</span></span>`;
-            deck.style.background = 'rgba(255, 0, 0, 0.1)';
+            
+            // Layout perfeito centralizado que não vaza da caixa!
+            deck.innerHTML = `
+                <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; width: 100%; height: 100%;">
+                    <span style="font-size: 10px; font-weight: bold; color: #fff;">LIXO</span>
+                    <span style="font-size: 14px; font-weight: bold; color: #fff; text-shadow: 0 0 5px black; margin-top: 2px;">${qtdLixo}</span>
+                </div>
+            `;
+            deck.style.background = 'rgba(255, 0, 0, 0.15)'; // Fundo vermelho transparente
+            deck.style.border = '2px dashed #ff5555'; // Borda tracejada vermelha
+            deck.style.cursor = 'pointer'; // Mostra a mãozinha de clique
+            
+            // Evento para abrir a janela do cemitério
+            deck.onclick = () => window.abrirModalVerLixo(isPlayer ? 'jogador' : 'oponente');
         }
         else if (textoAtual.trim() === 'DECK' || textoAtual.includes('LOCAIS')) {
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
@@ -1886,4 +1898,63 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 };
 
+
+
+
+
+
+    // ==========================================
+// 🔥 NOVO MOTOR: VISUALIZAR CEMITÉRIO (LIXO) 🔥
+// ==========================================
+
+window.abrirModalVerLixo = function(dono) {
+    if (document.getElementById('overlay-ver-lixo')) return;
+
+    let cartasHTML = "";
+    let titulo = dono === 'jogador' ? "SEU CEMITÉRIO (LIXO)" : "CEMITÉRIO DO OPONENTE";
+    let cor = dono === 'jogador' ? "#4CAF50" : "#e53935";
+
+    if (dono === 'jogador') {
+        let lixoArray = window.lixoAtaques || [];
+        if (lixoArray.length === 0) {
+            cartasHTML = `<p style="color:#aaa; font-size:12px; margin-top: 20px;">Seu lixo está vazio.</p>`;
+        } else {
+            // Desenha as imagens reais das cartas que você gastou
+            lixoArray.forEach(idAtaque => {
+                let c = window.inventario.find(item => item.id == idAtaque);
+                if (c) {
+                    cartasHTML += `
+                        <div style="width: 80px; height: 115px; background-image: url('${c.img}'); background-size: cover; background-position: center; border: 2px solid #777; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8);"></div>
+                    `;
+                }
+            });
+        }
+    } else {
+        // Oponente: Como é um bot virtual (sem IDs específicos de cartas ainda), nós renderizamos cartas viradas para baixo!
+        let qtdOp = window.lixoAtaquesOponente || 0;
+        if (qtdOp === 0) {
+            cartasHTML = `<p style="color:#aaa; font-size:12px; margin-top: 20px;">O lixo do oponente está vazio.</p>`;
+        } else {
+            for (let i = 0; i < qtdOp; i++) {
+                cartasHTML += `
+                    <div style="width: 80px; height: 115px; background-image: url('${URL_FUNDO_CARTA}'); background-size: cover; background-position: center; border: 2px solid #555; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8);"></div>
+                `;
+            }
+        }
+    }
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-ver-lixo" style="z-index: 1000000; background: rgba(0,0,0,0.95); flex-direction: column; align-items: center; justify-content: center; display: flex;">
+            <h2 style="color: ${cor}; text-shadow: 0 0 10px ${cor}; margin-bottom: 20px; font-family: 'Arial Black', sans-serif;">${titulo}</h2>
+            
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 90%; max-width: 400px; max-height: 50vh; overflow-y: auto; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid #333;">
+                ${cartasHTML}
+            </div>
+            
+            <button class="btn-acao-modal" style="width: 150px; background: #222; color: #fff; border: 2px solid #fff; margin-top: 25px;" onclick="document.getElementById('overlay-ver-lixo').remove()">FECHAR</button>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
 
