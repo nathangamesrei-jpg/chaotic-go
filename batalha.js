@@ -1628,28 +1628,32 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 window.passarTurno = function(ignorarLimite) {
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-    // 🔥 REGRA DO LIMITE DE MÃO (MÁXIMO 5 CARTAS NO COMBATE)
     if (emCombate && window.estadoTurno.jogadorAtual === 'jogador' && ignorarLimite !== true) {
         if (window.maoAtaques && window.maoAtaques.length > 5) {
             window.abrirModalDescarte();
-            return; // Trava o turno até você jogar carta fora!
+            return; 
         }
     }
 
-    // 🩹 SISTEMA DE AUTO-CURA (Garante que o Bot e os Lixos existam)
     if (typeof window.qtdMaoOponente === 'undefined') window.qtdMaoOponente = 3;
     if (typeof window.qtdBaralhoOponente === 'undefined') window.qtdBaralhoOponente = 17;
     if (typeof window.lixoAtaquesOponente === 'undefined') window.lixoAtaquesOponente = 0;
     if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
 
     if (window.estadoTurno.jogadorAtual === 'jogador') {
-        // Passando a bola pro Oponente
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
         if (emCombate) {
             window.pontosAtaque['oponente'] += 1;
+            
+            // 🔥 REGRA DO DECK OUT (OPONENTE): Se o deck secar, reembaralha o lixo dele!
+            if (window.qtdBaralhoOponente <= 0 && window.lixoAtaquesOponente > 0) {
+                window.qtdBaralhoOponente = window.lixoAtaquesOponente;
+                window.lixoAtaquesOponente = 0;
+            }
+
             if (window.qtdBaralhoOponente > 0) {
                 window.qtdMaoOponente++; 
                 window.qtdBaralhoOponente--; 
@@ -1664,20 +1668,26 @@ window.passarTurno = function(ignorarLimite) {
             setTimeout(() => { window.passarTurno(); }, 4000);
         });
     } else {
-        // 🔥 O BOT DESCARTA SOZINHO SE PASSAR DE 5 CARTAS!
         if (emCombate && window.qtdMaoOponente > 5) {
             let excesso = window.qtdMaoOponente - 5;
             window.qtdMaoOponente = 5;
             window.lixoAtaquesOponente += excesso;
         }
 
-        // Voltando a bola pra VOCÊ
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
         Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
         if (emCombate) {
             window.pontosAtaque['jogador'] += 1;
+            
+            // 🔥 REGRA DO DECK OUT (JOGADOR): Se o deck secar, reembaralha o seu lixo!
+            if ((!window.baralhoAtaques || window.baralhoAtaques.length === 0) && window.lixoAtaques && window.lixoAtaques.length > 0) {
+                window.mostrarMensagemScanner("Baralho vazio! Reembaralhando o Lixo...");
+                window.baralhoAtaques = embaralharArray(window.lixoAtaques);
+                window.lixoAtaques = []; // Zera o lixo depois de embaralhar
+            }
+
             if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
                 window.maoAtaques.push(window.baralhoAtaques.shift());
             }
@@ -1694,7 +1704,6 @@ window.passarTurno = function(ignorarLimite) {
     atualizarTelaBatalha(); 
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 };
-
 // ==========================================
 // 🔥 MOTOR DE DESCARTE E LIXO DA MÃO 🔥
 // ==========================================
