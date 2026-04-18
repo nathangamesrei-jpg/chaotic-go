@@ -112,12 +112,14 @@ function embaralharArray(array) {
     }
     return arr;
 }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 window.carregarDeckParaBatalha = function() {
     campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     window.slotSelecionadoMovimento = null;
     window.jogadorMugics = []; 
+    window.lixoAtaques = []; // 🔥 CRIA O SEU LIXO PARA NÃO CRASHAR O JOGO
+    window.lixoAtaquesOponente = 0; // 🔥 CRIA O LIXO DO BOT
 
     if (typeof limparDestaquesMovimento === "function") limparDestaquesMovimento();
 
@@ -1434,7 +1436,7 @@ window.iniciarTurnoReal = function(primeiroJogador) {
     }
     atualizarTelaBatalha(); 
 };
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 function atualizarDecksEMaoCards() {
     document.querySelectorAll('.box-deck').forEach(deck => {
         let isPlayer = deck.closest('.lado-jogador') !== null;
@@ -1444,6 +1446,12 @@ function atualizarDecksEMaoCards() {
             let qtd = isPlayer ? (window.baralhoAtaques ? window.baralhoAtaques.length : 20) : (window.qtdBaralhoOponente !== undefined ? window.qtdBaralhoOponente : 17);
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
             deck.classList.add('fundo-carta-personalizado');
+        }
+        // 🔥 NOVO: Atualiza a Caixa Tracejada do Lixo!
+        else if (textoAtual.includes('LIXO')) {
+            let qtdLixo = isPlayer ? (window.lixoAtaques ? window.lixoAtaques.length : 0) : (window.lixoAtaquesOponente || 0);
+            deck.innerHTML = `<span class="texto-deck-baixo">LIXO<br><span style="font-size:12px; color:#fff; text-shadow: 0 0 3px black;">${qtdLixo}</span></span>`;
+            deck.style.background = 'rgba(255, 0, 0, 0.1)';
         }
         else if (textoAtual.trim() === 'DECK' || textoAtual.includes('LOCAIS')) {
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
@@ -1580,12 +1588,22 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
     }, 8000); 
 };
-
-window.passarTurno = function() {
+/////////////////////////////////////////////////////////////////////
+window.passarTurno = function(ignorarLimite) {
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
+
+    // 🔥 REGRA DO LIMITE DE MÃO (MÁXIMO 5 CARTAS NO COMBATE)
+    if (emCombate && window.estadoTurno.jogadorAtual === 'jogador' && ignorarLimite !== true) {
+        if (window.maoAtaques && window.maoAtaques.length > 5) {
+            window.abrirModalDescarte();
+            return; // Trava o turno até você jogar carta fora!
+        }
+    }
 
     if (typeof window.qtdMaoOponente === 'undefined') window.qtdMaoOponente = 3;
     if (typeof window.qtdBaralhoOponente === 'undefined') window.qtdBaralhoOponente = 17;
+    if (typeof window.lixoAtaquesOponente === 'undefined') window.lixoAtaquesOponente = 0;
+    if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
 
     if (window.estadoTurno.jogadorAtual === 'jogador') {
         window.estadoTurno.jogadorAtual = 'oponente';
@@ -1608,6 +1626,13 @@ window.passarTurno = function() {
             setTimeout(() => { window.passarTurno(); }, 4000);
         });
     } else {
+        // 🔥 O BOT DESCARTA SOZINHO SE PASSAR DE 5 CARTAS!
+        if (emCombate && window.qtdMaoOponente > 5) {
+            let excesso = window.qtdMaoOponente - 5;
+            window.qtdMaoOponente = 5;
+            window.lixoAtaquesOponente += excesso;
+        }
+
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
         Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
@@ -1629,6 +1654,54 @@ window.passarTurno = function() {
     
     atualizarTelaBatalha(); 
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+};
+
+// ==========================================
+// 🔥 MOTOR DE DESCARTE E LIXO DA MÃO 🔥
+// ==========================================
+window.abrirModalDescarte = function() {
+    let excesso = window.maoAtaques.length - 5;
+    let htmlCartas = "";
+
+    window.maoAtaques.forEach((idAtaque, index) => {
+        let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
+        if (cartaOriginal) {
+            htmlCartas += `
+                <div onclick="window.descartarCartaAtaque(${index}, '${idAtaque}')" style="width: 70px; height: 100px; background-image: url('${cartaOriginal.img}'); background-size: cover; background-position: center; border: 2px solid #ff5555; border-radius: 5px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                </div>
+            `;
+        }
+    });
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-descarte" style="z-index: 1000000; background: rgba(0,0,0,0.95); flex-direction: column;">
+            <h2 style="color: #ff5555; text-shadow: 0 0 10px #ff5555; margin-bottom: 10px;">LIMITE DE MÃO EXCEDIDO!</h2>
+            <p style="color: #fff; margin-bottom: 20px; font-size: 14px;">Selecione e descarte <b style="color:#ffd700; font-size: 18px;">${excesso}</b> carta(s) para passar o turno.</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 90%;">
+                ${htmlCartas}
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+window.descartarCartaAtaque = function(index, idAtaque) {
+    document.getElementById('overlay-descarte').remove();
+    
+    // Tira da mão e joga pro Lixo!
+    window.maoAtaques.splice(index, 1);
+    if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
+    window.lixoAtaques.push(idAtaque);
+    
+    atualizarDecksEMaoCards(); 
+
+    // Verifica se ainda precisa descartar mais alguma
+    if (window.maoAtaques.length > 5) {
+        window.abrirModalDescarte();
+    } else {
+        window.mostrarMensagemScanner("Descarte concluído! Passando o turno...");
+        window.passarTurno(true); // O "true" autoriza a passar de fase
+    }
 };
 
 window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
