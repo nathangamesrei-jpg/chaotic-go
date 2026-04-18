@@ -1922,158 +1922,7 @@ window.adicionarAoBurst = function(acaoObj) {
     setTimeout(() => window.perguntarResposta(jogadorAlvo, acaoObj), 1000);
 };
 
-// 2. A Janela de SIM ou NÃO
-window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
-    window.aguardandoResposta = true;
-    let cor = jogadorAlvo === 'jogador' ? '#4CAF50' : '#e53935';
-    let nomeJogador = jogadorAlvo === 'jogador' ? 'VOCÊ' : 'OPONENTE';
 
-    const modalHTML = `
-        <div class="modal-overlay" id="overlay-burst" style="z-index: 1000000; background: rgba(0,0,0,0.9);">
-            <div class="modal-content-fichas" style="text-align:center; border: 3px solid ${cor}; box-shadow: 0 0 30px ${cor};">
-                <h3 style="color:${cor}; margin-bottom:15px; font-size: 24px; text-shadow: 0 0 10px ${cor};">AÇÃO DO ADVERSÁRIO!</h3>
-                <p style="color:#fff; font-size: 14px; margin-bottom: 20px;">
-                    O adversário usou: <b style="color:#ffd700; font-size: 16px;">${acaoAnterior.nomeAcao}</b><br><br>
-                    <span style="font-size: 18px;">${nomeJogador}, deseja responder a essa ação?</span>
-                </p>
-                <div style="display:flex; gap: 20px; justify-content: center;">
-                    <button class="btn-acao-modal" style="width: 100px; border-color:#00bcd4; color:#00bcd4;" onclick="window.iniciarRespostaBurst('${jogadorAlvo}')">SIM</button>
-                    <button class="btn-acao-modal" style="width: 100px; border-color:#e53935; color:#e53935;" onclick="window.negarRespostaBurst()">NÃO</button>
-                </div>
-                <p style="font-size: 10px; color: #888; margin-top: 15px;">Se clicar em SIM e não fizer nada, basta cancelar na sua carta.</p>
-            </div>
-        </div>
-    `;
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-};
-
-// 3. Se disser SIM (Libera a mesa para ele jogar a carta por cima)
-window.iniciarRespostaBurst = function(jogadorAlvo) {
-    document.getElementById('overlay-burst').remove();
-    window.mostrarMensagemScanner(`⏳ Aguardando a resposta de ${jogadorAlvo}... Escolha sua ação!`);
-    // O jogo continua travado em "aguardandoResposta", permitindo que ele clique numa carta e ela entre no Burst!
-};
-
-// 4. Se disser NÃO (Fecha a corrente e resolve tudo de trás pra frente)
-window.negarRespostaBurst = function() {
-    let modal = document.getElementById('overlay-burst');
-    if(modal) modal.remove();
-    
-    window.aguardandoResposta = false;
-    window.mostrarMensagemScanner("A corrente foi fechada! Resolvendo as ações...");
-    
-    setTimeout(() => window.resolverBurst(), 1000);
-};
-
-// 5. RESOLUÇÃO DE TRÁS PRA FRENTE (LIFO)
-window.resolverBurst = function() {
-    if (window.pilhaBurst.length === 0) {
-        window.mostrarMensagemScanner("Todas as ações resolvidas.");
-        atualizarTelaBatalha();
-        return;
-    }
-
-    // Puxa a ÚLTIMA ação que entrou na lista
-    let acaoAtual = window.pilhaBurst.pop();
-    
-    window.mostrarMensagemScanner(`✨ Resolvendo: ${acaoAtual.nomeAcao}`);
-    
-    // Executa a mágica da carta!
-    acaoAtual.executar();
-    
-    // Chama a próxima ação da fila depois de 2.5 segundos (pra dar tempo de ver a animação e o dano)
-    setTimeout(() => window.resolverBurst(), 2500);
-};
-
-// 6. CANCELAR O SIM: Se o cara apertou SIM, mas mudou de ideia e quer fechar a corrente
-window.cancelarRespostaBurst = function() {
-    if (window.aguardandoResposta) {
-        window.aguardandoResposta = false;
-        window.mostrarMensagemScanner("Resposta cancelada. Resolvendo a corrente...");
-        window.resolverBurst();
-    }
-};
-
-
-
-
-window.atualizarSeusContadoresDeAtaque_VELHA = function() {
-    let ptsJogador = window.pontosAtaque ? (window.pontosAtaque['jogador'] || 0) : 0;
-    let ptsOponente = window.pontosAtaque ? (window.pontosAtaque['oponente'] || 0) : 0;
-
-    let displayPontosJogador = document.getElementById('contador-ataque-jogador');
-    let displayPontosOponente = document.getElementById('contador-ataque-oponente');
-
-    if (displayPontosJogador) {
-        displayPontosJogador.innerText = `Cont. Ataque: ${ptsJogador}`;
-    }
-    if (displayPontosOponente) {
-        displayPontosOponente.innerText = `Cont. Ataque: ${ptsOponente}`;
-    }
-};
-
-
-
-
-function atualizarDecksEMaoCards_VELHA_VELHA() {
-    // 1. Atualiza os textos dos Decks
-    document.querySelectorAll('.box-deck').forEach(deck => {
-        let isPlayer = deck.closest('.lado-jogador') !== null;
-        let textoAtual = deck.textContent || ""; 
-
-        if (textoAtual.includes('DECK') && textoAtual.includes('ATAQUE')) {
-            let qtd = (isPlayer && window.baralhoAtaques) ? window.baralhoAtaques.length : 20;
-            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
-            deck.classList.add('fundo-carta-personalizado');
-        }
-        else if (textoAtual.trim() === 'DECK' || textoAtual.includes('LOCAIS')) {
-            deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>LOCAIS</span>`;
-            deck.classList.add('fundo-carta-personalizado');
-        }
-    });
-
-    let caixaMao = document.querySelector('.container-mao-ataques') || document.querySelector('.mao-jogador');
-    if(caixaMao) {
-        caixaMao.className = 'container-mao-ataques'; 
-        caixaMao.style.pointerEvents = 'none'; 
-        caixaMao.style.zIndex = '99999';
-        caixaMao.innerHTML = ''; 
-
-        // 🔥 A MÁGICA: Calcula o centro da mão para espalhar as cartas em um leque perfeito
-        let totalCartas = window.maoAtaques.length;
-        let meio = (totalCartas - 1) / 2;
-
-        window.maoAtaques.forEach((idAtaque, index) => {
-            let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
-            
-            if (cartaOriginal) {
-                let el = document.createElement('div');
-                el.className = 'carta-na-mao';
-                
-                el.style.backgroundImage = `url('${cartaOriginal.img}')`;
-                el.style.backgroundSize = 'cover';
-                el.style.backgroundPosition = 'center';
-                el.style.pointerEvents = 'auto';
-                el.style.cursor = 'pointer';
-
-                // 📐 CÁLCULO DINÂMICO DO LEQUE (Funciona com 1 a 10 cartas!)
-                let offset = index - meio;
-                let angulo = offset * 12; // Inclina 12 graus pra cada lado
-                let descida = Math.abs(offset) * 6; // Rebaixa 6px pra não ficar reto
-                
-                el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
-                el.style.zIndex = index + 1;
-                
-                el.onclick = function(e) {
-                    e.stopPropagation(); 
-                    window.abrirModalAtaque(index, idAtaque, cartaOriginal);
-                };
-                
-                caixaMao.appendChild(el);
-            }
-        });
-    }
-}
 
 
 
@@ -2494,3 +2343,51 @@ if (btnSairDrome) {
         window.pontosAtaque = { jogador: 3, oponente: 3 };
     };
 }
+
+
+
+
+
+
+
+// ==========================================
+// 🔥 CORREÇÃO: O BOT AGORA RESPONDE SOZINHO AO BURST 🔥
+// ==========================================
+
+window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
+    // 🧠 A MÁGICA DA IA: Se for a vez do bot responder, ele toma a decisão sozinho!
+    if (jogadorAlvo === 'oponente') {
+        window.mostrarMensagemScanner("Oponente pensando...");
+        
+        setTimeout(() => {
+            window.mostrarMensagemScanner("Oponente não tem respostas! O ataque vai acertar!");
+            window.aguardandoResposta = false;
+            window.resolverBurst(); // Resolve o dano no inimigo!
+        }, 2000);
+        
+        return; // 🛑 ABORTA AQUI! Impede que a tela vermelha abra na sua cara!
+    }
+
+    // Se for a SUA vez de responder a um ataque do inimigo, a tela vermelha abre normal:
+    window.aguardandoResposta = true;
+    let cor = jogadorAlvo === 'jogador' ? '#4CAF50' : '#e53935';
+    let nomeJogador = jogadorAlvo === 'jogador' ? 'VOCÊ' : 'OPONENTE';
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-burst" style="z-index: 1000000; background: rgba(0,0,0,0.9);">
+            <div class="modal-content-fichas" style="text-align:center; border: 3px solid ${cor}; box-shadow: 0 0 30px ${cor};">
+                <h3 style="color:${cor}; margin-bottom:15px; font-size: 24px; text-shadow: 0 0 10px ${cor};">AÇÃO DO ADVERSÁRIO!</h3>
+                <p style="color:#fff; font-size: 14px; margin-bottom: 20px;">
+                    O adversário usou: <b style="color:#ffd700; font-size: 16px;">${acaoAnterior.nomeAcao}</b><br><br>
+                    <span style="font-size: 18px;">${nomeJogador}, deseja responder a essa ação?</span>
+                </p>
+                <div style="display:flex; gap: 20px; justify-content: center;">
+                    <button class="btn-acao-modal" style="width: 100px; border-color:#00bcd4; color:#00bcd4;" onclick="window.iniciarRespostaBurst('${jogadorAlvo}')">SIM</button>
+                    <button class="btn-acao-modal" style="width: 100px; border-color:#e53935; color:#e53935;" onclick="window.negarRespostaBurst()">NÃO</button>
+                </div>
+                <p style="font-size: 10px; color: #888; margin-top: 15px;">Se clicar em SIM e não fizer nada, basta cancelar na sua carta.</p>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
