@@ -1951,8 +1951,11 @@ window.iniciarTurnoReal = function(primeiroJogador) {
     window.estadoTurno.turnoNumero = 1;
     window.estadoTurno.fase = 'principal';
 
-    // Garante que o jogo comece com 3 pontos justos para cada!
     window.pontosAtaque = { jogador: 3, oponente: 3 };
+    
+    // 🔥 NOVO: CRIAMOS UM BARALHO VIRTUAL PARA O BOT!
+    window.qtdMaoOponente = 3;
+    window.qtdBaralhoOponente = 17;
 
     Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
     if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
@@ -1989,7 +1992,14 @@ window.passarTurno = function() {
         window.estadoTurno.turnoNumero++;
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
-        if (emCombate) window.pontosAtaque['oponente'] += 1;
+        if (emCombate) {
+            window.pontosAtaque['oponente'] += 1;
+            // 🔥 NOVO: O BOT COMPRA CARTA FÍSICA SE O COMBATE ESTIVER ROLANDO!
+            if (window.qtdBaralhoOponente > 0) {
+                window.qtdMaoOponente++;
+                window.qtdBaralhoOponente--;
+            }
+        }
 
         let btn = document.getElementById('btn-passar-turno');
         if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
@@ -2016,60 +2026,7 @@ window.passarTurno = function() {
         });
     }
     atualizarTelaBatalha(); 
-};
-
-window.iniciarCombate = function(idAtacante, idDefensor) {
-    let atacante = obterCriaturaNoSlot(idAtacante);
-    let defensor = obterCriaturaNoSlot(idDefensor);
-
-    window.estadoCombate = { ativo: true, atacante: idAtacante, defensor: idDefensor };
-
-    let nomeLocal = window.localAtivoAtual ? "Local Ativo" : "Local Desconhecido";
-    let textoNarracao = `${atacante.nome} ataca ${defensor.nome} em ${nomeLocal}`;
-
-    try {
-        window.speechSynthesis.cancel(); 
-        let vozRobo = new SpeechSynthesisUtterance(textoNarracao);
-        vozRobo.lang = 'pt-BR'; vozRobo.rate = 1.0; vozRobo.pitch = 0.5; vozRobo.volume = 1.0; 
-        window.speechSynthesis.speak(vozRobo);
-    } catch(e) {}
-
-    let iconeAtacante = atacante.cartaBlank;
-    let iconeDefensor = defensor.cartaBlank;
-
-    const vsHTML = `
-        <div class="modal-overlay" id="overlay-combate-vs" style="z-index: 1000000; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100vw; height: 100vh; overflow: hidden;">
-            <div style="position: relative; width: 160px; height: 230px; margin-bottom: 20px; animation: dropInTop 0.5s forwards;">
-                <div class="carta-base" style="position: absolute; width: 100%; height: 100%; background-image: url('${defensor.cartaBlank}'); background-size: 100% 100%; border: 3px solid #e53935; border-radius: 10px; box-shadow: 0 0 30px #e53935; animation: fadeOutScan 0.5s 1.5s forwards;"></div>
-                <div class="criatura-revelada" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeDefensor}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 15px #e53935) brightness(1.2); opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
-            </div>
-            <div style="position: relative; width: 100%; display: flex; justify-content: center; align-items: center; height: 60px;">
-                <div style="font-family: 'Arial Black', sans-serif; font-size: 60px; color: #fff; text-shadow: 0 0 20px #e53935, 0 0 30px #ffd700; z-index: 10; animation: pulseVS 0.5s infinite alternate;">VS</div>
-            </div>
-            <div style="position: relative; width: 160px; height: 230px; margin-top: 20px; animation: dropInBottom 0.5s forwards;">
-                <div class="carta-base" style="position: absolute; width: 100%; height: 100%; background-image: url('${atacante.cartaBlank}'); background-size: 100% 100%; border: 3px solid #4CAF50; border-radius: 10px; box-shadow: 0 0 30px #4CAF50; animation: fadeOutScan 0.5s 1.5s forwards;"></div>
-                <div class="criatura-revelada" style="position: absolute; width: 100%; height: 100%; background-image: url('${iconeAtacante}'); background-size: contain; background-repeat: no-repeat; background-position: center; filter: drop-shadow(0 0 15px #4CAF50) brightness(1.2); opacity: 0; animation: revelarCarta 0.5s 1.5s forwards;"></div>
-            </div>
-        </div>
-        <style>
-            @keyframes dropInTop { from { transform: translateY(-100vh); } to { transform: translateY(0); } }
-            @keyframes dropInBottom { from { transform: translateY(100vh); } to { transform: translateY(0); } }
-            @keyframes revelarCarta { to { opacity: 1; } }
-            @keyframes fadeOutScan { to { opacity: 0; visibility: hidden; } }
-            @keyframes pulseVS { from { transform: scale(1); } to { transform: scale(1.2); } }
-        </style>
-    `;
-    document.body.insertAdjacentHTML('beforeend', vsHTML);
-
-    setTimeout(() => {
-        let telaVS = document.getElementById('overlay-combate-vs');
-        if (telaVS) telaVS.remove();
-        
-        window.pontosAtaque[atacante.dono] += 1; 
-        if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
-        
-        window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
-    }, 8000); 
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 };
 
 function atualizarDecksEMaoCards() {
@@ -2078,7 +2035,8 @@ function atualizarDecksEMaoCards() {
         let textoAtual = deck.textContent || ""; 
 
         if (textoAtual.includes('DECK') && textoAtual.includes('ATAQUE')) {
-            let qtd = (isPlayer && window.baralhoAtaques) ? window.baralhoAtaques.length : 20;
+            // 🔥 NOVO: O Deck do oponente agora desce o contador certinho!
+            let qtd = isPlayer ? (window.baralhoAtaques ? window.baralhoAtaques.length : 20) : (window.qtdBaralhoOponente !== undefined ? window.qtdBaralhoOponente : 17);
             deck.innerHTML = `<span class="texto-deck-baixo">DECK<br>ATAQUE<br><span style="font-size:9px; color:#fff; text-shadow: 0 0 3px black;">${qtd}/20</span></span>`;
             deck.classList.add('fundo-carta-personalizado');
         }
@@ -2088,6 +2046,7 @@ function atualizarDecksEMaoCards() {
         }
     });
 
+    // LEQUE DO JOGADOR
     let caixaMao = document.querySelector('.container-mao-ataques') || document.querySelector('.mao-jogador');
     if(caixaMao) {
         caixaMao.className = 'container-mao-ataques'; 
@@ -2100,7 +2059,6 @@ function atualizarDecksEMaoCards() {
 
         window.maoAtaques.forEach((idAtaque, index) => {
             let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
-            
             if (cartaOriginal) {
                 let el = document.createElement('div');
                 el.className = 'carta-na-mao';
@@ -2124,6 +2082,30 @@ function atualizarDecksEMaoCards() {
                 caixaMao.appendChild(el);
             }
         });
+    }
+
+    // 🔥 NOVO: LEQUE DO OPONENTE (MATEMÁTICA APLICADA!)
+    let caixaMaoOp = document.getElementById('mao-oponente-ui');
+    if (caixaMaoOp) {
+        caixaMaoOp.innerHTML = ''; // Limpa as 3 cartas estáticas de antes
+        
+        let totalOp = window.qtdMaoOponente !== undefined ? window.qtdMaoOponente : 3;
+        let meioOp = (totalOp - 1) / 2;
+        
+        for(let i = 0; i < totalOp; i++) {
+            let el = document.createElement('div');
+            el.className = 'carta-oponente-na-mao';
+            
+            // A mesma matemática de arco do jogador, aplicada de ponta-cabeça!
+            let offset = i - meioOp;
+            let angulo = offset * 12; 
+            let descida = Math.abs(offset) * 6; 
+            
+            el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
+            el.style.zIndex = i + 1;
+            
+            caixaMaoOp.appendChild(el);
+        }
     }
 }
 
