@@ -846,7 +846,7 @@ setTimeout(() => {
         document.addEventListener('touchend', soltarInteracao);
     };
 
-    function moverInteracao(e) {
+   function moverInteracao(e) {
         if (!interacao.idOrigem || !interacao.clone) return;
         
         let pointer = e.touches ? e.touches[0] : e;
@@ -854,7 +854,8 @@ setTimeout(() => {
         let moveX = Math.abs(pointer.clientX - interacao.startX);
         let moveY = Math.abs(pointer.clientY - interacao.startY);
 
-        if (!interacao.isDragging && (moveX > 10 || moveY > 10)) {
+        // 🔥 FIX: Tolerância aumentada de 10 para 25 pixels (Ignora o deslize do dedo no celular)
+        if (!interacao.isDragging && (moveX > 25 || moveY > 25)) {
             interacao.isDragging = true;
             interacao.clone.style.display = 'flex';
             
@@ -904,8 +905,13 @@ setTimeout(() => {
                     window.slotSelecionadoMovimento = null;
                 }
             } else {
-                limparDestaquesMovimento();
-                window.slotSelecionadoMovimento = null;
+                // 🔥 FIX: Se arrastou sem querer e soltou no mesmo lugar, abre a carta normal ao invés de ignorar!
+                if (slotDestino === origem) {
+                    window.lidarComCliqueTabuleiro(origem);
+                } else {
+                    limparDestaquesMovimento();
+                    window.slotSelecionadoMovimento = null;
+                }
             }
 
         } else {
@@ -915,7 +921,6 @@ setTimeout(() => {
             window.lidarComCliqueTabuleiro(origem);
         }
     }
-
     ['jog', 'op'].forEach(lado => {
         ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
             let el = document.getElementById(`${lado}-${slot}`);
@@ -1576,10 +1581,14 @@ function atualizarDecksEMaoCards() {
                 el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
                 el.style.zIndex = index + 1;
                 
-                el.onclick = function(e) {
+                // 🔥 FIX: Toque instantâneo! Pula o tempo de espera do celular.
+                let acionarCarta = function(e) {
+                    e.preventDefault();
                     e.stopPropagation(); 
                     window.abrirModalAtaque(index, idAtaque, cartaOriginal);
                 };
+                el.onpointerdown = acionarCarta; // Celular
+                el.onclick = acionarCarta; // PC
                 caixaMao.appendChild(el);
             }
         });
