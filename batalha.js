@@ -1984,50 +1984,7 @@ window.iniciarTurnoReal = function(primeiroJogador) {
     atualizarTelaBatalha(); 
 };
 
-window.passarTurno = function() {
-    let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-    if (window.estadoTurno.jogadorAtual === 'jogador') {
-        window.estadoTurno.jogadorAtual = 'oponente';
-        window.estadoTurno.turnoNumero++;
-        if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
-        
-        if (emCombate) {
-            window.pontosAtaque['oponente'] += 1;
-            // 🔥 NOVO: O BOT COMPRA CARTA FÍSICA SE O COMBATE ESTIVER ROLANDO!
-            if (window.qtdBaralhoOponente > 0) {
-                window.qtdMaoOponente++;
-                window.qtdBaralhoOponente--;
-            }
-        }
-
-        let btn = document.getElementById('btn-passar-turno');
-        if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
-        
-        window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
-            window.mostrarMensagemScanner(emCombate ? "Turno do oponente no combate..." : "Turno de movimento do oponente...");
-            setTimeout(() => { window.passarTurno(); }, 4000);
-        });
-    } else {
-        window.estadoTurno.jogadorAtual = 'jogador';
-        window.estadoTurno.turnoNumero++;
-        Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
-        
-        if (emCombate) {
-            window.pontosAtaque['jogador'] += 1;
-            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) window.maoAtaques.push(window.baralhoAtaques.shift());
-        }
-
-        let btn = document.getElementById('btn-passar-turno');
-        if(btn) { btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
-        
-        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
-            window.mostrarMensagemScanner(emCombate ? "Sua vez de atacar! +1 Ponto e +1 Carta." : "Sua vez! Movimente suas criaturas.");
-        });
-    }
-    atualizarTelaBatalha(); 
-    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
-};
 
 function atualizarDecksEMaoCards() {
     document.querySelectorAll('.box-deck').forEach(deck => {
@@ -2191,12 +2148,24 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 window.passarTurno = function() {
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
+    // 🩹 SISTEMA DE AUTO-CURA: Se o Bot estiver sem memória do baralho, o jogo conserta na hora!
+    if (typeof window.qtdMaoOponente === 'undefined') window.qtdMaoOponente = 3;
+    if (typeof window.qtdBaralhoOponente === 'undefined') window.qtdBaralhoOponente = 17;
+
     if (window.estadoTurno.jogadorAtual === 'jogador') {
+        // Passando a bola pro Oponente
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
-        if (emCombate) window.pontosAtaque['oponente'] += 1;
+        // 🔥 O BOT SÓ COMPRA SE ESTIVER NO COMBATE!
+        if (emCombate) {
+            window.pontosAtaque['oponente'] += 1;
+            if (window.qtdBaralhoOponente > 0) {
+                window.qtdMaoOponente++; // Ganha +1 na mão
+                window.qtdBaralhoOponente--; // Perde -1 do deck
+            }
+        }
 
         let btn = document.getElementById('btn-passar-turno');
         if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
@@ -2206,13 +2175,17 @@ window.passarTurno = function() {
             setTimeout(() => { window.passarTurno(); }, 4000);
         });
     } else {
+        // Voltando a bola pra VOCÊ
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
         Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
+        // 🔥 VOCÊ SÓ COMPRA SE ESTIVER NO COMBATE!
         if (emCombate) {
             window.pontosAtaque['jogador'] += 1;
-            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) window.maoAtaques.push(window.baralhoAtaques.shift());
+            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
+                window.maoAtaques.push(window.baralhoAtaques.shift());
+            }
         }
 
         let btn = document.getElementById('btn-passar-turno');
@@ -2222,8 +2195,9 @@ window.passarTurno = function() {
             window.mostrarMensagemScanner(emCombate ? "Sua vez de atacar! +1 Ponto e +1 Carta." : "Sua vez! Movimente suas criaturas.");
         });
     }
+    
     atualizarTelaBatalha(); 
-    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque(); // 🔥 FIX: OBRIGA O CONTADOR A ATUALIZAR
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 };
 
 // 3. CORRIGE O MODAL DE ATAQUE (Z-INDEX E LOCAL DE CRIAÇÃO)
