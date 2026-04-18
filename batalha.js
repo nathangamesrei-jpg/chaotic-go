@@ -10,11 +10,13 @@ function desenharMiniCarta(criaturaObj) {
     let img = "";
     let hpAtual = 0;
     let c = 0, p = 0, s = 0, v = 0;
-    let elems = [];
     let pct = 0;
     let corHp = '#444';
     let triboClass = ""; 
     let htmlEquipamento = ""; 
+    
+    // Preparando as luzes dos elementos
+    let temFogo = false, temAgua = false, temTerra = false, temAr = false;
 
     if (criaturaObj) {
         img = criaturaObj.cartaBlank; 
@@ -26,7 +28,24 @@ function desenharMiniCarta(criaturaObj) {
         p = criaturaObj.poder || criaturaObj.statsMax?.poder || 0;
         s = criaturaObj.sabedoria || criaturaObj.statsMax?.sabedoria || 0;
         v = criaturaObj.velocidade || criaturaObj.statsMax?.velocidade || 0;
-        elems = criaturaObj.elementos || [];
+        
+        // 🔥 FILTRO INTELIGENTE DE ELEMENTOS: 
+        // Pesca do DB caso falte no inventário e arruma as letras/acentos!
+        let elemsBrutos = criaturaObj.elementos || [];
+        if (elemsBrutos.length === 0 && typeof MONSTROS !== 'undefined') {
+            let dbCarta = MONSTROS.find(m => m.nome === criaturaObj.nome);
+            if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
+        }
+        // Converte de texto pra lista se precisar
+        if (typeof elemsBrutos === 'string') elemsBrutos = elemsBrutos.split(',');
+        
+        // Limpa tudo (tira espaços, acentos e põe em minúsculo pra não dar erro)
+        let elsNorm = elemsBrutos.map(e => e.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ""));
+        
+        temFogo = elsNorm.includes('fogo');
+        temAgua = elsNorm.includes('agua');
+        temTerra = elsNorm.includes('terra');
+        temAr = elsNorm.includes('ar');
         
         const triboMap = {'Azul': 'tribo-azul', 'Vermelho': 'tribo-vermelho', 'Amarelo': 'tribo-amarelo', 'Verde': 'tribo-verde', 'Ciano': 'tribo-ciano', 'Cinza': 'tribo-cinza'};
         triboClass = triboMap[criaturaObj.tribo] || 'tribo-cinza';
@@ -44,7 +63,6 @@ function desenharMiniCarta(criaturaObj) {
                     </div>
                 `;
             } else {
-                // O "else" solto garante que QUALQUER equipamento escondido ganhe o "?"
                 let textoTooltip = criaturaObj.dono === 'jogador' ? 'Oponente não pode ver' : 'Você não pode ver';
                 htmlEquipamento = `
                     <div class="mini-equip-icon oculto">
@@ -55,11 +73,6 @@ function desenharMiniCarta(criaturaObj) {
             }
         }
     }
-
-    const temFogo = elems.includes('Fogo');
-    const temAgua = elems.includes('Agua');
-    const temTerra = elems.includes('Terra');
-    const temAr = elems.includes('Ar');
 
     return `
         <div class="mini-card-wrapper">
