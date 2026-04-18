@@ -29,23 +29,23 @@ function desenharMiniCarta(criaturaObj) {
         s = criaturaObj.sabedoria || criaturaObj.statsMax?.sabedoria || 0;
         v = criaturaObj.velocidade || criaturaObj.statsMax?.velocidade || 0;
         
-        // 🔥 FILTRO INTELIGENTE DE ELEMENTOS: 
-        // Pesca do DB caso falte no inventário e arruma as letras/acentos!
-        let elemsBrutos = criaturaObj.elementos || [];
-        if (elemsBrutos.length === 0 && typeof MONSTROS !== 'undefined') {
+        // 🔥 O LEITOR UNIVERSAL DE ELEMENTOS (À prova de falhas)
+        let elemsBrutos = criaturaObj.elementos;
+        
+        // Se o inventário antigo do cara não salvou os elementos, busca direto na fonte (cartas.js)
+        if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
             let dbCarta = MONSTROS.find(m => m.nome === criaturaObj.nome);
             if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
         }
-        // Converte de texto pra lista se precisar
-        if (typeof elemsBrutos === 'string') elemsBrutos = elemsBrutos.split(',');
+
+        // O Truque: Transforma QUALQUER coisa num texto minúsculo sem acento
+        let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
         
-        // Limpa tudo (tira espaços, acentos e põe em minúsculo pra não dar erro)
-        let elsNorm = elemsBrutos.map(e => e.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ""));
-        
-        temFogo = elsNorm.includes('fogo');
-        temAgua = elsNorm.includes('agua');
-        temTerra = elsNorm.includes('terra');
-        temAr = elsNorm.includes('ar');
+        // Agora ele acha fácil, seja "Fogo", "fogo", ["Fogo"], etc.
+        temFogo = textoElementos.includes('fogo');
+        temAgua = textoElementos.includes('agua');
+        temTerra = textoElementos.includes('terra');
+        temAr = textoElementos.includes('ar');
         
         const triboMap = {'Azul': 'tribo-azul', 'Vermelho': 'tribo-vermelho', 'Amarelo': 'tribo-amarelo', 'Verde': 'tribo-verde', 'Ciano': 'tribo-ciano', 'Cinza': 'tribo-cinza'};
         triboClass = triboMap[criaturaObj.tribo] || 'tribo-cinza';
