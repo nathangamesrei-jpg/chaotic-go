@@ -1903,7 +1903,7 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
 
 
 
-    // ==========================================
+// ==========================================
 // 🔥 NOVO MOTOR: VISUALIZAR CEMITÉRIO (LIXO) 🔥
 // ==========================================
 
@@ -1923,21 +1923,28 @@ window.abrirModalVerLixo = function(dono) {
             lixoArray.forEach(idAtaque => {
                 let c = window.inventario.find(item => item.id == idAtaque);
                 if (c) {
+                    // 🔥 BÔNUS: Agora clicar na carta do lixo amplia ela pra você ler!
                     cartasHTML += `
-                        <div style="width: 80px; height: 115px; background-image: url('${c.img}'); background-size: cover; background-position: center; border: 2px solid #777; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8);"></div>
+                        <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${c.img}')" style="width: 80px; height: 115px; background-image: url('${c.img}'); background-size: cover; background-position: center; border: 2px solid #777; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8); cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>
                     `;
                 }
             });
         }
     } else {
-        // Oponente: Como é um bot virtual (sem IDs específicos de cartas ainda), nós renderizamos cartas viradas para baixo!
+        // 🔥 O TRUQUE DO BOT: Sorteia cartas de Ataque reais do Banco de Dados para simular o que ele jogou fora!
         let qtdOp = window.lixoAtaquesOponente || 0;
         if (qtdOp === 0) {
             cartasHTML = `<p style="color:#aaa; font-size:12px; margin-top: 20px;">O lixo do oponente está vazio.</p>`;
         } else {
+            // Pega todas as cartas de ataque disponíveis para sortear
+            let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
+            
             for (let i = 0; i < qtdOp; i++) {
+                let cartaSimulada = todosAtaques[Math.floor(Math.random() * todosAtaques.length)];
+                let imgBot = cartaSimulada ? cartaSimulada.img : URL_FUNDO_CARTA;
+                
                 cartasHTML += `
-                    <div style="width: 80px; height: 115px; background-image: url('${URL_FUNDO_CARTA}'); background-size: cover; background-position: center; border: 2px solid #555; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8);"></div>
+                    <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${imgBot}')" style="width: 80px; height: 115px; background-image: url('${imgBot}'); background-size: cover; background-position: center; border: 2px solid #e53935; border-radius: 5px; box-shadow: 0 0 10px rgba(229,57,53,0.8); cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>
                 `;
             }
         }
