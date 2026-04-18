@@ -1324,15 +1324,39 @@ window.estadoCombate = { ativo: false, atacante: null, defensor: null };
 
 window.encerrarCombateMorte = function(idMorto) {
     let morto = obterCriaturaNoSlot(idMorto);
-    window.mostrarMensagemScanner(`💀 ${morto.nome} FOI DESTRUÍDO!`);
+    window.mostrarMensagemScanner(`💀 ${morto.nome} FOI DESTRUÍDO! O tabuleiro será redefinido.`);
     
+    // Apaga a criatura da mesa
     setarCriaturaNoSlot(idMorto, null);
     
+    // Destrava a mesa
     window.estadoCombate.ativo = false;
     window.estadoCombate.atacante = null;
     window.estadoCombate.defensor = null;
     
+    // ==========================================
+    // 🔥 FASE DE MANUTENÇÃO PÓS-COMBATE 🔥
+    // ==========================================
+    
+    // 1. Os Pontos de Ataque voltam para a base de 3
+    window.pontosAtaque = { jogador: 3, oponente: 3 };
+    
+    // 2. O SEU BARALHO: Junta Mão + Lixo + Deck, embaralha e saca 3 novas
+    let todasMinhasCartas = [...(window.baralhoAtaques || []), ...(window.maoAtaques || []), ...(window.lixoAtaques || [])];
+    if (todasMinhasCartas.length > 0) {
+        window.baralhoAtaques = embaralharArray(todasMinhasCartas);
+        window.maoAtaques = window.baralhoAtaques.splice(0, 3);
+    }
+    window.lixoAtaques = []; // Zera o seu Lixo
+    
+    // 3. O BARALHO DO BOT: Reseta a matemática para 17 no deck, 3 na mão e 0 no lixo
+    window.qtdBaralhoOponente = 17;
+    window.qtdMaoOponente = 3;
+    window.lixoAtaquesOponente = 0;
+    
+    // Atualiza a tela para refletir tudo instantaneamente
     atualizarTelaBatalha();
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 };
 
 window.pilhaBurst = []; 
