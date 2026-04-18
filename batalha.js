@@ -1600,12 +1600,14 @@ window.passarTurno = function(ignorarLimite) {
         }
     }
 
+    // 🩹 SISTEMA DE AUTO-CURA (Garante que o Bot e os Lixos existam)
     if (typeof window.qtdMaoOponente === 'undefined') window.qtdMaoOponente = 3;
     if (typeof window.qtdBaralhoOponente === 'undefined') window.qtdBaralhoOponente = 17;
     if (typeof window.lixoAtaquesOponente === 'undefined') window.lixoAtaquesOponente = 0;
     if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
 
     if (window.estadoTurno.jogadorAtual === 'jogador') {
+        // Passando a bola pro Oponente
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
@@ -1633,6 +1635,7 @@ window.passarTurno = function(ignorarLimite) {
             window.lixoAtaquesOponente += excesso;
         }
 
+        // Voltando a bola pra VOCÊ
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
         Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
@@ -1656,6 +1659,53 @@ window.passarTurno = function(ignorarLimite) {
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 };
 
+// ==========================================
+// 🔥 MOTOR DE DESCARTE E LIXO DA MÃO 🔥
+// ==========================================
+window.abrirModalDescarte = function() {
+    let excesso = window.maoAtaques.length - 5;
+    let htmlCartas = "";
+
+    window.maoAtaques.forEach((idAtaque, index) => {
+        let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
+        if (cartaOriginal) {
+            htmlCartas += `
+                <div onclick="window.descartarCartaAtaque(${index}, '${idAtaque}')" style="width: 70px; height: 100px; background-image: url('${cartaOriginal.img}'); background-size: cover; background-position: center; border: 2px solid #ff5555; border-radius: 5px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                </div>
+            `;
+        }
+    });
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-descarte" style="z-index: 1000000; background: rgba(0,0,0,0.95); flex-direction: column;">
+            <h2 style="color: #ff5555; text-shadow: 0 0 10px #ff5555; margin-bottom: 10px;">LIMITE DE MÃO EXCEDIDO!</h2>
+            <p style="color: #fff; margin-bottom: 20px; font-size: 14px;">Selecione e descarte <b style="color:#ffd700; font-size: 18px;">${excesso}</b> carta(s) para passar o turno.</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 90%;">
+                ${htmlCartas}
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+window.descartarCartaAtaque = function(index, idAtaque) {
+    document.getElementById('overlay-descarte').remove();
+    
+    // Tira da mão e joga pro Lixo!
+    window.maoAtaques.splice(index, 1);
+    if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
+    window.lixoAtaques.push(idAtaque);
+    
+    atualizarDecksEMaoCards(); // Atualiza a contagem visual na mesa
+
+    // Verifica se ainda precisa descartar mais alguma
+    if (window.maoAtaques.length > 5) {
+        window.abrirModalDescarte();
+    } else {
+        window.mostrarMensagemScanner("Descarte concluído! Passando o turno...");
+        window.passarTurno(true); // O "true" autoriza a passar de fase
+    }
+};
 // ==========================================
 // 🔥 MOTOR DE DESCARTE E LIXO DA MÃO 🔥
 // ==========================================
