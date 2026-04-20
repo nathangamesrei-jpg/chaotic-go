@@ -197,9 +197,9 @@ window.confirmarEntradaDrome = function() {
     if (!window.estadoDrome.deckSelecionado) return;
     
     if (window.estadoDrome.tipoJogo === 'online') {
-        // 🔥 MODO SIMULADO / TREINO ATIVADO! (Pula a fila do servidor)
-        window.mostrarMensagemScanner("Iniciando Simulação (Modo Treino)...");
-        iniciarPartidaDrome("sala_simulada", true);
+        // 🔥 MODO ONLINE REATIVADO! (Chama a função da fila do servidor)
+        window.mostrarMensagemScanner("Conectando aos servidores do Drome...");
+        renderizarFilaOnline(); 
     } 
     else {
         renderizarPassoEscolhaAmigo();
@@ -274,24 +274,38 @@ window.ajustarTabuleiroBatalha = function(modo) {
     }
 }
 // ==========================================
-// INICIAR PARTIDA (ATUALIZADO E CORRIGIDO)
+// 🌐 TRADUTOR DE DECK PARA O MODO ONLINE
+// ==========================================
+window.expandirDeckParaOnline = function(deckIds) {
+    let deckExpandido = { nome: deckIds.nome, modo: deckIds.modo };
+    let expandirArray = (arr) => (arr || []).map(id => id ? window.inventario.find(c => c.id == id) || null : null);
+    
+    deckExpandido.criaturas_objs = expandirArray(deckIds.criaturas);
+    deckExpandido.equipamentos_objs = expandirArray(deckIds.equipamentos);
+    deckExpandido.ataques_objs = expandirArray(deckIds.ataques);
+    deckExpandido.locais_objs = expandirArray(deckIds.locais);
+    deckExpandido.mugics_objs = expandirArray(deckIds.mugics);
+    
+    return deckExpandido;
+};
+
+// ==========================================
+// INICIAR PARTIDA (AGORA COM SUPORTE ONLINE)
 // ==========================================
 function iniciarPartidaDrome(salaId, souP1) {
     clearInterval(window._timerFila);
     window.estadoDrome.naFila = false;
     document.getElementById("tela-entrada-drome").style.display = "none";
     
-    // 🛠️ MÁGICA 1: Corta o tabuleiro ANTES de exibir na tela (Evita piscar errado)
     window.ajustarTabuleiroBatalha(window.estadoDrome.modo);
 
-    // 🛠️ MÁGICA 2: Carrega o seu deck real no campo de batalha!
+    // 🛠️ MÁGICA 2: Manda a ID da Sala pro Tabuleiro baixar os dados da nuvem!
     if (typeof window.carregarDeckParaBatalha === "function") {
-        window.carregarDeckParaBatalha(); 
+        window.carregarDeckParaBatalha(salaId, souP1); 
     }
     
     document.getElementById("tela-batalha").style.display = "flex";
     window.modoMenu = false;
-    
     window.mostrarMensagemScanner("⚔️ ARENA PRONTA!");
 }
 
@@ -321,7 +335,11 @@ function renderizarFilaOnline() {
 
     let uid = localStorage.getItem("chaoticUID");
     let modo = window.estadoDrome.modo;
-    _dbSet('fila_drome/' + modo + '/' + uid, { uid, nome: window.perfilJogador.nome, deck: window.estadoDrome.deckSelecionado.nome, timestamp: Date.now() });
+    
+    // 🌐 EMPACOTA O DECK ANTES DE MANDAR PRA FILA
+    let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
+    
+    _dbSet('fila_drome/' + modo + '/' + uid, { uid, nome: window.perfilJogador.nome, deck: deckPronto, timestamp: Date.now() });
     _dbOn('fila_drome/' + modo, snapshot => {
         if (!snapshot.exists() || !window.estadoDrome.naFila) return;
         let lista = Object.entries(snapshot.val()).sort((a,b) => a[1].timestamp - b[1].timestamp);
@@ -377,7 +395,11 @@ window.desafiarAmigoDrome = function(index) {
     let amigo = window.amigos[index];
     let uid = localStorage.getItem("chaoticUID");
     let salaId = "drome_" + uid + "_" + amigo.uid;
-    _dbSet('salas_drome/' + salaId, { p1:{uid,nome:window.perfilJogador.nome,deck:window.estadoDrome.deckSelecionado.nome}, p2:{uid:amigo.uid,nome:amigo.nome,deck:null}, modo:window.estadoDrome.modo, status:"aguardando" });
+    
+    // 🌐 EMPACOTA O DECK ANTES DE MANDAR O DESAFIO
+    let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
+
+    _dbSet('salas_drome/' + salaId, { p1:{uid,nome:window.perfilJogador.nome,deck:deckPronto}, p2:{uid:amigo.uid,nome:amigo.nome,deck:null}, modo:window.estadoDrome.modo, status:"aguardando" });
     _dbSet('jogadores/' + amigo.uid + '/desafio_drome', { de:uid, nome:window.perfilJogador.nome, salaId, modo:window.estadoDrome.modo });
     renderizarAguardandoAmigo(salaId, amigo.nome);
 };
@@ -394,14 +416,14 @@ function renderizarAguardandoAmigo(salaId, nomeAmigo) {
         if (!snapshot.exists()) return;
         let sala = snapshot.val();
         if (sala.status === "pronta") iniciarPartidaDrome(salaId, true);
-        else if (sala.status === "recusado") { window.mostrarMensagemScanner(nomeAmigo.toUpperCase() + " RECUSOU!"); renderizarPassoEscolhaAmigo(); }
+        else if (sala.status === "recusado") { window.mostrarMensagemScanner(nomeAmigo.toUpperCase() + " RECUSOU!"); window.renderizarPassoEscolhaDeck(); }
     });
 }
 
 window.cancelarDesafioDrome = function(salaId) {
     _dbUpdate('salas_drome/' + salaId, { status:"cancelado" });
     setTimeout(() => _dbRemove('salas_drome/' + salaId), 2000);
-    renderizarPassoEscolhaAmigo();
+    window.renderizarPassoEscolhaDeck();
 };
 
 // ==========================================
@@ -449,9 +471,15 @@ window.responderDesafioDrome = function(resposta, salaId, modo) {
         document.getElementById("tela-entrada-drome").style.display = "flex";
         window.modoMenu = false;
         window.renderizarPassoEscolhaDeck();
+        
         setTimeout(() => {
             let btn = document.getElementById("btn-jogar-drome");
-            if (btn) btn.onclick = () => { _dbUpdate('salas_drome/' + salaId, {status:"pronta"}); iniciarPartidaDrome(salaId, false); };
+            if (btn) btn.onclick = () => { 
+                // 🌐 EMPACOTA O SEU DECK E MANDA PRA SALA CONFIRMANDO QUE TÁ PRONTO
+                let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
+                _dbUpdate('salas_drome/' + salaId, { status: "pronta", "p2/deck": deckPronto }); 
+                iniciarPartidaDrome(salaId, false); 
+            };
         }, 1500);
     }
 };
@@ -463,7 +491,15 @@ window.voltarMenuDrome = function() {
     window.estadoDrome = { tipoJogo:null, modo:null, deckSelecionado:null, amigoDesafiado:null, naFila:false };
 };
 
-window.selecionarTipoJogo = function(tipo) { window.estadoDrome.tipoJogo = tipo; renderizarPassoModo(); };
+window.selecionarTipoJogo = function(tipo) { 
+    window.estadoDrome.tipoJogo = tipo; 
+    if (tipo === 'online') {
+        window.mostrarMensagemScanner("Conectando aos servidores do Drome...");
+        renderizarFilaOnline(); // 🔥 VAI DIRETO PRA FILA ONLINE!
+    } else {
+        renderizarPassoModo(); 
+    }
+};
 window.selecionarModo = function(modo) { window.estadoDrome.modo = modo; window.renderizarPassoEscolhaDeck(); };
 
 setTimeout(function() {
