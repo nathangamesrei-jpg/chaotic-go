@@ -1392,37 +1392,44 @@ window.encerrarCombateMorte = function(idMorto) {
     let morto = obterCriaturaNoSlot(idMorto);
     window.mostrarMensagemScanner(`💀 ${morto.nome} FOI DESTRUÍDO! O tabuleiro será redefinido.`);
     
-    // Apaga a criatura da mesa
-    setarCriaturaNoSlot(idMorto, null);
-    
-    // Destrava a mesa
-    window.estadoCombate.ativo = false;
-    window.estadoCombate.atacante = null;
-    window.estadoCombate.defensor = null;
-    
-    // ==========================================
-    // 🔥 FASE DE MANUTENÇÃO PÓS-COMBATE 🔥
-    // ==========================================
-    
-    // 1. Os Pontos de Ataque voltam para a base de 3
-    window.pontosAtaque = { jogador: 3, oponente: 3 };
-    
-    // 2. O SEU BARALHO: Junta Mão + Lixo + Deck, embaralha e saca 3 novas
-    let todasMinhasCartas = [...(window.baralhoAtaques || []), ...(window.maoAtaques || []), ...(window.lixoAtaques || [])];
-    if (todasMinhasCartas.length > 0) {
-        window.baralhoAtaques = embaralharArray(todasMinhasCartas);
-        window.maoAtaques = window.baralhoAtaques.splice(0, 3);
-    }
-    window.lixoAtaques = []; // Zera o seu Lixo
-    
-    // 3. O BARALHO DO BOT: Reseta a matemática para 17 no deck, 3 na mão e 0 no lixo
-    window.qtdBaralhoOponente = 17;
-    window.qtdMaoOponente = 3;
-    window.lixoAtaquesOponente = 0;
-    
-    // Atualiza a tela para refletir tudo instantaneamente
-    atualizarTelaBatalha();
-    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+    // 🔥 1. CHAMA A ANIMAÇÃO DE CÓDIGOS ANTES DE APAGAR DA TELA!
+    window.animarExplosaoCodigo(idMorto, () => {
+        
+        // Apaga a criatura da mesa
+        setarCriaturaNoSlot(idMorto, null);
+        
+        // Destrava a mesa
+        window.estadoCombate.ativo = false;
+        window.estadoCombate.atacante = null;
+        window.estadoCombate.defensor = null;
+        
+        // ==========================================
+        // 🔥 FASE DE MANUTENÇÃO PÓS-COMBATE 🔥
+        // ==========================================
+        
+        // 1. Os Pontos de Ataque voltam para a base de 3
+        window.pontosAtaque = { jogador: 3, oponente: 3 };
+        
+        // 2. O SEU BARALHO: Junta Mão + Lixo + Deck, embaralha e saca 3 novas
+        let todasMinhasCartas = [...(window.baralhoAtaques || []), ...(window.maoAtaques || []), ...(window.lixoAtaques || [])];
+        if (todasMinhasCartas.length > 0) {
+            window.baralhoAtaques = embaralharArray(todasMinhasCartas);
+            window.maoAtaques = window.baralhoAtaques.splice(0, 3);
+        }
+        window.lixoAtaques = []; // Zera o seu Lixo
+        
+        // 3. O BARALHO DO BOT: Reseta a matemática para 17 no deck, 3 na mão e 0 no lixo
+        window.qtdBaralhoOponente = 17;
+        window.qtdMaoOponente = 3;
+        window.lixoAtaquesOponente = 0;
+        
+        // Atualiza a tela para refletir tudo instantaneamente
+        atualizarTelaBatalha();
+        if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+
+        // 🔥 2. CHECA SE ALGUÉM GANHOU O JOGO APÓS A REDEFINIÇÃO!
+        if (typeof window.checarFimDeJogo === 'function') window.checarFimDeJogo();
+    });
 };
 
 window.pilhaBurst = []; 
@@ -1999,12 +2006,18 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
 let btnSairDrome = document.getElementById("btn-sair-drome");
 if (btnSairDrome) {
     btnSairDrome.onclick = () => {
-        document.getElementById("tela-batalha").style.display = "none";
-        document.getElementById("tela-menu").style.display = "flex";
-        window.modoMenu = true;
-        window.estadoCombate = { ativo: false, atacante: null, defensor: null };
-        window.estadoTurno = { jogadorAtual: null, turnoNumero: 0, fase: 'pre-jogo' };
-        window.pontosAtaque = { jogador: 3, oponente: 3 };
+        // Se a partida estiver rolando, sair conta como derrota!
+        let vivasJogador = Object.values(campoJogador).filter(c => c !== null).length;
+        let vivasOp = window.campoOponente ? Object.values(window.campoOponente).filter(c => c !== null).length : 0;
+        
+        if (vivasJogador > 0 && vivasOp > 0) {
+            if(!confirm("A Batalha está rolando! Se você sair agora, contará como DESISTÊNCIA (Derrota). Deseja fugir?")) return;
+            window.declararVitoria('oponente', 'O jogador fugiu covardemente do Drome (Desistência).');
+            return;
+        }
+
+        // Se o jogo não tinha começado ou já tinha acabado, apenas sai direto
+        window.sairDaBatalhaAposFim();
     };
 }
 
@@ -2111,3 +2124,114 @@ window.abrirModalVerLixo = function(dono) {
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 };
 
+
+
+
+// ==========================================
+// 🔥 MOTOR DE EXPLOSÃO DE CÓDIGOS (ANIME) 🔥
+// ==========================================
+window.animarExplosaoCodigo = function(idElemento, callback) {
+    let el = document.getElementById(idElemento);
+    if (!el) { callback(); return; }
+
+    let rect = el.getBoundingClientRect();
+    
+    // Efeito de Tela "Bugando" e Ficando Verde (Matrix)
+    el.style.transition = "all 0.5s";
+    el.style.filter = "sepia(1) hue-rotate(90deg) saturate(500%) brightness(1.5)";
+    el.style.transform = "scale(1.1)";
+    el.style.opacity = "0";
+
+    // Cria as partículas de Binários (Zeros e Uns) voando
+    for(let i = 0; i < 40; i++) {
+        let part = document.createElement('div');
+        part.innerText = Math.random() > 0.5 ? "1" : "0";
+        part.style.position = "fixed";
+        part.style.left = (rect.left + rect.width / 2) + "px";
+        part.style.top = (rect.top + rect.height / 2) + "px";
+        part.style.color = "#00ff00"; // Verde neon
+        part.style.fontFamily = "monospace";
+        part.style.fontWeight = "bold";
+        part.style.fontSize = (Math.random() * 15 + 10) + "px";
+        part.style.pointerEvents = "none";
+        part.style.zIndex = "9999999";
+        part.style.textShadow = "0 0 8px #00ff00";
+        
+        // Direção aleatória da explosão
+        let moveX = (Math.random() - 0.5) * 250;
+        let moveY = (Math.random() - 0.5) * 250;
+        
+        part.style.transition = "all 1s cubic-bezier(0.1, 0.8, 0.3, 1)";
+        document.body.appendChild(part);
+        
+        // Dispara o movimento 10ms depois para a transição funcionar
+        setTimeout(() => {
+            part.style.transform = `translate(${moveX}px, ${moveY}px) rotate(${Math.random()*360}deg) scale(0)`;
+            part.style.opacity = "0";
+        }, 10);
+        
+        // Limpa o lixo HTML
+        setTimeout(() => part.remove(), 1000);
+    }
+
+    // Espera a animação acabar para apagar a criatura de verdade (callback)
+    setTimeout(() => {
+        el.style.filter = "";
+        el.style.transform = "";
+        el.style.opacity = "1";
+        callback();
+    }, 1000);
+};
+
+// ==========================================
+// 🏆 SISTEMA DE VITÓRIA E DERROTA 🏆
+// ==========================================
+window.checarFimDeJogo = function() {
+    let vivasJogador = Object.values(campoJogador).filter(c => c !== null).length;
+    let vivasOponente = window.campoOponente ? Object.values(window.campoOponente).filter(c => c !== null).length : 0;
+
+    if (vivasJogador === 0) {
+        window.declararVitoria('oponente', 'Todo o seu exército foi aniquilado.');
+    } else if (vivasOponente === 0) {
+        window.declararVitoria('jogador', 'Você destruiu todas as criaturas inimigas e dominou o Drome!');
+    }
+};
+
+window.declararVitoria = function(vencedor, motivo) {
+    let cor = vencedor === 'jogador' ? '#4CAF50' : '#e53935';
+    let titulo = vencedor === 'jogador' ? 'VITÓRIA!' : 'DERROTA!';
+    let subtitulo = vencedor === 'jogador' ? 'O DROME É SEU.' : 'VOCÊ FOI DESTRUÍDO.';
+    
+    // Toca som de fim de partida (se tiver)
+    if(window.tocarSFX) window.tocarSFX('notificacao');
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-vitoria" style="z-index: 99999999; background: rgba(0,0,0,0.95); flex-direction: column; display:flex; justify-content:center; align-items:center;">
+            <h1 style="color: ${cor}; font-size: 60px; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 20px ${cor}, 0 0 40px ${cor}; margin-bottom: 10px; text-transform: uppercase;">${titulo}</h1>
+            <h3 style="color: #fff; font-size: 20px; font-family: monospace; margin-bottom: 30px;">${subtitulo}</h3>
+            <p style="color: #ffd700; font-size: 14px; margin-bottom: 40px; text-align: center; max-width: 80%;">Motivo: ${motivo}</p>
+            <button class="btn-acao-modal" style="width: 200px; background: #222; border-color: ${cor}; color: ${cor}; font-size: 18px;" onclick="window.sairDaBatalhaAposFim()">SAIR DA ARENA</button>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+window.sairDaBatalhaAposFim = function() {
+    let modal = document.getElementById('overlay-vitoria');
+    if(modal) modal.remove();
+    
+    // Volta pro Menu Principal
+    document.getElementById("tela-batalha").style.display = "none";
+    document.getElementById("tela-menu").style.display = "flex";
+    window.modoMenu = true;
+    
+    // FAXINA GERAL: Limpa a memória para uma próxima batalha limpa
+    window.estadoCombate = { ativo: false, atacante: null, defensor: null };
+    window.estadoTurno = { jogadorAtual: null, turnoNumero: 0, fase: 'pre-jogo' };
+    window.pontosAtaque = { jogador: 3, oponente: 3 };
+    window.baralhoAtaques = [];
+    window.maoAtaques = [];
+    window.lixoAtaques = [];
+    window.campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
+    window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
+};
