@@ -1911,7 +1911,7 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
 };
 
-window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
+window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaque) {
     let modalAtaque = document.getElementById('overlay-ataque');
     if (modalAtaque) modalAtaque.remove();
 
@@ -1922,6 +1922,44 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
     
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
+    // 🔥 LÓGICA DO DANO ELEMENTAL 🔥
+    let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === nomeAtaque) : null;
+    let danoExtra = 0;
+    let iconesUsados = "";
+
+    // Checa se o ataque tem bônus elemental e se você é o atacante ativo
+    if (ataqueDB && ataqueDB.danoElemental && window.estadoCombate && window.estadoCombate.atacante) {
+        let atacante = obterCriaturaNoSlot(window.estadoCombate.atacante);
+        
+        if (atacante) {
+            // Leitor Universal de Elementos
+            let elemsBrutos = atacante.elementos;
+            if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
+                let dbCarta = MONSTROS.find(m => m.nome === atacante.nome);
+                if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
+            }
+            let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+
+            // Checa cada elemento e soma o dano extra se a sua criatura tiver o elemento!
+            if (textoElementos.includes('fogo') && ataqueDB.danoElemental.fogo > 0) { 
+                danoExtra += ataqueDB.danoElemental.fogo; iconesUsados += "🔥 "; 
+            }
+            if (textoElementos.includes('agua') && ataqueDB.danoElemental.agua > 0) { 
+                danoExtra += ataqueDB.danoElemental.agua; iconesUsados += "🌊 "; 
+            }
+            if (textoElementos.includes('terra') && ataqueDB.danoElemental.terra > 0) { 
+                danoExtra += ataqueDB.danoElemental.terra; iconesUsados += "⛰️ "; 
+            }
+            // Aceita tanto "ar" quanto "vento" para não bugar!
+            if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && ataqueDB.danoElemental.vento > 0) { 
+                danoExtra += ataqueDB.danoElemental.vento; iconesUsados += "☁️ "; 
+            }
+        }
+    }
+
+    // Calcula a força total da pancada
+    let danoTotal = danoBase + danoExtra;
+
     let acaoDoAtaque = {
         dono: 'jogador',
         nomeAcao: nomeAtaque,
@@ -1930,9 +1968,17 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
             let idDefensor = window.estadoCombate.defensor;
             let alvo = obterCriaturaNoSlot(idDefensor);
             if (alvo) {
-                alvo.hpAtual -= dano;
+                alvo.hpAtual -= danoTotal; // Usa o Dano Total calculado com os elementos!
                 if(window.tocarSFX) window.tocarSFX('notificacao'); 
-                window.mostrarMensagemScanner(`💥 Dano aplicado! ${alvo.nome} perdeu ${dano} de energia!`);
+                
+                // Mensagem dinâmica no Scanner
+                let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
+                if (danoExtra > 0) {
+                    msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Elemental ${iconesUsados})`;
+                }
+                
+                window.mostrarMensagemScanner(msgScanner);
+                
                 let elAlvo = document.getElementById(idDefensor);
                 if(elAlvo) {
                     elAlvo.style.animation = "shake 0.5s";
@@ -1948,6 +1994,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, dano, nomeAtaque) {
     };
     window.adicionarAoBurst(acaoDoAtaque);
 };
+
 
 let btnSairDrome = document.getElementById("btn-sair-drome");
 if (btnSairDrome) {
