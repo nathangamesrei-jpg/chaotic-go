@@ -2098,13 +2098,32 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
 let btnSairDrome = document.getElementById("btn-sair-drome");
 if (btnSairDrome) {
     btnSairDrome.onclick = () => {
-        // Se a partida estiver rolando, sair conta como derrota!
         let vivasJogador = Object.values(campoJogador).filter(c => c !== null).length;
         let vivasOp = window.campoOponente ? Object.values(window.campoOponente).filter(c => c !== null).length : 0;
         
+        // Se a partida estiver rolando, abre o Modal Personalizado de Fuga
         if (vivasJogador > 0 && vivasOp > 0) {
-            if(!confirm("A Batalha está rolando! Se você sair agora, contará como DESISTÊNCIA (Derrota). Deseja fugir?")) return;
-            window.declararVitoria('oponente', 'O jogador fugiu covardemente do Drome (Desistência).');
+            if (document.getElementById('overlay-fuga')) return;
+
+            const modalHTML = `
+                <div class="modal-overlay" id="overlay-fuga" style="z-index: 9999999; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div class="modal-content-fichas" style="text-align: center; border: 3px solid #e53935; box-shadow: 0 0 30px rgba(229, 57, 53, 0.5); background: #111; padding: 30px; border-radius: 10px; max-width: 400px;">
+                        <h2 style="color: #e53935; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 10px #e53935; margin-bottom: 20px; font-size: 24px;">ATENÇÃO!</h2>
+                        <p style="color: #fff; font-size: 14px; font-family: monospace; margin-bottom: 30px; line-height: 1.5;">
+                            A Batalha está rolando! Se você sair agora, contará como <b style="color: #e53935; font-size: 16px;">DESISTÊNCIA (Derrota)</b>.<br><br>Deseja fugir do Drome?
+                        </p>
+                        <div style="display: flex; gap: 15px; justify-content: center;">
+                            <button class="btn-acao-modal" style="background: #220000; color: #e53935; border: 1px solid #e53935; width: 130px;" onclick="
+                                document.getElementById('overlay-fuga').remove();
+                                window.declararVitoria('oponente', 'O jogador fugiu covardemente do Drome (Desistência).');
+                            ">FUGIR</button>
+                            <button class="btn-acao-modal" style="background: #112211; color: #4CAF50; border: 1px solid #4CAF50; width: 160px;" onclick="document.getElementById('overlay-fuga').remove()">VOLTAR À LUTA</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            if(window.tocarSFX) window.tocarSFX('notificacao');
             return;
         }
 
