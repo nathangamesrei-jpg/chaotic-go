@@ -46,7 +46,7 @@ const ATAQUES = [
         tipoCarta: "Ataque", 
         img: "cartas/ataques/mao_negra.jpg", 
         efeito: "Pegue uma carta aleatória de ataque da mão do seu oponente.", 
-        raridade: 0.7
+        raridade: 0.1
     },
     {
         id: 103, 
@@ -110,7 +110,7 @@ const LOCAIS_DB = [
         elementoNativo: null, // Regra 2: Qualquer Elemento (null)
         img: "cartas/locais/locais azul/cidade de kiru.jpg", 
         tipoCarta: "Local", 
-        raridade: 0.0001
+        raridade: 9.0
     },
     {
         id: 502, 
