@@ -1963,37 +1963,45 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
     
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
-    // 🔥 LÓGICA DO DANO ELEMENTAL 🔥
+    // 🔥 LÓGICA DO DANO (ELEMENTAL + CHECAGEM DE ATRIBUTOS) 🔥
     let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === nomeAtaque) : null;
     let danoExtra = 0;
-    let iconesUsados = "";
+    let msgBonus = "";
 
-    // Checa se o ataque tem bônus elemental e se você é o atacante ativo
-    if (ataqueDB && ataqueDB.danoElemental && window.estadoCombate && window.estadoCombate.atacante) {
+    if (ataqueDB && window.estadoCombate && window.estadoCombate.atacante) {
         let atacante = obterCriaturaNoSlot(window.estadoCombate.atacante);
+        let defensor = obterCriaturaNoSlot(window.estadoCombate.defensor); // 🔥 Puxa o defensor para comparar stats!
         
         if (atacante) {
-            // Leitor Universal de Elementos
-            let elemsBrutos = atacante.elementos;
-            if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
-                let dbCarta = MONSTROS.find(m => m.nome === atacante.nome);
-                if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
-            }
-            let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+            // 1. CHECAGEM ELEMENTAL
+            if (ataqueDB.danoElemental) {
+                let elemsBrutos = atacante.elementos;
+                if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
+                    let dbCarta = MONSTROS.find(m => m.nome === atacante.nome);
+                    if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
+                }
+                let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
 
-            // Checa cada elemento e soma o dano extra se a sua criatura tiver o elemento!
-            if (textoElementos.includes('fogo') && ataqueDB.danoElemental.fogo > 0) { 
-                danoExtra += ataqueDB.danoElemental.fogo; iconesUsados += "🔥 "; 
+                if (textoElementos.includes('fogo') && ataqueDB.danoElemental.fogo > 0) { danoExtra += ataqueDB.danoElemental.fogo; msgBonus += "🔥 "; }
+                if (textoElementos.includes('agua') && ataqueDB.danoElemental.agua > 0) { danoExtra += ataqueDB.danoElemental.agua; msgBonus += "🌊 "; }
+                if (textoElementos.includes('terra') && ataqueDB.danoElemental.terra > 0) { danoExtra += ataqueDB.danoElemental.terra; msgBonus += "⛰️ "; }
+                if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && ataqueDB.danoElemental.vento > 0) { danoExtra += ataqueDB.danoElemental.vento; msgBonus += "☁️ "; }
             }
-            if (textoElementos.includes('agua') && ataqueDB.danoElemental.agua > 0) { 
-                danoExtra += ataqueDB.danoElemental.agua; iconesUsados += "🌊 "; 
-            }
-            if (textoElementos.includes('terra') && ataqueDB.danoElemental.terra > 0) { 
-                danoExtra += ataqueDB.danoElemental.terra; iconesUsados += "⛰️ "; 
-            }
-            // Aceita tanto "ar" quanto "vento" para não bugar!
-            if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && ataqueDB.danoElemental.vento > 0) { 
-                danoExtra += ataqueDB.danoElemental.vento; iconesUsados += "☁️ "; 
+
+            // 2. CHECAGEM DE ATRIBUTOS (STAT CHECK) 🔥
+            if (ataqueDB.checkAtributo && defensor) {
+                let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); // 'coragem', 'poder', 'sabedoria', 'velocidade'
+                let bonus = ataqueDB.checkAtributo.danoExtra;
+                
+                let valAta = atacante.statsMax ? (atacante.statsMax[attr] || 0) : 0;
+                let valDef = defensor.statsMax ? (defensor.statsMax[attr] || 0) : 0;
+
+                // Se o seu status for MAIOR que o do inimigo, ganha o dano bônus!
+                if (valAta > valDef) {
+                    danoExtra += bonus;
+                    let iconesAttr = { 'coragem': '❤️', 'poder': '⚡', 'sabedoria': '👁️', 'velocidade': '💨' };
+                    msgBonus += `[+${bonus} Check ${iconesAttr[attr] || ''}] `;
+                }
             }
         }
     }
@@ -2009,13 +2017,12 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             let idDefensor = window.estadoCombate.defensor;
             let alvo = obterCriaturaNoSlot(idDefensor);
             if (alvo) {
-                alvo.hpAtual -= danoTotal; // Usa o Dano Total calculado com os elementos!
+                alvo.hpAtual -= danoTotal; 
                 if(window.tocarSFX) window.tocarSFX('notificacao'); 
                 
-                // Mensagem dinâmica no Scanner
                 let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
                 if (danoExtra > 0) {
-                    msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Elemental ${iconesUsados})`;
+                    msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
                 }
                 
                 window.mostrarMensagemScanner(msgScanner);
@@ -2035,6 +2042,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
     };
     window.adicionarAoBurst(acaoDoAtaque);
 };
+/////////////////////////////////////////////////////////////////////////////////
 
 
 let btnSairDrome = document.getElementById("btn-sair-drome");
