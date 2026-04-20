@@ -25,7 +25,16 @@ const MONSTROS = [
 // ==========================================
 const ATAQUES = [
     {
-        id: 101, nome: "Ácido Gástrico", custo: 3, danoBase: 10, danoElemental: { fogo: 5, agua: 5, terra: 0, vento: 0 }, tipoCarta: "Ataque", img: "cartas/ataques/acido_gastrico.jpg", efeito: "Remove o equipamento do campeão ativo do oponente.", raridade: 0.6
+        id: 101, 
+        nome: "Ácido Gástrico", 
+        custo: 3, 
+        danoBase: 10, 
+        danoElemental: { fogo: 5, agua: 5, terra: 0, vento: 0 }, 
+        checkAtributo: null, // 🔥 Indica que não há checagem
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/acido_gastrico.jpg", 
+        efeito: "Remove o equipamento do campeão ativo do oponente.", 
+        raridade: 0.6
     },
     {
         id: 102, 
@@ -33,6 +42,7 @@ const ATAQUES = [
         custo: 0, 
         danoBase: 0, 
         danoElemental: { fogo: 0, agua: 0, terra: 0, vento: 0 }, 
+        checkAtributo: null, // 🔥 Indica que não há checagem
         tipoCarta: "Ataque", 
         img: "cartas/ataques/mao_negra.jpg", 
         efeito: "Pegue uma carta aleatória de ataque da mão do seu oponente.", 
@@ -44,11 +54,29 @@ const ATAQUES = [
         custo: 2, 
         danoBase: 0, 
         danoElemental: { fogo: 0, agua: 0, terra: 0, vento: 0 }, 
+        checkAtributo: null, // 🔥 Indica que não há checagem
         tipoCarta: "Ataque", 
         img: "cartas/ataques/alianca.jpg", 
         efeito: "Escolha um campeão derrotado seu, o valor da metade da energia dele é recuperado no seu campeão ativo.", 
         raridade: 0.7
     }
+    
+    /* ===================================================
+    EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
+    ===================================================
+    ,{
+        id: 104, 
+        nome: "Golpe de Bravura", 
+        custo: 1, 
+        danoBase: 10, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, vento: 0 }, 
+        checkAtributo: { atributo: "coragem", danoExtra: 10 }, // Dá +10 de dano se a sua Coragem for maior!
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/golpe.jpg", 
+        efeito: "Ganha +10 de dano extra se você for mais corajoso que o oponente.", 
+        raridade: 0.5
+    }
+    */
 ];
 
 // ==========================================
@@ -85,20 +113,20 @@ const LOCAIS_DB = [
         raridade: 0.0001
     },
     {
-        id: 502, 
-        nome: "O Túnel da Tempestade", 
-        iniciativa: "Poder", 
-        triboNativa: "Qualquer", // Regra 1: Qualquer Tribo
-        elementoNativo: "Ar",    // Regra 2: SÓ monstros com o elemento "Ar"
+        id: 502, 
+        nome: "O Túnel da Tempestade", 
+        iniciativa: "Poder", 
+        triboNativa: "Qualquer", // Regra 1: Qualquer Tribo
+        elementoNativo: "Ar",    // Regra 2: SÓ monstros com o elemento "Ar"
         // 🚀 BOOST DE SPAWN: Guru e Rex dominam este local!
         boostSpawn: [
             { nome: "Guru", peso: 50 }, // Adiciona 50 bilhetes extras do Guru na urna
             { nome: "Rex", peso: 50 }   // Adiciona 50 bilhetes extras do Rex na urna
         ],
-        img: "cartas/locais/tunel_tempestade.jpg", 
-        tipoCarta: "Local", 
-        raridade: 0.5
-    }
+        img: "cartas/locais/tunel_tempestade.jpg", 
+        tipoCarta: "Local", 
+        raridade: 0.5
+    }
 ];
 
 
@@ -106,5 +134,3 @@ const CENARIOS = {
     "Cidade de Kiru": "cartas/locais/locais azul/kiru-bg.png",
     "O Túnel da Tempestade": "cartas/locais/tempestade-bg.jpg"
 };
-
-
