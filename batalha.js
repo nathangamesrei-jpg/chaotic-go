@@ -2340,51 +2340,89 @@ window.sairDaBatalhaAposFim = function() {
 // ==========================================
 
 // 1. REVELAR EQUIPAMENTO
+// 1. REVELAR EQUIPAMENTO (AGORA NO BURST)
 window.revelarEquipamento = function(fullId) {
     let criatura = obterCriaturaNoSlot(fullId);
     if (criatura && criatura.equipamento && !criatura.equipamentoRevelado) {
-        criatura.equipamentoRevelado = true; // Vira a carta pra cima!
-        
         window.fecharModalAcoes();
-        window.mostrarMensagemScanner(`✨ EQUIPAMENTO REVELADO: ${criatura.nome} revelou ${criatura.equipamento.nome}!`);
-        if(window.tocarSFX) window.tocarSFX('notificacao');
         
-        atualizarTelaBatalha(); 
+        let acaoRevelar = {
+            dono: criatura.dono,
+            nomeAcao: `Revelar Equipamento (${criatura.equipamento.nome})`,
+            tipo: 'equipamento',
+            executar: function() {
+                criatura.equipamentoRevelado = true; // Vira a carta pra cima só na resolução!
+                window.mostrarMensagemScanner(`✨ EQUIPAMENTO REVELADO: ${criatura.nome} revelou ${criatura.equipamento.nome}!`);
+                if(window.tocarSFX) window.tocarSFX('notificacao');
+                atualizarTelaBatalha(); 
+            }
+        };
+        window.adicionarAoBurst(acaoRevelar);
     }
 };
 
-// 2. USAR HABILIDADE
+// 2. USAR HABILIDADE (AGORA NO BURST)
 window.usarHabilidade = function(fullId) {
     let criatura = obterCriaturaNoSlot(fullId);
     
-    // Verifica se tem fichas (Mugic Counters) para gastar
     if (criatura && criatura.fichasHabilidade > 0) {
-        criatura.fichasHabilidade -= 1; // Gasta 1 ficha!
-        
+        criatura.fichasHabilidade -= 1; // PAGA O CUSTO IMEDIATAMENTE!
         window.fecharModalAcoes();
-        window.mostrarMensagemScanner(`⚡ HABILIDADE ATIVADA! ${criatura.nome} usou seu efeito e gastou 1 Ficha.`);
-        if(window.tocarSFX) window.tocarSFX('notificacao');
+        atualizarTelaBatalha(); // Atualiza a tela pra mostrar que a ficha sumiu
         
-        atualizarTelaBatalha();
+        let acaoHabilidade = {
+            dono: criatura.dono,
+            nomeAcao: `Habilidade de ${criatura.nome}`,
+            tipo: 'habilidade',
+            executar: function() {
+                window.mostrarMensagemScanner(`⚡ HABILIDADE ATIVADA! O efeito de ${criatura.nome} foi resolvido com sucesso.`);
+                if(window.tocarSFX) window.tocarSFX('notificacao');
+            }
+        };
+        window.adicionarAoBurst(acaoHabilidade);
+
     } else {
         window.mostrarMensagemScanner("❌ Fichas de habilidade insuficientes!");
     }
 };
 
-// 3. USAR MUGIC
+// 3. PREPARAR MUGIC (Apenas avisa, não vai pro burst ainda)
 window.prepararMugic = function(fullId) {
     let criatura = obterCriaturaNoSlot(fullId);
     
-    // Verifica se tem fichas
     if (criatura && criatura.fichasHabilidade > 0) {
-        criatura.fichasHabilidade -= 1; // O Mugic custa a ficha da criatura!
-        
+        criatura.fichasHabilidade -= 1; // Paga o custo da conjuração
         window.fecharModalAcoes();
         window.mostrarMensagemScanner(`🎵 PREPARANDO MUGIC! ${criatura.nome} pagou o custo. Clique na Magia na lateral para lançar!`);
         if(window.tocarSFX) window.tocarSFX('notificacao');
-        
         atualizarTelaBatalha();
     } else {
         window.mostrarMensagemScanner("❌ Fichas insuficientes para conjurar um Mugic!");
+    }
+};
+
+// 4. USAR MUGIC DE FATO (AGORA NO BURST)
+window.descartarMugic = function(index) {
+    let mugic = window.jogadorMugics[index];
+    if (mugic) {
+        // Remove da tela e joga pro lixo Imediatamente (É a conjuração)
+        if (!window.cemiterio) window.cemiterio = [];
+        window.cemiterio.push(mugic.id); 
+        window.jogadorMugics[index] = null; 
+        
+        document.getElementById('overlay-ver-mugic').remove();
+        atualizarMugicsDaTela();
+        atualizarDecksEMaoCards(); 
+
+        let acaoMugic = {
+            dono: 'jogador',
+            nomeAcao: `Mugic: ${mugic.nome}`,
+            tipo: 'mugic',
+            executar: function() {
+                window.mostrarMensagemScanner(`✨ Mugic ${mugic.nome} resolvido e ativado no campo!`);
+                if(window.tocarSFX) window.tocarSFX('notificacao');
+            }
+        };
+        window.adicionarAoBurst(acaoMugic);
     }
 };
