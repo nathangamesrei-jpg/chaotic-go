@@ -263,6 +263,21 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
         window.qtdBaralhoOponente -= 3; // Retira 3 para a mão inicial
 
         atualizarTelaBatalha(); 
+        
+       // 🌐 GRAVA OS DADOS DA SALA ONLINE E LIGA O RÁDIO DE TURNOS!
+        if (salaId && salaId !== "sala_simulada") {
+            window.salaBatalhaAtual = salaId;
+            window.souP1Batalha = souP1;
+            window.iniciarEscutaDeTurnoOnline(); // Rádio 1: Escuta os Turnos e o Jokenpo!
+            if (typeof window.iniciarEscutaAcoesOnline === 'function') {
+                window.iniciarEscutaAcoesOnline(); // Rádio 2: Escuta os movimentos e as magias!
+            }
+            if (typeof window.iniciarEscutaAcoesOnline === 'function') {
+                window.iniciarEscutaAcoesOnline(); // Rádio 2: Escuta os movimentos de tabuleiro!
+            } 
+        }
+        
+        // CHAMA O JOKENPO PRA TODO MUNDO (Bot ou Online)!
         setTimeout(() => { window.abrirJokenpo(); }, 800); 
     };
 
@@ -854,9 +869,20 @@ window.lidarComCliqueTabuleiro = function(fullId) {
         setarCriaturaNoSlot(idOrigem, null); 
         criaturaOrigem.moveuNesteTurno = true; 
         window.mostrarMensagemScanner("Avançando pelo tabuleiro!");
+        
+        // 🌐 TRANSMITINDO MOVIMENTO PRO RÁDIO
+        if (typeof window.enviarAcaoRede === 'function') {
+            window.enviarAcaoRede({ tipo: 'mover', origem: idOrigem, destino: fullId });
+        }
+        
     } else if (criaturaAlvo.dono === 'oponente') {
         criaturaOrigem.moveuNesteTurno = true; 
         window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
+        
+        // 🌐 TRANSMITINDO INÍCIO DE COMBATE PRO RÁDIO
+        if (typeof window.enviarAcaoRede === 'function') {
+            window.enviarAcaoRede({ tipo: 'combate', origem: idOrigem, destino: fullId });
+        }
         
         if(typeof window.iniciarCombate === 'function') {
             window.iniciarCombate(idOrigem, fullId);
@@ -1299,13 +1325,18 @@ window.mostrarBannerTCG = function(texto, corCorpo, corBorda, callback) {
 window.abrirJokenpo = function() {
     window.estadoTurno.fase = 'jokenpo';
 
+    // Limpa a mesa de Jokenpo antiga do servidor se você for o dono da sala (P1)
+    if (window.salaBatalhaAtual && window.souP1Batalha) {
+        window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { jokenpo: null });
+    }
+
     const modalHTML = `
         <div class="modal-overlay" id="overlay-jokenpo" style="z-index: 99990; background: rgba(0,0,0,0.9);">
             <div style="text-align:center; display: flex; flex-direction: column; align-items: center;">
                 <h2 style="color:#ffd700; font-size:24px; margin-bottom:10px; text-shadow: 0 0 10px #ffd700;">DECIDA QUEM COMEÇA!</h2>
                 <p id="jokenpo-status" style="color:#fff; margin-bottom: 30px; font-family: monospace;">Escolha sua arma...</p>
                 
-                <div style="display:flex; gap: 20px; margin-bottom: 30px;">
+                <div id="jokenpo-botoes" style="display:flex; gap: 20px; margin-bottom: 30px;">
                     <button class="jokenpo-btn" onclick="resolverJokenpo('pedra')">✊</button>
                     <button class="jokenpo-btn" onclick="resolverJokenpo('papel')">✋</button>
                     <button class="jokenpo-btn" onclick="resolverJokenpo('tesoura')">✌️</button>
@@ -1314,6 +1345,131 @@ window.abrirJokenpo = function() {
         </div>
     `;
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
+};
+
+window.resolverJokenpo = function(escolhaJogador) {
+    const emojis = { 'pedra': '✊', 'papel': '✋', 'tesoura': '✌️' };
+    const statusEl = document.getElementById('jokenpo-status');
+    const boxBotoes = document.getElementById('jokenpo-botoes');
+
+    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+        // 🤖 MODO BOT (Sorteio Rápido)
+        const opcoes = ['pedra', 'papel', 'tesoura'];
+        const escolhaOp = opcoes[Math.floor(Math.random() * opcoes.length)];
+        
+        statusEl.innerHTML = `Você: ${emojis[escolhaJogador]} <br> Oponente: ${emojis[escolhaOp]}`;
+
+        setTimeout(() => {
+            if (escolhaJogador === escolhaOp) {
+                statusEl.innerHTML = `<span style="color:#ff9800; font-weight:bold; font-size:18px;">EMPATE! JOGUE DE NOVO!</span>`;
+                document.getElementById('overlay-jokenpo').style.animation = "shake 0.5s";
+                setTimeout(() => document.getElementById('overlay-jokenpo').style.animation = "", 500);
+            } 
+            else if ((escolhaJogador === 'pedra' && escolhaOp === 'tesoura') || (escolhaJogador === 'papel' && escolhaOp === 'pedra') || (escolhaJogador === 'tesoura' && escolhaOp === 'papel')) {
+                statusEl.innerHTML = `<span style="color:#4CAF50; font-weight:bold; font-size:24px;">VOCÊ VENCEU!</span>`;
+                abrirEscolhaDeTurno('jogador');
+            } else {
+                statusEl.innerHTML = `<span style="color:#e53935; font-weight:bold; font-size:24px;">OPONENTE VENCEU!</span>`;
+                setTimeout(() => {
+                    document.getElementById('overlay-jokenpo').remove();
+                    iniciarTurnoReal('oponente');
+                }, 1500);
+            }
+        }, 1000);
+    } 
+    else {
+        // 🌐 MODO ONLINE (Nuvem)
+        boxBotoes.style.display = 'none'; // Some com os botões pra não clicar duas vezes!
+        statusEl.innerHTML = `Sua arma: ${emojis[escolhaJogador]} <br> <span style="color:#00ffff; font-size:12px; margin-top: 10px; display:block;">Aguardando adversário...</span>`;
+        
+        let meuSlot = window.souP1Batalha ? 'p1' : 'p2';
+        window._dbUpdate('salas_drome/' + window.salaBatalhaAtual + '/jokenpo', { [meuSlot]: escolhaJogador });
+
+        // Fica escutando as duas jogadas no Firebase
+        window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/jokenpo', (snap) => {
+            if (!snap.exists()) return;
+            let jogoData = snap.val();
+
+            if (jogoData.p1 && jogoData.p2) {
+                let minhaEscolha = window.souP1Batalha ? jogoData.p1 : jogoData.p2;
+                let escolhaDele = window.souP1Batalha ? jogoData.p2 : jogoData.p1;
+
+                statusEl.innerHTML = `Você: ${emojis[minhaEscolha]} <br> Oponente: ${emojis[escolhaDele]}`;
+
+                setTimeout(() => {
+                    if (minhaEscolha === escolhaDele) {
+                        statusEl.innerHTML = `<span style="color:#ff9800; font-weight:bold; font-size:18px;">EMPATE! DE NOVO!</span>`;
+                        document.getElementById('overlay-jokenpo').style.animation = "shake 0.5s";
+                        setTimeout(() => document.getElementById('overlay-jokenpo').style.animation = "", 500);
+                        
+                        // Libera os botões de novo e limpa o Firebase pro 2º round!
+                        boxBotoes.style.display = 'flex';
+                        if (window.souP1Batalha) window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { jokenpo: null });
+                    } 
+                    else if ((minhaEscolha === 'pedra' && escolhaDele === 'tesoura') || (minhaEscolha === 'papel' && escolhaDele === 'pedra') || (minhaEscolha === 'tesoura' && escolhaDele === 'papel')) {
+                        statusEl.innerHTML = `<span style="color:#4CAF50; font-weight:bold; font-size:24px;">VOCÊ VENCEU!</span>`;
+                        abrirEscolhaDeTurno('jogador');
+                    } else {
+                        statusEl.innerHTML = `<span style="color:#e53935; font-weight:bold; font-size:24px;">OPONENTE VENCEU!</span><br><span style="font-size:11px;color:#aaa;">Aguardando ele escolher quem inicia...</span>`;
+                        // O perdedor fica travado aqui. Quem vai libertar ele é o sinal do Firebase dizendo que o jogo começou!
+                    }
+                }, 1500);
+            }
+        });
+    }
+};
+
+window.abrirEscolhaDeTurno = function(vencedor) {
+    const modal = document.getElementById('overlay-jokenpo');
+    modal.innerHTML = `
+        <div style="text-align:center; display: flex; flex-direction: column; align-items: center;">
+            <h2 style="color:#4CAF50; font-size:24px; margin-bottom:10px;">VITÓRIA!</h2>
+            <p style="color:#fff; margin-bottom: 30px;">Você ganhou o direito de escolha:</p>
+            <div style="display:flex; gap: 20px;">
+                <button class="btn-acao-modal" style="width: 120px;" onclick="window.enviarEscolhaDeTurno('eu')">EU COMEÇO</button>
+                <button class="btn-acao-modal" style="width: 120px; border-color:#e53935; color:#e53935;" onclick="window.enviarEscolhaDeTurno('ele')">OPONENTE COMEÇA</button>
+            </div>
+        </div>
+    `;
+};
+
+window.enviarEscolhaDeTurno = function(quemComeca) {
+    let modalJokenpo = document.getElementById('overlay-jokenpo');
+    if (modalJokenpo) modalJokenpo.remove();
+    
+    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+        // MODO BOT (Liga a partida direto)
+        let jog = quemComeca === 'eu' ? 'jogador' : 'oponente';
+        iniciarTurnoReal(jog);
+    } else {
+        // MODO ONLINE (Avisa na nuvem quem o ganhador escolheu pra começar)
+        let turnoInicial = '';
+        if (quemComeca === 'eu') turnoInicial = window.souP1Batalha ? 'p1' : 'p2';
+        else turnoInicial = window.souP1Batalha ? 'p2' : 'p1';
+        
+        window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { turno_ativo: turnoInicial });
+    }
+};
+
+
+
+
+window.enviarEscolhaDeTurno = function(quemComeca) {
+    let modalJokenpo = document.getElementById('overlay-jokenpo');
+    if (modalJokenpo) modalJokenpo.remove();
+    
+    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+        // MODO BOT (Liga a partida direto)
+        let jog = quemComeca === 'eu' ? 'jogador' : 'oponente';
+        iniciarTurnoReal(jog);
+    } else {
+        // MODO ONLINE (Avisa na nuvem quem o ganhador escolheu pra começar)
+        let turnoInicial = '';
+        if (quemComeca === 'eu') turnoInicial = window.souP1Batalha ? 'p1' : 'p2';
+        else turnoInicial = window.souP1Batalha ? 'p2' : 'p1';
+        
+        window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { turno_ativo: turnoInicial });
+    }
 };
 
 window.resolverJokenpo = function(escolhaJogador) {
@@ -1628,18 +1784,32 @@ window.encerrarCombateMorte = function(idMorto) {
 window.pilhaBurst = []; 
 window.aguardandoResposta = false;
 
+window.pilhaBurst = []; 
+window.aguardandoResposta = false;
+
 window.adicionarAoBurst = function(acaoObj) {
     window.pilhaBurst.push(acaoObj);
     window.mostrarMensagemScanner(`⚡ BURST ATIVADO: ${acaoObj.nomeAcao} entrou na corrente!`);
-    
-    let jogadorAlvo = acaoObj.dono === 'jogador' ? 'oponente' : 'jogador';
-    
-    setTimeout(() => window.perguntarResposta(jogadorAlvo, acaoObj), 1000);
+
+    // 🌐 MODO ONLINE: Avisa a rede e aguarda a resposta do inimigo!
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        if (acaoObj.dono === 'jogador') {
+            window.mostrarMensagemScanner("⏳ Aguardando a resposta do Oponente...");
+            window.enviarAcaoRede({ tipo: 'abrir_burst', nomeAcao: acaoObj.nomeAcao });
+        } else {
+            // Se eu recebi a ação da rede, a tela pergunta se eu quero responder!
+            setTimeout(() => window.perguntarResposta('jogador', acaoObj), 500);
+        }
+    } else {
+        // 🤖 MODO BOT OFFLINE
+        let jogadorAlvo = acaoObj.dono === 'jogador' ? 'oponente' : 'jogador';
+        setTimeout(() => window.perguntarResposta(jogadorAlvo, acaoObj), 1000);
+    }
 };
 
 window.iniciarRespostaBurst = function(jogadorAlvo) {
     document.getElementById('overlay-burst').remove();
-    window.mostrarMensagemScanner(`⏳ Aguardando a resposta de ${jogadorAlvo}... Escolha sua ação!`);
+    window.mostrarMensagemScanner(`⏳ Escolha a sua Magia ou Habilidade para responder!`);
 };
 
 window.negarRespostaBurst = function() {
@@ -1647,8 +1817,13 @@ window.negarRespostaBurst = function() {
     if(modal) modal.remove();
     
     window.aguardandoResposta = false;
-    window.mostrarMensagemScanner("A corrente foi fechada! Resolvendo as ações...");
     
+    // 🌐 Avisa o inimigo que você recusou responder
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        window.enviarAcaoRede({ tipo: 'fechar_burst' });
+    }
+    
+    window.mostrarMensagemScanner("Você não respondeu. Resolvendo as ações...");
     setTimeout(() => window.resolverBurst(), 1000);
 };
 
@@ -1656,21 +1831,32 @@ window.resolverBurst = function() {
     if (window.pilhaBurst.length === 0) {
         window.mostrarMensagemScanner("Todas as ações resolvidas.");
         atualizarTelaBatalha();
+        
+        // 🌐 MASTER SYNC: Aquele que jogou no próprio turno atualiza a vida de todos na rede!
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && window.estadoTurno.jogadorAtual === 'jogador') {
+            setTimeout(() => {
+                window.enviarAcaoRede({
+                    tipo: 'sincronizar_mesa',
+                    campoJog: window.campoJogador,
+                    campoOp: window.campoOponente
+                });
+            }, 1000); // Dá um tempinho pras animações de HP acabarem na tela local
+        }
         return;
     }
 
     let acaoAtual = window.pilhaBurst.pop();
-    
     window.mostrarMensagemScanner(`✨ Resolvendo: ${acaoAtual.nomeAcao}`);
-    
     acaoAtual.executar();
-    
     setTimeout(() => window.resolverBurst(), 2500);
 };
 
 window.cancelarRespostaBurst = function() {
     if (window.aguardandoResposta) {
         window.aguardandoResposta = false;
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'fechar_burst' });
+        }
         window.mostrarMensagemScanner("Resposta cancelada. Resolvendo a corrente...");
         window.resolverBurst();
     }
@@ -1938,6 +2124,56 @@ window.passarTurno = function(ignorarLimite) {
         }
     }
 
+    // 🌐 SE FOR ONLINE: Envia o comando de passar o turno para a nuvem!
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        if (window.estadoTurno.jogadorAtual === 'jogador') {
+            let proximoTurno = window.souP1Batalha ? 'p2' : 'p1';
+            window.mostrarMensagemScanner("Enviando turno...");
+            
+            // Oculta o botão instantaneamente para evitar duplo-clique
+            let btn = document.getElementById('btn-passar-turno');
+            if (btn) btn.style.display = 'none';
+            
+            window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { turno_ativo: proximoTurno });
+            return; // Interrompe aqui. A tela só vira quando o Firebase devolver o sinal.
+        }
+    }
+
+    // Se for Bot (ou se a nuvem confirmou), roda o script local!
+    window.executarPassagemDeTurnoLocal();
+};
+
+// 🌐 O RÁDIO DO FIREBASE: Fica escutando quem é o dono do turno
+window.iniciarEscutaDeTurnoOnline = function() {
+    window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/turno_ativo', (snapshot) => {
+        if (!snapshot.exists()) return;
+        let turnoVigente = snapshot.val(); // Retorna 'p1' ou 'p2'
+        
+        let minhaVez = (window.souP1Batalha && turnoVigente === 'p1') || (!window.souP1Batalha && turnoVigente === 'p2');
+        
+        // Remove a tela do Jokenpo (Pra quem perdeu e ficou esperando o sinal)
+        let modalJokenpo = document.getElementById('overlay-jokenpo');
+        if (modalJokenpo) modalJokenpo.remove();
+
+        // 1. PRIMEIRA LARGADA DO JOGO: Se o jogo acabou de sair do Jokenpo!
+        if (window.estadoTurno.fase !== 'principal') {
+            window.iniciarTurnoReal(minhaVez ? 'jogador' : 'oponente');
+        } 
+        // 2. MUDANÇA DE TURNO NORMAL NO MEIO DO JOGO
+        else {
+            if (minhaVez && window.estadoTurno.jogadorAtual === 'oponente') {
+                window.executarPassagemDeTurnoLocal();
+            } else if (!minhaVez && window.estadoTurno.jogadorAtual === 'jogador') {
+                window.executarPassagemDeTurnoLocal();
+            }
+        }
+    });
+};
+
+// O verdadeiro motor que vira a mesa (Separado do clique do botão)
+window.executarPassagemDeTurnoLocal = function() {
+    let emCombate = window.estadoCombate && window.estadoCombate.ativo;
+
     if (typeof window.qtdMaoOponente === 'undefined') window.qtdMaoOponente = 3;
     if (typeof window.qtdBaralhoOponente === 'undefined') window.qtdBaralhoOponente = 17;
     if (typeof window.lixoAtaquesOponente === 'undefined') window.lixoAtaquesOponente = 0;
@@ -1951,7 +2187,6 @@ window.passarTurno = function(ignorarLimite) {
         if (emCombate) {
             window.pontosAtaque['oponente'] += 1;
             
-            // 🔥 REGRA DO DECK OUT (OPONENTE): Se o deck secar, reembaralha o lixo dele!
             if (window.qtdBaralhoOponente <= 0 && window.lixoAtaquesOponente > 0) {
                 window.qtdBaralhoOponente = window.lixoAtaquesOponente;
                 window.lixoAtaquesOponente = 0;
@@ -1964,11 +2199,19 @@ window.passarTurno = function(ignorarLimite) {
         }
 
         let btn = document.getElementById('btn-passar-turno');
-        if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
+        if(btn) { 
+            btn.style.display = 'block'; 
+            btn.disabled = true; 
+            btn.innerHTML = "TURNO<br>OPONENTE"; 
+        }
         
         window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
             window.mostrarMensagemScanner(emCombate ? "Turno do oponente no combate..." : "Turno de movimento do oponente...");
-            setTimeout(() => { window.passarTurno(); }, 4000);
+            
+            // 🤖 SE FOR BOT (Muda o turno sozinho dps de 4s)
+            if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+                setTimeout(() => { window.passarTurno(); }, 4000);
+            }
         });
     } else {
         if (emCombate && window.qtdMaoOponente > 5) {
@@ -1984,11 +2227,10 @@ window.passarTurno = function(ignorarLimite) {
         if (emCombate) {
             window.pontosAtaque['jogador'] += 1;
             
-            // 🔥 REGRA DO DECK OUT (JOGADOR): Se o deck secar, reembaralha o seu lixo!
             if ((!window.baralhoAtaques || window.baralhoAtaques.length === 0) && window.lixoAtaques && window.lixoAtaques.length > 0) {
                 window.mostrarMensagemScanner("Baralho vazio! Reembaralhando o Lixo...");
                 window.baralhoAtaques = embaralharArray(window.lixoAtaques);
-                window.lixoAtaques = []; // Zera o lixo depois de embaralhar
+                window.lixoAtaques = []; 
             }
 
             if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
@@ -1997,7 +2239,11 @@ window.passarTurno = function(ignorarLimite) {
         }
 
         let btn = document.getElementById('btn-passar-turno');
-        if(btn) { btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
+        if(btn) { 
+            btn.style.display = 'block'; 
+            btn.disabled = false; 
+            btn.innerHTML = "PASSAR<br>TURNO"; 
+        }
         
         window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
             window.mostrarMensagemScanner(emCombate ? "Sua vez de atacar! +1 Ponto e +1 Carta." : "Sua vez! Movimente suas criaturas.");
@@ -2593,4 +2839,157 @@ window.descartarMugic = function(index) {
 
     window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para o ${mugic.nome}... (Ou num vazio para cancelar)`);
     if(window.tocarSFX) window.tocarSFX('notificacao');
+};
+
+
+
+
+    // ==========================================
+// 📡 PILAR 3: CENTRAL DE RÁDIO ONLINE (AÇÕES DO TABULEIRO)
+// ==========================================
+
+window.ultimaAcaoProcessada = 0; // Memória para não repetir a mesma ação duas vezes
+
+// 🎤 O TRANSMISSOR: Envia o que você fez para a Nuvem
+window.enviarAcaoRede = function(acaoData) {
+    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
+    
+    acaoData.timestamp = Date.now(); // Carimbo de tempo
+    acaoData.remetente = window.souP1Batalha ? 'p1' : 'p2'; // Assinatura de quem mandou
+    
+    window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { ultima_acao: acaoData });
+};
+
+// 🎧 O RECEPTOR: Fica escutando a Nuvem o tempo todo
+window.iniciarEscutaAcoesOnline = function() {
+    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
+    
+    window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao', (snap) => {
+        if (!snap.exists()) return;
+        let acao = snap.val();
+        
+        // 1. Ignora se fui eu mesmo que mandei (o eco do rádio)
+        if (acao.remetente === (window.souP1Batalha ? 'p1' : 'p2')) return;
+        
+        // 2. Ignora se já processamos essa mesma jogada antes
+        if (window.ultimaAcaoProcessada === acao.timestamp) return;
+        window.ultimaAcaoProcessada = acao.timestamp;
+
+        // 3. Executa a jogada do inimigo na nossa tela!
+        window.processarAcaoInimiga(acao);
+    });
+};
+
+// 🤖 O FANTASMA: Pega o sinal do rádio e mexe as cartas na sua mesa
+window.processarAcaoInimiga = function(acao) {
+    if (acao.tipo === 'mover') {
+        // Puxa a criatura da origem (lembrando que na tela inimiga é 'jog', pra nós é 'op')
+        let origemReal = acao.origem.replace('jog-', 'op-');
+        let destinoReal = acao.destino.replace('jog-', 'op-');
+        
+        let criatura = obterCriaturaNoSlot(origemReal);
+        setarCriaturaNoSlot(destinoReal, criatura); 
+        setarCriaturaNoSlot(origemReal, null); 
+        if(criatura) criatura.moveuNesteTurno = true;
+        
+        window.mostrarMensagemScanner("O inimigo reposicionou uma criatura!");
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        atualizarTelaBatalha();
+    }
+    else if (acao.tipo === 'combate') {
+        let origemReal = acao.origem.replace('jog-', 'op-');
+        let destinoReal = acao.destino.replace('jog-', 'op-'); // Na nossa tela, o alvo do inimigo somos nós ('jog-')
+        destinoReal = destinoReal.replace('op-', 'jog-'); 
+        
+        let criatura = obterCriaturaNoSlot(origemReal);
+        if(criatura) criatura.moveuNesteTurno = true;
+        
+        window.mostrarMensagemScanner("⚔️ ALERTA: O INIMIGO INICIOU UM COMBATE!");
+        
+        if(typeof window.iniciarCombate === 'function') {
+            window.iniciarCombate(origemReal, destinoReal);
+        }
+        atualizarTelaBatalha();
+    }
+};
+
+
+
+                 // ==========================================
+// 📡 PILAR 3: CENTRAL DE RÁDIO ONLINE (O GRANDE SINCRONIZADOR)
+// ==========================================
+
+window.ultimaAcaoProcessada = 0; // Memória anti-eco
+
+// 🎤 O TRANSMISSOR: Envia o que você fez para a Nuvem
+window.enviarAcaoRede = function(acaoData) {
+    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
+    acaoData.timestamp = Date.now();
+    acaoData.remetente = window.souP1Batalha ? 'p1' : 'p2';
+    window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { ultima_acao: acaoData });
+};
+
+// 🎧 O RECEPTOR: Fica escutando a Nuvem o tempo todo
+window.iniciarEscutaAcoesOnline = function() {
+    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
+    window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao', (snap) => {
+        if (!snap.exists()) return;
+        let acao = snap.val();
+        
+        // Ignora se fui eu mesmo que mandei ou se já processamos
+        if (acao.remetente === (window.souP1Batalha ? 'p1' : 'p2')) return;
+        if (window.ultimaAcaoProcessada === acao.timestamp) return;
+        window.ultimaAcaoProcessada = acao.timestamp;
+
+        window.processarAcaoInimiga(acao);
+    });
+};
+
+// 🤖 O FANTASMA: Pega o sinal do rádio e mexe as cartas na sua mesa
+window.processarAcaoInimiga = function(acao) {
+    // 1. MOVIMENTO DE CARTA
+    if (acao.tipo === 'mover') {
+        let origemReal = acao.origem.replace('jog-', 'op-');
+        let destinoReal = acao.destino.replace('jog-', 'op-');
+        let criatura = obterCriaturaNoSlot(origemReal);
+        setarCriaturaNoSlot(destinoReal, criatura); 
+        setarCriaturaNoSlot(origemReal, null); 
+        if(criatura) criatura.moveuNesteTurno = true;
+        window.mostrarMensagemScanner("O inimigo reposicionou uma criatura!");
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        atualizarTelaBatalha();
+    }
+    // 2. INÍCIO DE COMBATE
+    else if (acao.tipo === 'combate') {
+        let origemReal = acao.origem.replace('jog-', 'op-');
+        let destinoReal = acao.destino.replace('jog-', 'op-').replace('op-', 'jog-'); // O alvo dele sou eu ('jog-')
+        let criatura = obterCriaturaNoSlot(origemReal);
+        if(criatura) criatura.moveuNesteTurno = true;
+        window.mostrarMensagemScanner("⚔️ ALERTA: O INIMIGO INICIOU UM COMBATE!");
+        if(typeof window.iniciarCombate === 'function') window.iniciarCombate(origemReal, destinoReal);
+        atualizarTelaBatalha();
+    }
+    // 3. ABERTURA DE CORRENTE (BURST)
+    else if (acao.tipo === 'abrir_burst') {
+        let acaoInimiga = {
+            dono: 'oponente',
+            nomeAcao: acao.nomeAcao,
+            tipo: 'rede',
+            executar: function() { window.mostrarMensagemScanner(`✨ Resolvido: ${acao.nomeAcao}`); }
+        };
+        window.adicionarAoBurst(acaoInimiga);
+    }
+    // 4. FECHAMENTO DE CORRENTE (Oponente clicou em NÃO)
+    else if (acao.tipo === 'fechar_burst') {
+        window.aguardandoResposta = false;
+        window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
+        setTimeout(() => window.resolverBurst(), 1000);
+    }
+    // 5. SINCRONIZAÇÃO MESTRA DE MESA (Garante que os HPs fiquem iguais pós-dano)
+    else if (acao.tipo === 'sincronizar_mesa') {
+        // O que é campoJogador para ele, é campoOponente para mim, e vice-versa!
+        window.campoJogador = acao.campoOp;
+        window.campoOponente = acao.campoJog;
+        atualizarTelaBatalha();
+    }
 };
