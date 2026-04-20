@@ -486,12 +486,33 @@ window.verMugicModal = function(index) {
                 <div style="width:120px;height:170px;margin:0 auto 15px auto;background-image:url('${mugic.img}');background-size:cover;background-position:center;border:2px solid #00bcd4;border-radius:8px;box-shadow: 0 0 15px rgba(0,188,212,0.5);"></div>
                 <h4 style="color:#fff;margin-bottom:5px;">${mugic.nome}</h4>
                 <p style="font-size:11px;color:#ccc;line-height:1.4;">${mugic.efeito || 'Use suas fichas de habilidade para conjurar.'}</p>
-                <button class="btn-acao-modal" style="background:#00bcd4;color:#000;border:none;margin-top:15px;" onclick="document.getElementById('overlay-ver-mugic').remove()">FECHAR</button>
+                
+                <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                    <button class="btn-acao-modal" style="background:#e53935;color:#fff;border:none;flex:1;" onclick="window.descartarMugic(${index})">USAR E DESCARTAR</button>
+                    <button class="btn-acao-modal" style="background:#555;color:#fff;border:none;flex:1;" onclick="document.getElementById('overlay-ver-mugic').remove()">FECHAR</button>
+                </div>
             </div>
         </div>
     `;
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
 }
+
+// 🔥 FUNÇÃO NOVA QUE JOGA A MAGIA NO LIXO
+window.descartarMugic = function(index) {
+    let mugic = window.jogadorMugics[index];
+    if (mugic) {
+        if (!window.cemiterio) window.cemiterio = [];
+        window.cemiterio.push(mugic.id); // Manda pro lixo permanente
+        window.jogadorMugics[index] = null; // Tira do slot heptagonal da tela
+        
+        document.getElementById('overlay-ver-mugic').remove();
+        window.mostrarMensagemScanner(`✨ Mugic ${mugic.nome} ativado e enviado para o Lixo!`);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        
+        atualizarMugicsDaTela();
+        atualizarDecksEMaoCards(); // Sobe o número do lixo
+    }
+};
 
 window.ajustarTabuleiroBatalha = function(modo) {
     let opZona = document.querySelector('.lado-oponente .zona-central');
@@ -1389,10 +1410,27 @@ function atualizarLocaisAtivosNaMesa() {
 window.estadoCombate = { ativo: false, atacante: null, defensor: null };
 
 window.encerrarCombateMorte = function(idMorto) {
+    if (!window.cemiterio) window.cemiterio = [];
+    if (!window.cemiterioOponente) window.cemiterioOponente = [];
+
     let morto = obterCriaturaNoSlot(idMorto);
     window.mostrarMensagemScanner(`💀 ${morto.nome} FOI DESTRUÍDO! O tabuleiro será redefinido.`);
     
-    // 🔥 1. CHAMA A ANIMAÇÃO DE CÓDIGOS ANTES DE APAGAR DA TELA!
+    // 🔥 1. GUARDA O MORTO E O EQUIPAMENTO NO CEMITÉRIO PERMANENTE 🔥
+    if (morto) {
+        let isPlayer = morto.dono === 'jogador';
+        let arrayCemiterio = isPlayer ? window.cemiterio : window.cemiterioOponente;
+        
+        let cartaOriginal = window.inventario ? window.inventario.find(c => c.nome === morto.nome) : null;
+        if (cartaOriginal) arrayCemiterio.push(cartaOriginal.id);
+        
+        if (morto.equipamento) {
+            let equipOriginal = window.inventario ? window.inventario.find(c => c.nome === morto.equipamento.nome) : null;
+            if (equipOriginal) arrayCemiterio.push(equipOriginal.id);
+        }
+    }
+
+    // 2. CHAMA A ANIMAÇÃO DE CÓDIGOS ANTES DE APAGAR DA TELA!
     window.animarExplosaoCodigo(idMorto, () => {
         
         // Apaga a criatura da mesa
@@ -1545,8 +1583,11 @@ function atualizarDecksEMaoCards() {
             deck.classList.add('fundo-carta-personalizado');
         }
         // 🔥 CORREÇÃO VISUAL DO LIXO E ADIÇÃO DO CLIQUE
-        else if (textoAtual.includes('LIXO')) {
-            let qtdLixo = isPlayer ? (window.lixoAtaques ? window.lixoAtaques.length : 0) : (window.lixoAtaquesOponente || 0);
+       else if (textoAtual.includes('LIXO')) {
+            // 🔥 SOMA OS ATAQUES + O CEMITÉRIO PERMANENTE
+            let qtdLixo = isPlayer ? 
+                ((window.lixoAtaques ? window.lixoAtaques.length : 0) + (window.cemiterio ? window.cemiterio.length : 0)) : 
+                ((window.lixoAtaquesOponente || 0) + (window.cemiterioOponente ? window.cemiterioOponente.length : 0));
             
             // Layout perfeito centralizado que não vaza da caixa!
             deck.innerHTML = `
@@ -2116,15 +2157,14 @@ window.abrirModalVerLixo = function(dono) {
     let cor = dono === 'jogador' ? "#4CAF50" : "#e53935";
 
     if (dono === 'jogador') {
-        let lixoArray = window.lixoAtaques || [];
+        // 🔥 JUNTA ATAQUES + MONSTROS + EQUIPAMENTOS + MAGIAS
+        let lixoArray = [...(window.lixoAtaques || []), ...(window.cemiterio || [])];
         if (lixoArray.length === 0) {
             cartasHTML = `<p style="color:#aaa; font-size:12px; margin-top: 20px;">Seu lixo está vazio.</p>`;
         } else {
-            // Desenha as imagens reais das cartas que você gastou
-            lixoArray.forEach(idAtaque => {
-                let c = window.inventario.find(item => item.id == idAtaque);
+            lixoArray.forEach(idCarta => {
+                let c = window.inventario.find(item => item.id == idCarta);
                 if (c) {
-                    // 🔥 BÔNUS: Agora clicar na carta do lixo amplia ela pra você ler!
                     cartasHTML += `
                         <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${c.img}')" style="width: 80px; height: 115px; background-image: url('${c.img}'); background-size: cover; background-position: center; border: 2px solid #777; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8); cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>
                     `;
@@ -2132,18 +2172,27 @@ window.abrirModalVerLixo = function(dono) {
             });
         }
     } else {
-        // 🔥 O TRUQUE DO BOT: Sorteia cartas de Ataque reais do Banco de Dados para simular o que ele jogou fora!
-        let qtdOp = window.lixoAtaquesOponente || 0;
-        if (qtdOp === 0) {
+        let qtdOpAtaques = window.lixoAtaquesOponente || 0;
+        let lixoOpCartas = window.cemiterioOponente || [];
+        
+        if (qtdOpAtaques === 0 && lixoOpCartas.length === 0) {
             cartasHTML = `<p style="color:#aaa; font-size:12px; margin-top: 20px;">O lixo do oponente está vazio.</p>`;
         } else {
-            // Pega todas as cartas de ataque disponíveis para sortear
-            let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
+            // 1. Mostra os MONSTROS E EQUIPAMENTOS reais destruídos do Bot!
+            lixoOpCartas.forEach(idCarta => {
+                let c = window.inventario.find(item => item.id == idCarta);
+                if (c) {
+                    cartasHTML += `
+                        <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${c.img}')" style="width: 80px; height: 115px; background-image: url('${c.img}'); background-size: cover; background-position: center; border: 2px solid #555; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8); cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>
+                    `;
+                }
+            });
             
-            for (let i = 0; i < qtdOp; i++) {
+            // 2. Mostra as cartas de ATAQUE simuladas do Bot!
+            let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
+            for (let i = 0; i < qtdOpAtaques; i++) {
                 let cartaSimulada = todosAtaques[Math.floor(Math.random() * todosAtaques.length)];
                 let imgBot = cartaSimulada ? cartaSimulada.img : URL_FUNDO_CARTA;
-                
                 cartasHTML += `
                     <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${imgBot}')" style="width: 80px; height: 115px; background-image: url('${imgBot}'); background-size: cover; background-position: center; border: 2px solid #e53935; border-radius: 5px; box-shadow: 0 0 10px rgba(229,57,53,0.8); cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>
                 `;
@@ -2154,15 +2203,12 @@ window.abrirModalVerLixo = function(dono) {
     const modalHTML = `
         <div class="modal-overlay" id="overlay-ver-lixo" style="z-index: 1000000; background: rgba(0,0,0,0.95); flex-direction: column; align-items: center; justify-content: center; display: flex;">
             <h2 style="color: ${cor}; text-shadow: 0 0 10px ${cor}; margin-bottom: 20px; font-family: 'Arial Black', sans-serif;">${titulo}</h2>
-            
             <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 90%; max-width: 400px; max-height: 50vh; overflow-y: auto; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 10px; border: 1px solid #333;">
                 ${cartasHTML}
             </div>
-            
             <button class="btn-acao-modal" style="width: 150px; background: #222; color: #fff; border: 2px solid #fff; margin-top: 25px;" onclick="document.getElementById('overlay-ver-lixo').remove()">FECHAR</button>
         </div>
     `;
-    
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 };
 
