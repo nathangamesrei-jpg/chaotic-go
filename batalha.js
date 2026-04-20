@@ -1635,11 +1635,26 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
     window.estadoCombate = { ativo: true, atacante: idAtacante, defensor: idDefensor };
 
     let nomeLocal = "Local Desconhecido";
+    let locDB = null;
     if (window.localAtivoAtual) {
-        let locDB = null;
         if (typeof LOCAIS_DB !== 'undefined') locDB = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
         if (!locDB && window.inventario) locDB = window.inventario.find(l => l.img === window.localAtivoAtual);
         if (locDB) nomeLocal = locDB.nome;
+    }
+
+    // 🔥 CÁLCULO DE INICIATIVA 🔥
+    let atributoIniciativa = locDB && locDB.iniciativa ? locDB.iniciativa.toLowerCase() : "velocidade"; // Velocidade é o padrão se falhar
+    let prop = 'velocidade';
+    if (atributoIniciativa.includes('coragem')) prop = 'coragem';
+    if (atributoIniciativa.includes('poder')) prop = 'poder';
+    if (atributoIniciativa.includes('sabedoria')) prop = 'sabedoria';
+
+    let valAta = atacante.statsMax ? atacante.statsMax[prop] : 0;
+    let valDef = defensor.statsMax ? defensor.statsMax[prop] : 0;
+
+    let vencedorIniciativa = atacante.dono; // Empate vai pro atacante
+    if (valDef > valAta) {
+        vencedorIniciativa = defensor.dono;
     }
 
     let textoNarracao = `${atacante.nome} ataca ${defensor.nome} em ${nomeLocal}`;
@@ -1691,10 +1706,29 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         let telaVS = document.getElementById('overlay-combate-vs');
         if (telaVS) telaVS.remove();
         
-        window.pontosAtaque[atacante.dono] += 1; 
+        // 🔥 APLICA A INICIATIVA 🔥
+        window.estadoTurno.jogadorAtual = vencedorIniciativa;
+        window.pontosAtaque[vencedorIniciativa] += 1; 
         if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
         
-        window.mostrarMensagemScanner("⚠️ MODO DE COMBATE ATIVO! Apenas Ataques e Mugics permitidos.");
+        let btn = document.getElementById('btn-passar-turno');
+        
+        if (vencedorIniciativa === 'jogador') {
+            if(btn) { btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
+            window.mostrarBannerTCG('SUA INICIATIVA', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
+                window.mostrarMensagemScanner(`⚠️ Você ganhou a Iniciativa de ${prop.toUpperCase()} (${valAta} vs ${valDef}). Ataque primeiro!`);
+            });
+        } else {
+            if(btn) { btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
+            window.mostrarBannerTCG('INICIATIVA DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
+                window.mostrarMensagemScanner(`⚠️ Oponente ganhou a Iniciativa de ${prop.toUpperCase()} (${valDef} vs ${valAta}). Ele ataca primeiro!`);
+                
+                // O bot ainda não sabe jogar cartas, então ele pula a vez sozinho depois de 4s
+                setTimeout(() => { window.passarTurno(true); }, 4000);
+            });
+        }
+        
+        atualizarTelaBatalha();
     }, 8000); 
 };
 /////////////////////////////////////////////////////////////////////
