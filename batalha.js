@@ -397,6 +397,15 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
     `;
 
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
+    
+    // 🔥 CORREÇÃO DO "CLIQUE FANTASMA" NO CELULAR 🔥
+    // Deixa a janela intocável por 350ms para ignorar o "rastro" do toque na tela
+    let modalOpcoes = document.getElementById('overlay-acoes');
+    if (modalOpcoes) {
+        modalOpcoes.style.pointerEvents = 'none';
+        setTimeout(() => { modalOpcoes.style.pointerEvents = 'auto'; }, 350);
+    }
+    
     document.getElementById('overlay-acoes').addEventListener('click', function(e) { if(e.target === this) fecharModalAcoes(); });
 };
 
@@ -2357,12 +2366,6 @@ window.usarHabilidade = function(fullId) {
         if(window.tocarSFX) window.tocarSFX('notificacao');
         
         atualizarTelaBatalha();
-        
-        // Alerta na tela pro jogador resolver o texto da carta manualmente
-        setTimeout(() => {
-            alert(`EFEITO DE ${criatura.nome.toUpperCase()}:\n\n${criatura.textoCarta}\n\n(Aplique o efeito manualmente no tabuleiro se necessário)`);
-        }, 500);
-
     } else {
         window.mostrarMensagemScanner("❌ Fichas de habilidade insuficientes!");
     }
