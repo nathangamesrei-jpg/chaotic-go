@@ -2235,3 +2235,65 @@ window.sairDaBatalhaAposFim = function() {
     window.campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
     window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
 };
+
+
+
+// ==========================================
+// 🔥 MOTOR DE AÇÕES DA CRIATURA (HABILIDADE, MUGIC E EQUIPAMENTO) 🔥
+// ==========================================
+
+// 1. REVELAR EQUIPAMENTO
+window.revelarEquipamento = function(fullId) {
+    let criatura = obterCriaturaNoSlot(fullId);
+    if (criatura && criatura.equipamento && !criatura.equipamentoRevelado) {
+        criatura.equipamentoRevelado = true; // Vira a carta pra cima!
+        
+        window.fecharModalAcoes();
+        window.mostrarMensagemScanner(`✨ EQUIPAMENTO REVELADO: ${criatura.nome} revelou ${criatura.equipamento.nome}!`);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        
+        atualizarTelaBatalha(); 
+    }
+};
+
+// 2. USAR HABILIDADE
+window.usarHabilidade = function(fullId) {
+    let criatura = obterCriaturaNoSlot(fullId);
+    
+    // Verifica se tem fichas (Mugic Counters) para gastar
+    if (criatura && criatura.fichasHabilidade > 0) {
+        criatura.fichasHabilidade -= 1; // Gasta 1 ficha!
+        
+        window.fecharModalAcoes();
+        window.mostrarMensagemScanner(`⚡ HABILIDADE ATIVADA! ${criatura.nome} usou seu efeito e gastou 1 Ficha.`);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        
+        atualizarTelaBatalha();
+        
+        // Alerta na tela pro jogador resolver o texto da carta manualmente
+        setTimeout(() => {
+            alert(`EFEITO DE ${criatura.nome.toUpperCase()}:\n\n${criatura.textoCarta}\n\n(Aplique o efeito manualmente no tabuleiro se necessário)`);
+        }, 500);
+
+    } else {
+        window.mostrarMensagemScanner("❌ Fichas de habilidade insuficientes!");
+    }
+};
+
+// 3. USAR MUGIC
+window.prepararMugic = function(fullId) {
+    let criatura = obterCriaturaNoSlot(fullId);
+    
+    // Verifica se tem fichas
+    if (criatura && criatura.fichasHabilidade > 0) {
+        criatura.fichasHabilidade -= 1; // O Mugic custa a ficha da criatura!
+        
+        window.fecharModalAcoes();
+        window.mostrarMensagemScanner(`🎵 PREPARANDO MUGIC! ${criatura.nome} pagou o custo. Clique na Magia na lateral para lançar!`);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        
+        atualizarTelaBatalha();
+    } else {
+        window.mostrarMensagemScanner("❌ Fichas insuficientes para conjurar um Mugic!");
+    }
+};
