@@ -649,7 +649,68 @@ function setarCriaturaNoSlot(fullId, criatura) {
     if (fullId.startsWith('op-')) window.campoOponente[fullId.replace('op-', '')] = criatura;
 }
 
+window.modoAlvo = null; // Guarda o que você está mirando
+window.conjuradorMugicAtual = null; // Guarda quem vai lançar a magia
+
 window.lidarComCliqueTabuleiro = function(fullId) {
+    // 🔥 1. INTERCEPTADOR DE ALVOS (MIRA HOLOGRÁFICA) 🔥
+    if (window.modoAlvo) {
+        let alvo = obterCriaturaNoSlot(fullId);
+        
+        // Se clicar num espaço vazio, cancela a ação e devolve o controle
+        if (!alvo) {
+            window.modoAlvo = null; 
+            window.mostrarMensagemScanner("Mira desativada. Ação cancelada.");
+            return;
+        }
+        
+        let ctx = window.modoAlvo;
+        window.modoAlvo = null; 
+        let conjurador = obterCriaturaNoSlot(ctx.origem);
+
+        if (!conjurador || conjurador.fichasHabilidade <= 0) return;
+
+        // 🔥 GASTA A FICHA AGORA (Pois o alvo foi confirmado) 🔥
+        conjurador.fichasHabilidade -= 1; 
+        atualizarTelaBatalha();
+
+        if (ctx.tipo === 'habilidade') {
+            let acao = {
+                dono: conjurador.dono,
+                nomeAcao: `Habilidade de ${conjurador.nome} ➔ ${alvo.nome}`,
+                tipo: 'habilidade',
+                executar: function() {
+                    window.mostrarMensagemScanner(`⚡ O efeito de ${conjurador.nome} atingiu ${alvo.nome}!`);
+                    if(window.tocarSFX) window.tocarSFX('notificacao');
+                    let elAlvo = document.getElementById(fullId);
+                    if(elAlvo) { elAlvo.style.animation = "shake 0.5s"; setTimeout(() => elAlvo.style.animation = "", 500); }
+                }
+            };
+            window.adicionarAoBurst(acao);
+        } else if (ctx.tipo === 'mugic') {
+            // Joga o Mugic pro lixo permanente
+            if (!window.cemiterio) window.cemiterio = [];
+            window.cemiterio.push(ctx.mugicObj.id); 
+            window.jogadorMugics[ctx.mugicIndex] = null;
+            atualizarMugicsDaTela(); 
+            atualizarDecksEMaoCards();
+            
+            let acao = {
+                dono: 'jogador',
+                nomeAcao: `Mugic: ${ctx.mugicObj.nome} ➔ ${alvo.nome}`,
+                tipo: 'mugic',
+                executar: function() {
+                    window.mostrarMensagemScanner(`✨ O Mugic explodiu em ${alvo.nome}!`);
+                    if(window.tocarSFX) window.tocarSFX('notificacao');
+                    let elAlvo = document.getElementById(fullId);
+                    if(elAlvo) { elAlvo.style.animation = "shake 0.5s"; setTimeout(() => elAlvo.style.animation = "", 500); }
+                }
+            };
+            window.adicionarAoBurst(acao);
+        }
+        return;
+    }
+
     if (window.estadoTurno.jogadorAtual !== 'jogador') return;
 
     let criaturaAlvo = obterCriaturaNoSlot(fullId);
@@ -2380,68 +2441,71 @@ window.revelarEquipamento = function(fullId) {
     }
 };
 
-// 2. USAR HABILIDADE (AGORA NO BURST)
+// 2. USAR HABILIDADE (AGORA COM MIRA)
 window.usarHabilidade = function(fullId) {
     let criatura = obterCriaturaNoSlot(fullId);
     
     if (criatura && criatura.fichasHabilidade > 0) {
-        criatura.fichasHabilidade -= 1; // PAGA O CUSTO IMEDIATAMENTE!
         window.fecharModalAcoes();
-        atualizarTelaBatalha(); // Atualiza a tela pra mostrar que a ficha sumiu
         
-        let acaoHabilidade = {
-            dono: criatura.dono,
-            nomeAcao: `Habilidade de ${criatura.nome}`,
+        // Ativa o Modo Alvo! (A ficha só será gasta se ele clicar no alvo)
+        window.modoAlvo = {
             tipo: 'habilidade',
-            executar: function() {
-                window.mostrarMensagemScanner(`⚡ HABILIDADE ATIVADA! O efeito de ${criatura.nome} foi resolvido com sucesso.`);
-                if(window.tocarSFX) window.tocarSFX('notificacao');
-            }
+            origem: fullId
         };
-        window.adicionarAoBurst(acaoHabilidade);
+        
+        window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para usar a habilidade de ${criatura.nome} (Ou num espaço vazio para cancelar).`);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
 
     } else {
         window.mostrarMensagemScanner("❌ Fichas de habilidade insuficientes!");
     }
 };
 
-// 3. PREPARAR MUGIC (Apenas avisa, não vai pro burst ainda)
+// 3. PREPARAR MUGIC (Registra quem é o Conjurador sem gastar a ficha)
 window.prepararMugic = function(fullId) {
     let criatura = obterCriaturaNoSlot(fullId);
     
     if (criatura && criatura.fichasHabilidade > 0) {
-        criatura.fichasHabilidade -= 1; // Paga o custo da conjuração
+        window.conjuradorMugicAtual = fullId; // Salva o mago escolhido!
         window.fecharModalAcoes();
-        window.mostrarMensagemScanner(`🎵 PREPARANDO MUGIC! ${criatura.nome} pagou o custo. Clique na Magia na lateral para lançar!`);
+        window.mostrarMensagemScanner(`🎵 PREPARANDO: ${criatura.nome} está pronto para conjurar. Clique na Magia na lateral direita!`);
         if(window.tocarSFX) window.tocarSFX('notificacao');
-        atualizarTelaBatalha();
     } else {
         window.mostrarMensagemScanner("❌ Fichas insuficientes para conjurar um Mugic!");
     }
 };
 
-// 4. USAR MUGIC DE FATO (AGORA NO BURST)
+// 4. USAR MUGIC (CHECA A TRIBO E ABRE A MIRA)
 window.descartarMugic = function(index) {
     let mugic = window.jogadorMugics[index];
-    if (mugic) {
-        // Remove da tela e joga pro lixo Imediatamente (É a conjuração)
-        if (!window.cemiterio) window.cemiterio = [];
-        window.cemiterio.push(mugic.id); 
-        window.jogadorMugics[index] = null; 
-        
-        document.getElementById('overlay-ver-mugic').remove();
-        atualizarMugicsDaTela();
-        atualizarDecksEMaoCards(); 
+    if (!mugic) return;
 
-        let acaoMugic = {
-            dono: 'jogador',
-            nomeAcao: `Mugic: ${mugic.nome}`,
-            tipo: 'mugic',
-            executar: function() {
-                window.mostrarMensagemScanner(`✨ Mugic ${mugic.nome} resolvido e ativado no campo!`);
-                if(window.tocarSFX) window.tocarSFX('notificacao');
-            }
-        };
-        window.adicionarAoBurst(acaoMugic);
+    let conjuradorId = window.conjuradorMugicAtual;
+    if (!conjuradorId) {
+        window.mostrarMensagemScanner("❌ Erro: Selecione primeiro uma criatura (Usar Mugic) antes de escolher a carta!");
+        return;
     }
+
+    let criatura = obterCriaturaNoSlot(conjuradorId);
+    if (!criatura || criatura.fichasHabilidade <= 0) return;
+
+    // 🔥 REGRA DA COR (RESTRIÇÃO DE TRIBO) 🔥
+    if (mugic.triboRestricao && mugic.triboRestricao.toLowerCase() !== criatura.tribo.toLowerCase()) {
+        window.mostrarMensagemScanner(`❌ Falha! O Mugic é da tribo ${mugic.triboRestricao}. ${criatura.nome} (${criatura.tribo}) não pode conjurá-lo!`);
+        return;
+    }
+
+    document.getElementById('overlay-ver-mugic').remove();
+
+    // Ativa o Modo Alvo para o Mugic!
+    window.modoAlvo = {
+        tipo: 'mugic',
+        origem: conjuradorId,
+        mugicIndex: index,
+        mugicObj: mugic
+    };
+
+    window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para o ${mugic.nome}... (Ou num vazio para cancelar)`);
+    if(window.tocarSFX) window.tocarSFX('notificacao');
 };
