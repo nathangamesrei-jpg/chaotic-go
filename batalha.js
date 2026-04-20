@@ -928,8 +928,16 @@ setTimeout(() => {
                 if (el.parentElement) el.parentElement.style.pointerEvents = "none";
                 el.style.pointerEvents = "auto";
                 
-                el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
-                el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+                // 🔥 FIX REAL: Se for carta do Oponente, usa o clique simples igual carta de ataque!
+                if (lado === 'op') {
+                    el.onpointerdown = null;
+                    el.ontouchstart = null;
+                    el.onclick = () => window.lidarComCliqueTabuleiro(`op-${slot}`);
+                } else {
+                    // Nas suas cartas, mantém o sistema de arrastar e soltar
+                    el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+                    el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+                }
             }
         });
     });
@@ -1581,14 +1589,10 @@ function atualizarDecksEMaoCards() {
                 el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
                 el.style.zIndex = index + 1;
                 
-                // 🔥 FIX: Toque instantâneo! Pula o tempo de espera do celular.
-                let acionarCarta = function(e) {
-                    e.preventDefault();
+               el.onclick = function(e) {
                     e.stopPropagation(); 
                     window.abrirModalAtaque(index, idAtaque, cartaOriginal);
                 };
-                el.onpointerdown = acionarCarta; // Celular
-                el.onclick = acionarCarta; // PC
                 caixaMao.appendChild(el);
             }
         });
