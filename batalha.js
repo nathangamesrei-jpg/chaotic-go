@@ -846,6 +846,65 @@ setTimeout(() => {
     if (arena) { arena.style.paddingBottom = "15px"; arena.style.paddingTop = "15px"; arena.style.boxSizing = "border-box"; }
     // ... [CSS Movement Block Skipped for brevity, already loaded normally via timeout] ...
     
+    if (!document.getElementById("css-movimento")) {
+        let style = document.createElement('style');
+        style.id = "css-movimento";
+        style.innerHTML = `
+            .zona-central {
+                justify-content: flex-start !important; 
+                gap: 5px !important;
+            }
+            .linha-formacao-batalha { margin: 0 !important; }
+
+            [id^="jog-"], [id^="op-"] {
+                touch-action: none !important; 
+            }
+
+            .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
+            .slot-livre-movimento { box-shadow: inset 0 0 25px rgba(0,255,0,0.8), 0 0 15px rgba(0,255,0,0.5) !important; border-color: #00ff00 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
+            .slot-livre-movimento:hover { background: rgba(0,255,0,0.15); transform: scale(1.02); }
+            .slot-alvo-combate { box-shadow: inset 0 0 25px rgba(255,0,0,0.8), 0 0 15px rgba(255,0,0,0.5) !important; border-color: #ff0000 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
+            .slot-alvo-combate:hover { background: rgba(255,0,0,0.15); transform: scale(1.02); }
+            
+            .mini-card-wrapper { position: relative; pointer-events: none; } 
+            .mini-equip-icon { pointer-events: auto; position: absolute; top: -8px; right: -8px; width: 22px; height: 22px; border-radius: 50%; z-index: 50; cursor: help; border: 2px solid #ffd700; display:flex; justify-content:center; align-items:center; }
+            .mini-equip-icon.revelado { background-size: cover; background-position: center; }
+            .mini-equip-icon.oculto { background: #222; color: #fff; font-weight: bold; font-size: 14px; border-color: #aaa; }
+            .equip-tooltip { display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); width: 130px; background: rgba(0,10,0,0.95); border: 1px solid #4CAF50; color: white; text-align: center; font-size: 9px; padding: 6px; border-radius: 5px; pointer-events: none; z-index: 200; line-height: 1.3; }
+            .mini-equip-icon:hover .equip-tooltip { display: block; }
+            
+            .btn-acao-modal { background: #112211; border: 1px solid #4CAF50; color: white; padding: 10px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; transition: 0.2s; }
+            .btn-acao-modal:hover { background: #4CAF50; color: black; }
+            .btn-acao-modal.btn-mover { border-color: #00bcd4; color: #00bcd4; }
+            .btn-acao-modal.btn-mover:hover { background: #00bcd4; color: black; }
+            .btn-acao-modal.btn-revelar { border-color: #ffd700; color: #ffd700; }
+            .btn-acao-modal.btn-revelar:hover { background: #ffd700; color: black; }
+            .btn-acao-modal.btn-cancelar { border-color: #e53935; color: #e53935; margin-top: 10px; }
+            .btn-acao-modal.btn-cancelar:hover { background: #e53935; color: white; }
+
+            .fundo-carta-personalizado {
+                background-image: url('${URL_FUNDO_CARTA}') !important;
+                background-size: cover !important;
+                background-position: center !important;
+                background-color: transparent !important;
+                color: #fff !important;
+                text-shadow: 0px 0px 4px #000, 0px 0px 6px #000 !important;
+                border: 2px solid #555 !important;
+                position: relative !important;
+            }
+            .texto-deck-baixo {
+                position: absolute;
+                bottom: 5px;
+                left: 0;
+                width: 100%;
+                text-align: center;
+                line-height: 1.2;
+                font-size: 8px; 
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
     let zonas = document.querySelectorAll('.zona-central');
     if (zonas) zonas.forEach(z => z.style.pointerEvents = "none"); 
 
