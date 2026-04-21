@@ -1564,8 +1564,7 @@ window.encerrarCombateMorte = function(idMorto) {
     });
 };
 
-window.pilhaBurst = []; 
-window.aguardandoResposta = false;
+
 
 window.pilhaBurst = []; 
 window.aguardandoResposta = false;
@@ -2317,13 +2316,11 @@ if (btnSairDrome) {
 window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
     if (jogadorAlvo === 'oponente') {
         window.mostrarMensagemScanner("Oponente pensando...");
-        
         setTimeout(() => {
             window.mostrarMensagemScanner("Oponente não tem respostas! O ataque vai acertar!");
             window.aguardandoResposta = false;
             window.resolverBurst(); 
         }, 2000);
-        
         return; 
     }
 
@@ -2352,7 +2349,6 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
     if (cartaDB) {
         let imgCard = cartaDB.img || cartaDB.cartaBlank;
         let txtEfeito = cartaDB.efeito || cartaDB.textoCarta || "Sem efeito descrito.";
-        
         htmlVisualCarta = `
             <div style="display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.5); padding: 15px 10px; border-radius: 8px; margin: 15px 0; border: 1px solid #444; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);">
                 <div onclick="window.ampliarCartaClicada('${imgCard}')" style="width: 70px; height: 100px; background-image: url('${imgCard}'); background-size: cover; background-position: center; border: 2px solid #ffd700; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px rgba(255,215,0,0.4); margin-bottom: 10px; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"></div>
@@ -2366,13 +2362,10 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
         <div class="modal-overlay" id="overlay-burst" style="z-index: 1000000; background: rgba(0,0,0,0.9);">
             <div class="modal-content-fichas" style="text-align:center; border: 3px solid ${cor}; box-shadow: 0 0 30px ${cor};">
                 <h3 style="color:${cor}; margin-bottom:15px; font-size: 24px; text-shadow: 0 0 10px ${cor};">AÇÃO DO ADVERSÁRIO!</h3>
-                
                 <p style="color:#fff; font-size: 14px; margin-bottom: 5px;">
                     O adversário ativou: <b style="color:#ffd700; font-size: 16px;">${acaoAnterior.nomeAcao}</b>
                 </p>
-                
                 ${htmlVisualCarta}
-                
                 <p style="color:#fff; font-size: 16px; margin-bottom: 20px;">
                     ${nomeJogador}, deseja responder a essa ação?
                 </p>
@@ -2671,74 +2664,7 @@ window.descartarMugic = function(index) {
 
 
 
-    // ==========================================
-// 📡 PILAR 3: CENTRAL DE RÁDIO ONLINE (AÇÕES DO TABULEIRO)
-// ==========================================
-
-window.ultimaAcaoProcessada = 0; // Memória para não repetir a mesma ação duas vezes
-
-// 🎤 O TRANSMISSOR: Envia o que você fez para a Nuvem
-window.enviarAcaoRede = function(acaoData) {
-    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
     
-    acaoData.timestamp = Date.now(); // Carimbo de tempo
-    acaoData.remetente = window.souP1Batalha ? 'p1' : 'p2'; // Assinatura de quem mandou
-    
-    window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { ultima_acao: acaoData });
-};
-
-// 🎧 O RECEPTOR: Fica escutando a Nuvem o tempo todo
-window.iniciarEscutaAcoesOnline = function() {
-    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
-    
-    window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao', (snap) => {
-        if (!snap.exists()) return;
-        let acao = snap.val();
-        
-        // 1. Ignora se fui eu mesmo que mandei (o eco do rádio)
-        if (acao.remetente === (window.souP1Batalha ? 'p1' : 'p2')) return;
-        
-        // 2. Ignora se já processamos essa mesma jogada antes
-        if (window.ultimaAcaoProcessada === acao.timestamp) return;
-        window.ultimaAcaoProcessada = acao.timestamp;
-
-        // 3. Executa a jogada do inimigo na nossa tela!
-        window.processarAcaoInimiga(acao);
-    });
-};
-
-// 🤖 O FANTASMA: Pega o sinal do rádio e mexe as cartas na sua mesa
-window.processarAcaoInimiga = function(acao) {
-    if (acao.tipo === 'mover') {
-        // Puxa a criatura da origem (lembrando que na tela inimiga é 'jog', pra nós é 'op')
-        let origemReal = acao.origem.replace('jog-', 'op-');
-        let destinoReal = acao.destino.replace('jog-', 'op-');
-        
-        let criatura = obterCriaturaNoSlot(origemReal);
-        setarCriaturaNoSlot(destinoReal, criatura); 
-        setarCriaturaNoSlot(origemReal, null); 
-        if(criatura) criatura.moveuNesteTurno = true;
-        
-        window.mostrarMensagemScanner("O inimigo reposicionou uma criatura!");
-        if(window.tocarSFX) window.tocarSFX('notificacao');
-        atualizarTelaBatalha();
-    }
-    else if (acao.tipo === 'combate') {
-        let origemReal = acao.origem.replace('jog-', 'op-');
-        let destinoReal = acao.destino.replace('jog-', 'op-'); // Na nossa tela, o alvo do inimigo somos nós ('jog-')
-        destinoReal = destinoReal.replace('op-', 'jog-'); 
-        
-        let criatura = obterCriaturaNoSlot(origemReal);
-        if(criatura) criatura.moveuNesteTurno = true;
-        
-        window.mostrarMensagemScanner("⚔️ ALERTA: O INIMIGO INICIOU UM COMBATE!");
-        
-        if(typeof window.iniciarCombate === 'function') {
-            window.iniciarCombate(origemReal, destinoReal);
-        }
-        atualizarTelaBatalha();
-    }
-};
 
 
 
