@@ -493,13 +493,10 @@ window.voltarMenuDrome = function() {
 
 window.selecionarTipoJogo = function(tipo) { 
     window.estadoDrome.tipoJogo = tipo; 
-    if (tipo === 'online') {
-        window.mostrarMensagemScanner("Conectando aos servidores do Drome...");
-        renderizarFilaOnline(); // 🔥 VAI DIRETO PRA FILA ONLINE!
-    } else {
-        renderizarPassoModo(); 
-    }
+    // Vai para a escolha de Modo (1x1, 3x3, 6x6) nos dois casos!
+    renderizarPassoModo(); 
 };
+
 window.selecionarModo = function(modo) { window.estadoDrome.modo = modo; window.renderizarPassoEscolhaDeck(); };
 
 setTimeout(function() {
