@@ -2482,17 +2482,54 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
     let cor = jogadorAlvo === 'jogador' ? '#4CAF50' : '#e53935';
     let nomeJogador = jogadorAlvo === 'jogador' ? 'VOCÊ' : 'OPONENTE';
 
+    // 🔍 DETETIVE DE CARTAS: Extrai o nome da carta da mensagem da rede!
+    let nomeBusca = acaoAnterior.nomeAcao;
+    if (nomeBusca.includes('Mugic:')) {
+        nomeBusca = nomeBusca.split('Mugic: ')[1].split(' ➔')[0].trim();
+    } else if (nomeBusca.includes('Habilidade de')) {
+        nomeBusca = nomeBusca.split('Habilidade de ')[1].split(' ➔')[0].trim();
+    } else if (nomeBusca.includes('Revelar Equipamento')) {
+        nomeBusca = nomeBusca.replace('Revelar Equipamento (', '').replace(')', '').trim();
+    }
+
+    // 📚 Procura a carta em todos os bancos de dados para mostrar a foto!
+    let cartaDB = null;
+    if(typeof ATAQUES !== 'undefined') cartaDB = ATAQUES.find(c => c.nome === nomeBusca);
+    if(!cartaDB && typeof MAGIAS !== 'undefined') cartaDB = MAGIAS.find(c => c.nome === nomeBusca);
+    if(!cartaDB && typeof MONSTROS !== 'undefined') cartaDB = MONSTROS.find(c => c.nome === nomeBusca);
+    if(!cartaDB && typeof EQUIPAMENTOS !== 'undefined') cartaDB = EQUIPAMENTOS.find(c => c.nome === nomeBusca);
+
+    let htmlVisualCarta = "";
+    if (cartaDB) {
+        let imgCard = cartaDB.img || cartaDB.cartaBlank;
+        let txtEfeito = cartaDB.efeito || cartaDB.textoCarta || "Sem efeito descrito.";
+        
+        htmlVisualCarta = `
+            <div style="display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.5); padding: 15px 10px; border-radius: 8px; margin: 15px 0; border: 1px solid #444; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);">
+                <div onclick="window.ampliarCartaClicada('${imgCard}')" style="width: 70px; height: 100px; background-image: url('${imgCard}'); background-size: cover; background-position: center; border: 2px solid #ffd700; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px rgba(255,215,0,0.4); margin-bottom: 10px; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"></div>
+                <p style="font-size: 11px; color: #ccc; max-width: 250px; line-height: 1.4; font-style: italic; text-shadow: 0 0 3px #000;">"${txtEfeito}"</p>
+                <p style="font-size: 9px; color: #888; margin-top: 8px; text-transform: uppercase;">(Toque na carta para ver detalhes)</p>
+            </div>
+        `;
+    }
+
     const modalHTML = `
         <div class="modal-overlay" id="overlay-burst" style="z-index: 1000000; background: rgba(0,0,0,0.9);">
             <div class="modal-content-fichas" style="text-align:center; border: 3px solid ${cor}; box-shadow: 0 0 30px ${cor};">
                 <h3 style="color:${cor}; margin-bottom:15px; font-size: 24px; text-shadow: 0 0 10px ${cor};">AÇÃO DO ADVERSÁRIO!</h3>
-                <p style="color:#fff; font-size: 14px; margin-bottom: 20px;">
-                    O adversário usou: <b style="color:#ffd700; font-size: 16px;">${acaoAnterior.nomeAcao}</b><br><br>
-                    <span style="font-size: 18px;">${nomeJogador}, deseja responder a essa ação?</span>
+                
+                <p style="color:#fff; font-size: 14px; margin-bottom: 5px;">
+                    O adversário ativou: <b style="color:#ffd700; font-size: 16px;">${acaoAnterior.nomeAcao}</b>
+                </p>
+                
+                ${htmlVisualCarta}
+                
+                <p style="color:#fff; font-size: 16px; margin-bottom: 20px;">
+                    ${nomeJogador}, deseja responder a essa ação?
                 </p>
                 <div style="display:flex; gap: 20px; justify-content: center;">
-                    <button class="btn-acao-modal" style="width: 100px; border-color:#00bcd4; color:#00bcd4;" onclick="window.iniciarRespostaBurst('${jogadorAlvo}')">SIM</button>
-                    <button class="btn-acao-modal" style="width: 100px; border-color:#e53935; color:#e53935;" onclick="window.negarRespostaBurst()">NÃO</button>
+                    <button class="btn-acao-modal" style="width: 100px; border-color:#00bcd4; color:#00bcd4; background: #002222; font-size: 14px;" onclick="window.iniciarRespostaBurst('${jogadorAlvo}')">SIM</button>
+                    <button class="btn-acao-modal" style="width: 100px; border-color:#e53935; color:#e53935; background: #220000; font-size: 14px;" onclick="window.negarRespostaBurst()">NÃO</button>
                 </div>
                 <p style="font-size: 10px; color: #888; margin-top: 15px;">Se clicar em SIM e não fizer nada, basta cancelar na sua carta.</p>
             </div>
