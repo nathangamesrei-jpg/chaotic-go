@@ -312,7 +312,8 @@ function iniciarPartidaDrome(salaId, souP1) {
 // ==========================================
 // FILA ONLINE
 // ==========================================
-function renderizarFilaOnline() {
+
+               function renderizarFilaOnline() {
     let tela = document.getElementById("tela-entrada-drome");
     window.estadoDrome.naFila = true;
     tela.innerHTML = `
@@ -339,23 +340,47 @@ function renderizarFilaOnline() {
     // 🌐 EMPACOTA O DECK ANTES DE MANDAR PRA FILA
     let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
     
-    _dbSet('fila_drome/' + modo + '/' + uid, { uid, nome: window.perfilJogador.nome, deck: deckPronto, timestamp: Date.now() });
-    _dbOn('fila_drome/' + modo, snapshot => {
+    // 🎧 RECEPTOR P2: Escuta se alguém puxou você pra uma sala!
+    window._dbOn('jogadores/' + uid + '/match_drome', snap => {
+        if (!snap.exists() || !window.estadoDrome.naFila) return;
+        let match = snap.val();
+        window.cancelarFila(); // Para o cronômetro
+        window._dbRemove('jogadores/' + uid + '/match_drome'); // Apaga o convite da nuvem
+        iniciarPartidaDrome(match.salaId, false); // P2 ENTRA NA SALA!
+    });
+
+    window._dbSet('fila_drome/' + modo + '/' + uid, { uid, nome: window.perfilJogador.nome, deck: deckPronto, timestamp: Date.now() });
+    
+    // 📡 TRANSMISSOR P1: O mais velho na fila cria a sala e chama o P2
+    window._dbOn('fila_drome/' + modo, snapshot => {
         if (!snapshot.exists() || !window.estadoDrome.naFila) return;
         let lista = Object.entries(snapshot.val()).sort((a,b) => a[1].timestamp - b[1].timestamp);
+        
         if (lista.length >= 2) {
             let p1 = lista[0], p2 = lista[1];
+            
             if (p1[0] === uid) {
-                let salaId = "online_" + uid + "_" + p2[0];
-                _dbRemove('fila_drome/' + modo + '/' + p1[0]);
-                _dbRemove('fila_drome/' + modo + '/' + p2[0]);
-                _dbSet('salas_drome/' + salaId, { p1: {uid:p1[0],nome:p1[1].nome,deck:p1[1].deck}, p2: {uid:p2[0],nome:p2[1].nome,deck:p2[1].deck}, modo, status: "iniciando" });
+                let salaId = "online_" + p1[0] + "_" + p2[0];
+                window._dbRemove('fila_drome/' + modo + '/' + p1[0]);
+                window._dbRemove('fila_drome/' + modo + '/' + p2[0]);
+                
+                window._dbSet('salas_drome/' + salaId, { 
+                    p1: {uid:p1[0],nome:p1[1].nome,deck:p1[1].deck}, 
+                    p2: {uid:p2[0],nome:p2[1].nome,deck:p2[1].deck}, 
+                    modo: modo, status: "iniciando" 
+                });
+                
+                // 🔥 A MÁGICA: Manda o ID da sala direto pro perfil do P2!
+                window._dbSet('jogadores/' + p2[0] + '/match_drome', { salaId: salaId });
+                
                 window.cancelarFila();
-                iniciarPartidaDrome(salaId, true);
+                iniciarPartidaDrome(salaId, true); // P1 ENTRA NA SALA!
             }
         }
     });
 }
+
+
 
 window.cancelarFila = function() {
     window.estadoDrome.naFila = false;
