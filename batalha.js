@@ -1322,6 +1322,8 @@ window.mostrarBannerTCG = function(texto, corCorpo, corBorda, callback) {
     }, 2500); 
 };
 
+
+
 window.abrirJokenpo = function() {
     window.estadoTurno.fase = 'jokenpo';
 
@@ -1337,9 +1339,9 @@ window.abrirJokenpo = function() {
                 <p id="jokenpo-status" style="color:#fff; margin-bottom: 30px; font-family: monospace;">Escolha sua arma...</p>
                 
                 <div id="jokenpo-botoes" style="display:flex; gap: 20px; margin-bottom: 30px;">
-                    <button class="jokenpo-btn" onclick="resolverJokenpo('pedra')">✊</button>
-                    <button class="jokenpo-btn" onclick="resolverJokenpo('papel')">✋</button>
-                    <button class="jokenpo-btn" onclick="resolverJokenpo('tesoura')">✌️</button>
+                    <button class="jokenpo-btn" onclick="window.resolverJokenpo('pedra')">✊</button>
+                    <button class="jokenpo-btn" onclick="window.resolverJokenpo('papel')">✋</button>
+                    <button class="jokenpo-btn" onclick="window.resolverJokenpo('tesoura')">✌️</button>
                 </div>
             </div>
         </div>
@@ -1367,12 +1369,12 @@ window.resolverJokenpo = function(escolhaJogador) {
             } 
             else if ((escolhaJogador === 'pedra' && escolhaOp === 'tesoura') || (escolhaJogador === 'papel' && escolhaOp === 'pedra') || (escolhaJogador === 'tesoura' && escolhaOp === 'papel')) {
                 statusEl.innerHTML = `<span style="color:#4CAF50; font-weight:bold; font-size:24px;">VOCÊ VENCEU!</span>`;
-                abrirEscolhaDeTurno('jogador');
+                window.abrirEscolhaDeTurno('jogador');
             } else {
                 statusEl.innerHTML = `<span style="color:#e53935; font-weight:bold; font-size:24px;">OPONENTE VENCEU!</span>`;
                 setTimeout(() => {
                     document.getElementById('overlay-jokenpo').remove();
-                    iniciarTurnoReal('oponente');
+                    window.iniciarTurnoReal('oponente');
                 }, 1500);
             }
         }, 1000);
@@ -1402,16 +1404,14 @@ window.resolverJokenpo = function(escolhaJogador) {
                         document.getElementById('overlay-jokenpo').style.animation = "shake 0.5s";
                         setTimeout(() => document.getElementById('overlay-jokenpo').style.animation = "", 500);
                         
-                        // Libera os botões de novo e limpa o Firebase pro 2º round!
                         boxBotoes.style.display = 'flex';
                         if (window.souP1Batalha) window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { jokenpo: null });
                     } 
                     else if ((minhaEscolha === 'pedra' && escolhaDele === 'tesoura') || (minhaEscolha === 'papel' && escolhaDele === 'pedra') || (minhaEscolha === 'tesoura' && escolhaDele === 'papel')) {
                         statusEl.innerHTML = `<span style="color:#4CAF50; font-weight:bold; font-size:24px;">VOCÊ VENCEU!</span>`;
-                        abrirEscolhaDeTurno('jogador');
+                        window.abrirEscolhaDeTurno('jogador');
                     } else {
-                        statusEl.innerHTML = `<span style="color:#e53935; font-weight:bold; font-size:24px;">OPONENTE VENCEU!</span><br><span style="font-size:11px;color:#aaa;">Aguardando ele escolher quem inicia...</span>`;
-                        // O perdedor fica travado aqui. Quem vai libertar ele é o sinal do Firebase dizendo que o jogo começou!
+                        statusEl.innerHTML = `<span style="color:#e53935; font-weight:bold; font-size:24px;">OPONENTE VENCEU!</span><br><span style="font-size:11px;color:#aaa;">Aguardando escolha de turno...</span>`;
                     }
                 }, 1500);
             }
@@ -1433,23 +1433,7 @@ window.abrirEscolhaDeTurno = function(vencedor) {
     `;
 };
 
-window.enviarEscolhaDeTurno = function(quemComeca) {
-    let modalJokenpo = document.getElementById('overlay-jokenpo');
-    if (modalJokenpo) modalJokenpo.remove();
-    
-    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
-        // MODO BOT (Liga a partida direto)
-        let jog = quemComeca === 'eu' ? 'jogador' : 'oponente';
-        iniciarTurnoReal(jog);
-    } else {
-        // MODO ONLINE (Avisa na nuvem quem o ganhador escolheu pra começar)
-        let turnoInicial = '';
-        if (quemComeca === 'eu') turnoInicial = window.souP1Batalha ? 'p1' : 'p2';
-        else turnoInicial = window.souP1Batalha ? 'p2' : 'p1';
-        
-        window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { turno_ativo: turnoInicial });
-    }
-};
+
 
 
 
@@ -1472,51 +1456,8 @@ window.enviarEscolhaDeTurno = function(quemComeca) {
     }
 };
 
-window.resolverJokenpo = function(escolhaJogador) {
-    const opcoes = ['pedra', 'papel', 'tesoura'];
-    const emojis = { 'pedra': '✊', 'papel': '✋', 'tesoura': '✌️' };
-    const escolhaOp = opcoes[Math.floor(Math.random() * opcoes.length)];
-    
-    const statusEl = document.getElementById('jokenpo-status');
-    statusEl.innerHTML = `Você: ${emojis[escolhaJogador]} <br> Oponente: ${emojis[escolhaOp]}`;
 
-    setTimeout(() => {
-        if (escolhaJogador === escolhaOp) {
-            statusEl.innerHTML = `<span style="color:#ff9800; font-weight:bold; font-size:18px;">EMPATE! JOGUE DE NOVO!</span>`;
-            document.getElementById('overlay-jokenpo').style.animation = "shake 0.5s";
-            setTimeout(() => document.getElementById('overlay-jokenpo').style.animation = "", 500);
-        } 
-        else if (
-            (escolhaJogador === 'pedra' && escolhaOp === 'tesoura') ||
-            (escolhaJogador === 'papel' && escolhaOp === 'pedra') ||
-            (escolhaJogador === 'tesoura' && escolhaOp === 'papel')
-        ) {
-            statusEl.innerHTML = `<span style="color:#4CAF50; font-weight:bold; font-size:24px;">VOCÊ VENCEU!</span>`;
-            abrirEscolhaDeTurno('jogador');
-        } 
-        else {
-            statusEl.innerHTML = `<span style="color:#e53935; font-weight:bold; font-size:24px;">OPONENTE VENCEU!</span>`;
-            setTimeout(() => {
-                document.getElementById('overlay-jokenpo').remove();
-                iniciarTurnoReal('oponente');
-            }, 1500);
-        }
-    }, 1000);
-};
 
-window.abrirEscolhaDeTurno = function(vencedor) {
-    const modal = document.getElementById('overlay-jokenpo');
-    modal.innerHTML = `
-        <div style="text-align:center; display: flex; flex-direction: column; align-items: center;">
-            <h2 style="color:#4CAF50; font-size:24px; margin-bottom:10px;">VITÓRIA!</h2>
-            <p style="color:#fff; margin-bottom: 30px;">Você ganhou o direito de escolha:</p>
-            <div style="display:flex; gap: 20px;">
-                <button class="btn-acao-modal" style="width: 120px;" onclick="iniciarTurnoReal('jogador')">EU COMEÇO</button>
-                <button class="btn-acao-modal" style="width: 120px; border-color:#e53935; color:#e53935;" onclick="iniciarTurnoReal('oponente')">OPONENTE COMEÇA</button>
-            </div>
-        </div>
-    `;
-};
 
 setTimeout(() => {
     if (!document.getElementById("css-botao-turno")) {
