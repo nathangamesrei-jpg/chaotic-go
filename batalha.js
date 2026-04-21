@@ -1956,6 +1956,15 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         window.estadoTurno.jogadorAtual = vencedorIniciativa;
         window.pontosAtaque[vencedorIniciativa] += 1; 
         if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+
+        // 🌐 ATUALIZA A NUVEM PARA O RÁDIO DE TURNOS NÃO BUGAR!
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            // Apenas o PC de quem INICIOU a invasão manda a mensagem pra não dar eco duplo
+            if (atacante.dono === 'jogador') { 
+                let turnoVencedorNuvem = (vencedorIniciativa === 'jogador') ? (window.souP1Batalha ? 'p1' : 'p2') : (window.souP1Batalha ? 'p2' : 'p1');
+                window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { turno_ativo: turnoVencedorNuvem });
+            }
+        }
         
         let btn = document.getElementById('btn-passar-turno');
         
