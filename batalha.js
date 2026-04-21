@@ -949,7 +949,9 @@ setTimeout(() => {
         document.addEventListener('touchend', soltarInteracao);
     };
 
-   function moverInteracao(e) {
+  let ultimaSyncDrag = 0; // A memória do atraso de 80ms
+
+    function moverInteracao(e) {
         if (!interacao.idOrigem || !interacao.clone) return;
         
         let pointer = e.touches ? e.touches[0] : e;
@@ -957,7 +959,6 @@ setTimeout(() => {
         let moveX = Math.abs(pointer.clientX - interacao.startX);
         let moveY = Math.abs(pointer.clientY - interacao.startY);
 
-        // 🔥 FIX: Tolerância aumentada de 10 para 25 pixels (Ignora o deslize do dedo no celular)
         if (!interacao.isDragging && (moveX > 25 || moveY > 25)) {
             interacao.isDragging = true;
             interacao.clone.style.display = 'flex';
@@ -973,6 +974,24 @@ setTimeout(() => {
             if(e.cancelable) e.preventDefault(); 
             interacao.clone.style.left = (pointer.clientX - interacao.clone.offsetWidth / 2) + 'px';
             interacao.clone.style.top = (pointer.clientY - interacao.clone.offsetHeight / 2) + 'px';
+
+            // 🌐 O TRANSMISSOR FANTASMA: Envia a posição do dedo a cada 80ms!
+            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                let agora = Date.now();
+                if (agora - ultimaSyncDrag > 80) {
+                    ultimaSyncDrag = agora;
+                    // Converte pixels em Porcentagem (pra funcionar em qualquer tamanho de tela)
+                    let pctX = (pointer.clientX / window.innerWidth) * 100;
+                    let pctY = (pointer.clientY / window.innerHeight) * 100;
+                    let criaturaDrag = obterCriaturaNoSlot(interacao.idOrigem);
+                    
+                    if (criaturaDrag) {
+                        window._dbUpdate('salas_drome/' + window.salaBatalhaAtual + '/drag/' + (window.souP1Batalha ? 'p1' : 'p2'), {
+                            ativo: true, x: pctX, y: pctY, img: criaturaDrag.cartaBlank
+                        });
+                    }
+                }
+            }
         }
     }
 
@@ -983,6 +1002,11 @@ setTimeout(() => {
         document.removeEventListener('touchend', soltarInteracao);
 
         let origem = interacao.idOrigem;
+
+        // 🌐 DESLIGA O FANTASMA QUANDO SOLTAR A CARTA
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window._dbUpdate('salas_drome/' + window.salaBatalhaAtual + '/drag/' + (window.souP1Batalha ? 'p1' : 'p2'), { ativo: false });
+        }
         
         if (interacao.isDragging) {
             let pointer = e.changedTouches ? e.changedTouches[0] : e;
@@ -1008,7 +1032,6 @@ setTimeout(() => {
                     window.slotSelecionadoMovimento = null;
                 }
             } else {
-                // 🔥 FIX: Se arrastou sem querer e soltou no mesmo lugar, abre a carta normal ao invés de ignorar!
                 if (slotDestino === origem) {
                     window.lidarComCliqueTabuleiro(origem);
                 } else {
@@ -2744,16 +2767,47 @@ window.enviarAcaoRede = function(acaoData) {
 // 🎧 O RECEPTOR: Fica escutando a Nuvem o tempo todo
 window.iniciarEscutaAcoesOnline = function() {
     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
+    
+    // Rádio 1: Escuta as ações pesadas (Movimento final, combate, magias)
     window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao', (snap) => {
         if (!snap.exists()) return;
         let acao = snap.val();
-        
-        // Ignora se fui eu mesmo que mandei ou se já processamos
         if (acao.remetente === (window.souP1Batalha ? 'p1' : 'p2')) return;
         if (window.ultimaAcaoProcessada === acao.timestamp) return;
         window.ultimaAcaoProcessada = acao.timestamp;
-
         window.processarAcaoInimiga(acao);
+    });
+
+    // 👻 Rádio 2: O Radar de Fantasmas (Vê a carta do oponente flutuando na tela)
+    let inimigo = window.souP1Batalha ? 'p2' : 'p1';
+    window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/drag/' + inimigo, (snap) => {
+        if (!snap.exists()) return;
+        let drag = snap.val();
+        let cloneFantasma = document.getElementById('clone-drag-inimigo');
+        
+        if (drag.ativo) {
+            if (!cloneFantasma) {
+                cloneFantasma = document.createElement('div');
+                cloneFantasma.id = 'clone-drag-inimigo';
+                // Cria a carta flutuante com brilho vermelho (inimigo)
+                cloneFantasma.style.cssText = 'position:fixed; width:80px; height:115px; background-size:cover; border:2px solid #e53935; border-radius:5px; box-shadow:0 0 20px #e53935; z-index:999998; pointer-events:none; opacity:0.8; transition: transform 0.1s linear, left 0.1s linear, top 0.1s linear;';
+                document.body.appendChild(cloneFantasma);
+            }
+            cloneFantasma.style.backgroundImage = `url('${drag.img}')`;
+            
+            // 🧠 A GRANDE SACADA: A tela dele é de ponta-cabeça em relação à sua!
+            // Se ele move pra BAIXO na tela dele, pra você tem que ir pra CIMA.
+            let xInvertido = 100 - drag.x;
+            let yInvertido = 100 - drag.y;
+            
+            // Centraliza a miniatura no mouse invertido
+            cloneFantasma.style.left = `calc(${xInvertido}vw - 40px)`;
+            cloneFantasma.style.top = `calc(${yInvertido}vh - 57px)`;
+            cloneFantasma.style.transform = "scale(1.1)";
+        } else {
+            // Ele soltou a carta, deleta o fantasma instantaneamente!
+            if (cloneFantasma) cloneFantasma.remove();
+        }
     });
 };
 
