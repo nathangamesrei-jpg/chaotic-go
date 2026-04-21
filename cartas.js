@@ -46,7 +46,7 @@ const ATAQUES = [
         tipoCarta: "Ataque", 
         img: "cartas/ataques/mao_negra.jpg", 
         efeito: "Pegue uma carta aleatória de ataque da mão do seu oponente.", 
-        raridade: 2.2
+        raridade: 0.6
     },
     {
         id: 103, 
