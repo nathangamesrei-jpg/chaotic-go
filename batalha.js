@@ -2290,16 +2290,31 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
     let danoExtra = 0;
     let msgBonus = "";
 
-    if (ataqueDB && window.estadoCombate && window.estadoCombate.atacante) {
-        let atacante = obterCriaturaNoSlot(window.estadoCombate.atacante);
-        let defensor = obterCriaturaNoSlot(window.estadoCombate.defensor); // 🔥 Puxa o defensor para comparar stats!
+    // 🔥 FIX DO BUMERANGUE: Identifica quem é o seu monstro e quem é o monstro inimigo no duelo atual!
+    let idMeuMonstro = null;
+    let idMonstroInimigo = null;
+
+    if (window.estadoCombate && window.estadoCombate.ativo) {
+        let p1Card = obterCriaturaNoSlot(window.estadoCombate.atacante);
+        let p2Card = obterCriaturaNoSlot(window.estadoCombate.defensor);
+
+        if (p1Card && p1Card.dono === 'jogador') { idMeuMonstro = window.estadoCombate.atacante; } 
+        else { idMonstroInimigo = window.estadoCombate.atacante; }
+
+        if (p2Card && p2Card.dono === 'jogador') { idMeuMonstro = window.estadoCombate.defensor; } 
+        else { idMonstroInimigo = window.estadoCombate.defensor; }
+    }
+
+    if (ataqueDB && idMeuMonstro && idMonstroInimigo) {
+        let minhaCriatura = obterCriaturaNoSlot(idMeuMonstro);
+        let criaturaInimiga = obterCriaturaNoSlot(idMonstroInimigo); 
         
-        if (atacante) {
+        if (minhaCriatura) {
             // 1. CHECAGEM ELEMENTAL
             if (ataqueDB.danoElemental) {
-                let elemsBrutos = atacante.elementos;
+                let elemsBrutos = minhaCriatura.elementos;
                 if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
-                    let dbCarta = MONSTROS.find(m => m.nome === atacante.nome);
+                    let dbCarta = MONSTROS.find(m => m.nome === minhaCriatura.nome);
                     if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
                 }
                 let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
@@ -2311,14 +2326,13 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             }
 
             // 2. CHECAGEM DE ATRIBUTOS (STAT CHECK) 🔥
-            if (ataqueDB.checkAtributo && defensor) {
-                let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); // 'coragem', 'poder', 'sabedoria', 'velocidade'
+            if (ataqueDB.checkAtributo && criaturaInimiga) {
+                let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); 
                 let bonus = ataqueDB.checkAtributo.danoExtra;
                 
-                let valAta = atacante.statsMax ? (atacante.statsMax[attr] || 0) : 0;
-                let valDef = defensor.statsMax ? (defensor.statsMax[attr] || 0) : 0;
+                let valAta = minhaCriatura.statsMax ? (minhaCriatura.statsMax[attr] || 0) : 0;
+                let valDef = criaturaInimiga.statsMax ? (criaturaInimiga.statsMax[attr] || 0) : 0;
 
-                // Se o seu status for MAIOR que o do inimigo, ganha o dano bônus!
                 if (valAta > valDef) {
                     danoExtra += bonus;
                     let iconesAttr = { 'coragem': '❤️', 'poder': '⚡', 'sabedoria': '👁️', 'velocidade': '💨' };
@@ -2328,7 +2342,6 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         }
     }
 
-    // Calcula a força total da pancada
     let danoTotal = danoBase + danoExtra;
 
     let acaoDoAtaque = {
@@ -2336,27 +2349,25 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         nomeAcao: nomeAtaque,
         tipo: 'ataque',
         executar: function() {
-            let idDefensor = window.estadoCombate.defensor;
-            let alvo = obterCriaturaNoSlot(idDefensor);
+            if (!idMonstroInimigo) return;
+            let alvo = obterCriaturaNoSlot(idMonstroInimigo);
             if (alvo) {
                 alvo.hpAtual -= danoTotal; 
                 if(window.tocarSFX) window.tocarSFX('notificacao'); 
                 
                 let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
-                if (danoExtra > 0) {
-                    msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
-                }
+                if (danoExtra > 0) msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
                 
                 window.mostrarMensagemScanner(msgScanner);
                 
-                let elAlvo = document.getElementById(idDefensor);
+                let elAlvo = document.getElementById(idMonstroInimigo);
                 if(elAlvo) {
                     elAlvo.style.animation = "shake 0.5s";
                     setTimeout(() => { elAlvo.style.animation = ""; }, 500);
                 }
                 if (alvo.hpAtual <= 0) {
                     alvo.hpAtual = 0;
-                    setTimeout(() => window.encerrarCombateMorte(idDefensor), 1000);
+                    setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
                 }
                 atualizarTelaBatalha();
             }
@@ -2865,6 +2876,10 @@ window.processarAcaoInimiga = function(acao) {
         // O que é campoJogador para ele, é campoOponente para mim, e vice-versa!
         window.campoJogador = acao.campoOp;
         window.campoOponente = acao.campoJog;
+        
+        // 🔥 CORREÇÃO VITAL: Restaura a etiqueta de "Dono" para não congelar o Tabuleiro do Receptor!
+        if(window.campoJogador) Object.keys(window.campoJogador).forEach(k => { if(window.campoJogador[k]) window.campoJogador[k].dono = 'jogador'; });
+        if(window.campoOponente) Object.keys(window.campoOponente).forEach(k => { if(window.campoOponente[k]) window.campoOponente[k].dono = 'oponente'; });
+
         atualizarTelaBatalha();
     }
-};
