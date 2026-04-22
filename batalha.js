@@ -1682,21 +1682,29 @@ window.negarRespostaBurst = function() {
     
     window.aguardandoResposta = false;
     
-    // 🌐 MASTER SYNC BULLETPROOF: Envia apenas um mapa de HPs pro Firebase (Super leve e seguro!)
+    // 🌐 Avisa o inimigo que você recusou responder
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        window.enviarAcaoRede({ tipo: 'fechar_burst' });
+    }
+    
+    window.mostrarMensagemScanner("Você não respondeu. Resolvendo as ações...");
+    setTimeout(() => window.resolverBurst(), 1000);
+};
+
+window.resolverBurst = function() {
+    if (window.pilhaBurst.length === 0) {
+        window.mostrarMensagemScanner("Todas as ações resolvidas.");
+        atualizarTelaBatalha();
+        
+        // 🌐 MASTER SYNC: Aquele que jogou no próprio turno atualiza a vida de todos na rede!
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && window.estadoTurno.jogadorAtual === 'jogador') {
             setTimeout(() => {
-                let syncHP = { jog: {}, op: {} };
-                // Mapeia o HP de todo mundo. Se for -1, significa que está morto/vazio.
-                ['c1','c2','c3','c4','c5','c6'].forEach(k => {
-                    syncHP.jog[k] = window.campoJogador[k] ? window.campoJogador[k].hpAtual : -1;
-                    syncHP.op[k] = window.campoOponente[k] ? window.campoOponente[k].hpAtual : -1;
-                });
-
                 window.enviarAcaoRede({
-                    tipo: 'sincronizar_hp',
-                    hps: syncHP
+                    tipo: 'sincronizar_mesa',
+                    campoJog: window.campoJogador,
+                    campoOp: window.campoOponente
                 });
-            }, 1000); // Tempinho pra animação acabar
+            }, 1000); // Dá um tempinho pras animações de HP acabarem na tela local
         }
         return;
     }
@@ -1706,6 +1714,7 @@ window.negarRespostaBurst = function() {
     acaoAtual.executar();
     setTimeout(() => window.resolverBurst(), 2500);
 };
+
 window.cancelarRespostaBurst = function() {
     if (window.aguardandoResposta) {
         window.aguardandoResposta = false;
@@ -2276,36 +2285,21 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
     
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
+    // 🔥 LÓGICA DO DANO (ELEMENTAL + CHECAGEM DE ATRIBUTOS) 🔥
     let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === nomeAtaque) : null;
     let danoExtra = 0;
     let msgBonus = "";
 
-    // 🔥 LÓGICA DO DANO CORRIGIDA: Identifica quem é você e quem é o inimigo na briga! 🔥
-    let minhaCriatura = null;
-    let criaturaInimiga = null;
-    let idAlvoInimigo = null;
-
-    if (window.estadoCombate && window.estadoCombate.ativo) {
-        let cA = obterCriaturaNoSlot(window.estadoCombate.atacante);
-        let cD = obterCriaturaNoSlot(window.estadoCombate.defensor);
+    if (ataqueDB && window.estadoCombate && window.estadoCombate.atacante) {
+        let atacante = obterCriaturaNoSlot(window.estadoCombate.atacante);
+        let defensor = obterCriaturaNoSlot(window.estadoCombate.defensor); // 🔥 Puxa o defensor para comparar stats!
         
-        // Verifica de quem é a carta. O alvo sempre será a do Oponente!
-        if (cA && cA.dono === 'jogador') {
-            minhaCriatura = cA;
-            criaturaInimiga = cD;
-            idAlvoInimigo = window.estadoCombate.defensor;
-        } else {
-            minhaCriatura = cD;
-            criaturaInimiga = cA;
-            idAlvoInimigo = window.estadoCombate.atacante;
-        }
-
-        if (minhaCriatura) {
+        if (atacante) {
             // 1. CHECAGEM ELEMENTAL
-            if (ataqueDB && ataqueDB.danoElemental) {
-                let elemsBrutos = minhaCriatura.elementos;
+            if (ataqueDB.danoElemental) {
+                let elemsBrutos = atacante.elementos;
                 if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
-                    let dbCarta = MONSTROS.find(m => m.nome === minhaCriatura.nome);
+                    let dbCarta = MONSTROS.find(m => m.nome === atacante.nome);
                     if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
                 }
                 let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
@@ -2316,14 +2310,15 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && ataqueDB.danoElemental.vento > 0) { danoExtra += ataqueDB.danoElemental.vento; msgBonus += "☁️ "; }
             }
 
-            // 2. CHECAGEM DE ATRIBUTOS
-            if (ataqueDB && ataqueDB.checkAtributo && criaturaInimiga) {
-                let attr = ataqueDB.checkAtributo.atributo.toLowerCase();
+            // 2. CHECAGEM DE ATRIBUTOS (STAT CHECK) 🔥
+            if (ataqueDB.checkAtributo && defensor) {
+                let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); // 'coragem', 'poder', 'sabedoria', 'velocidade'
                 let bonus = ataqueDB.checkAtributo.danoExtra;
                 
-                let valAta = minhaCriatura.statsMax ? (minhaCriatura.statsMax[attr] || 0) : 0;
-                let valDef = criaturaInimiga.statsMax ? (criaturaInimiga.statsMax[attr] || 0) : 0;
+                let valAta = atacante.statsMax ? (atacante.statsMax[attr] || 0) : 0;
+                let valDef = defensor.statsMax ? (defensor.statsMax[attr] || 0) : 0;
 
+                // Se o seu status for MAIOR que o do inimigo, ganha o dano bônus!
                 if (valAta > valDef) {
                     danoExtra += bonus;
                     let iconesAttr = { 'coragem': '❤️', 'poder': '⚡', 'sabedoria': '👁️', 'velocidade': '💨' };
@@ -2333,6 +2328,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         }
     }
 
+    // Calcula a força total da pancada
     let danoTotal = danoBase + danoExtra;
 
     let acaoDoAtaque = {
@@ -2340,8 +2336,8 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         nomeAcao: nomeAtaque,
         tipo: 'ataque',
         executar: function() {
-            if (!idAlvoInimigo) return;
-            let alvo = obterCriaturaNoSlot(idAlvoInimigo);
+            let idDefensor = window.estadoCombate.defensor;
+            let alvo = obterCriaturaNoSlot(idDefensor);
             if (alvo) {
                 alvo.hpAtual -= danoTotal; 
                 if(window.tocarSFX) window.tocarSFX('notificacao'); 
@@ -2353,14 +2349,14 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 
                 window.mostrarMensagemScanner(msgScanner);
                 
-                let elAlvo = document.getElementById(idAlvoInimigo);
+                let elAlvo = document.getElementById(idDefensor);
                 if(elAlvo) {
                     elAlvo.style.animation = "shake 0.5s";
                     setTimeout(() => { elAlvo.style.animation = ""; }, 500);
                 }
                 if (alvo.hpAtual <= 0) {
                     alvo.hpAtual = 0;
-                    setTimeout(() => window.encerrarCombateMorte(idAlvoInimigo), 1000);
+                    setTimeout(() => window.encerrarCombateMorte(idDefensor), 1000);
                 }
                 atualizarTelaBatalha();
             }
@@ -2864,22 +2860,11 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
         setTimeout(() => window.resolverBurst(), 1000);
     }
-   // 5. SINCRONIZAÇÃO MESTRA (Lê o mapa de HPs que ele enviou)
-    else if (acao.tipo === 'sincronizar_hp') {
-        ['c1','c2','c3','c4','c5','c6'].forEach(k => {
-            // A vida do 'jog' do oponente é a vida do MEU 'op'
-            if (acao.hps.jog && acao.hps.jog[k] !== undefined) {
-                let hpDele = acao.hps.jog[k];
-                if (hpDele === -1) setarCriaturaNoSlot('op-'+k, null);
-                else if (window.campoOponente[k]) window.campoOponente[k].hpAtual = hpDele;
-            }
-            // A vida do 'op' do oponente é a vida do MEU 'jog'
-            if (acao.hps.op && acao.hps.op[k] !== undefined) {
-                let hpMeu = acao.hps.op[k];
-                if (hpMeu === -1) setarCriaturaNoSlot('jog-'+k, null);
-                else if (window.campoJogador[k]) window.campoJogador[k].hpAtual = hpMeu;
-            }
-        });
+    // 5. SINCRONIZAÇÃO MESTRA DE MESA (Garante que os HPs fiquem iguais pós-dano)
+    else if (acao.tipo === 'sincronizar_mesa') {
+        // O que é campoJogador para ele, é campoOponente para mim, e vice-versa!
+        window.campoJogador = acao.campoOp;
+        window.campoOponente = acao.campoJog;
         atualizarTelaBatalha();
     }
 };
