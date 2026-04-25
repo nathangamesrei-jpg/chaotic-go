@@ -3173,16 +3173,20 @@ window.estadoCombate = { ativo: false, atacante: null, defensor: null };
 
 
 window.encerrarCombateMorte = function(idMorto) {
-
     if (!window.cemiterio) window.cemiterio = [];
-
     if (!window.cemiterioOponente) window.cemiterioOponente = [];
 
-
-
     let morto = obterCriaturaNoSlot(idMorto);
+    if(!morto) return; // Trava de segurança extra
 
     window.mostrarMensagemScanner(`💀 ${morto.nome} FOI DESTRUÍDO! O tabuleiro será redefinido.`);
+    
+    // 🌐 AVISA A NUVEM PARA MATAR O MONSTRO NA TELA DO INIMIGO TAMBÉM!
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        if (window.estadoTurno.jogadorAtual === 'jogador') {
+            window.enviarAcaoRede({ tipo: 'morte', alvo: idMorto });
+        }
+    }
 
     
 
@@ -3385,37 +3389,21 @@ window.negarRespostaBurst = function() {
 
 
 window.resolverBurst = function() {
-
     if (window.pilhaBurst.length === 0) {
-
         window.mostrarMensagemScanner("Todas as ações resolvidas.");
-
         atualizarTelaBatalha();
-
         
-
-        // 🌐 MASTER SYNC: Aquele que jogou no próprio turno atualiza a vida de todos na rede!
-
+        // 🌐 MASTER SYNC: Envia a mesa como Texto Seguro (JSON) para o Firebase não barrar!
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && window.estadoTurno.jogadorAtual === 'jogador') {
-
             setTimeout(() => {
-
                 window.enviarAcaoRede({
-
                     tipo: 'sincronizar_mesa',
-
-                    campoJog: window.campoJogador,
-
-                    campoOp: window.campoOponente
-
+                    campoJog: JSON.stringify(window.campoJogador),
+                    campoOp: JSON.stringify(window.campoOponente)
                 });
-
-            }, 1000); // Dá um tempinho pras animações de HP acabarem na tela local
-
+            }, 800); 
         }
-
         return;
-
     }
 
 
@@ -5548,99 +5536,59 @@ window.iniciarEscutaAcoesOnline = function() {
 
 
 // 🤖 O FANTASMA: Pega o sinal do rádio e mexe as cartas na sua mesa
-
 window.processarAcaoInimiga = function(acao) {
-
-    // 1. MOVIMENTO DE CARTA
-
     if (acao.tipo === 'mover') {
-
         let origemReal = acao.origem.replace('jog-', 'op-');
-
         let destinoReal = acao.destino.replace('jog-', 'op-');
-
         let criatura = obterCriaturaNoSlot(origemReal);
-
         setarCriaturaNoSlot(destinoReal, criatura); 
-
         setarCriaturaNoSlot(origemReal, null); 
-
         if(criatura) criatura.moveuNesteTurno = true;
-
         window.mostrarMensagemScanner("O inimigo reposicionou uma criatura!");
-
         if(window.tocarSFX) window.tocarSFX('notificacao');
-
         atualizarTelaBatalha();
-
     }
-
-    // 2. INÍCIO DE COMBATE
-
     else if (acao.tipo === 'combate') {
-
         let origemReal = acao.origem.replace('jog-', 'op-');
-
-        let destinoReal = acao.destino.replace('jog-', 'op-').replace('op-', 'jog-'); // O alvo dele sou eu ('jog-')
-
+        let destinoReal = acao.destino.replace('jog-', 'op-').replace('op-', 'jog-'); 
         let criatura = obterCriaturaNoSlot(origemReal);
-
         if(criatura) criatura.moveuNesteTurno = true;
-
         window.mostrarMensagemScanner("⚔️ ALERTA: O INIMIGO INICIOU UM COMBATE!");
-
         if(typeof window.iniciarCombate === 'function') window.iniciarCombate(origemReal, destinoReal);
-
         atualizarTelaBatalha();
-
     }
-
-    // 3. ABERTURA DE CORRENTE (BURST)
-
     else if (acao.tipo === 'abrir_burst') {
-
         let acaoInimiga = {
-
             dono: 'oponente',
-
             nomeAcao: acao.nomeAcao,
-
             tipo: 'rede',
-
             executar: function() { window.mostrarMensagemScanner(`✨ Resolvido: ${acao.nomeAcao}`); }
-
         };
-
         window.adicionarAoBurst(acaoInimiga);
-
     }
-
-    // 4. FECHAMENTO DE CORRENTE (Oponente clicou em NÃO)
-
     else if (acao.tipo === 'fechar_burst') {
-
         window.aguardandoResposta = false;
-
         window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
-
         setTimeout(() => window.resolverBurst(), 1000);
-
     }
-
-    // 5. SINCRONIZAÇÃO MESTRA DE MESA (Garante que os HPs fiquem iguais pós-dano)
-
     else if (acao.tipo === 'sincronizar_mesa') {
-        // O que é campoJogador para ele, é campoOponente para mim, e vice-versa!
-        window.campoJogador = acao.campoOp;
-        window.campoOponente = acao.campoJog;
+        // Desempacota o texto e transforma em tabuleiro de novo!
+        let op = JSON.parse(acao.campoOp);
+        let jog = JSON.parse(acao.campoJog);
         
-        // 🔥 CORREÇÃO VITAL: Restaura a etiqueta de "Dono" para não congelar o Tabuleiro do Receptor!
+        window.campoJogador = op || { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
+        window.campoOponente = jog || { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
+        
         if(window.campoJogador) Object.keys(window.campoJogador).forEach(k => { if(window.campoJogador[k]) window.campoJogador[k].dono = 'jogador'; });
         if(window.campoOponente) Object.keys(window.campoOponente).forEach(k => { if(window.campoOponente[k]) window.campoOponente[k].dono = 'oponente'; });
 
         atualizarTelaBatalha();
     }
-    // 6. SINCRONIZAÇÃO DE LOCAL (Quando o oponente sorteia o local dele)
+    else if (acao.tipo === 'morte') {
+        // Se a nuvem mandou matar, espelha o ID e explode!
+        let alvoReal = acao.alvo.includes('jog-') ? acao.alvo.replace('jog-', 'op-') : acao.alvo.replace('op-', 'jog-');
+        window.encerrarCombateMorte(alvoReal);
+    }
     else if (acao.tipo === 'definir_local') {
         window.localAtivoAtual = acao.img;
         if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
@@ -5648,7 +5596,6 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O Oponente revelou o Local da batalha!");
         if(window.tocarSFX) window.tocarSFX('notificacao');
         
-        // Faz uma animação rápida pra mostrar a carta revelada na tela
         const modalHTML = `
             <div class="modal-overlay" id="overlay-roleta-local" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
                 <h2 style="color: #e53935; font-family: 'Arial Black', sans-serif; letter-spacing: 2px; text-shadow: 0 0 15px #e53935; margin-bottom: 20px; text-transform: uppercase;">LOCAL INIMIGO REVELADO!</h2>
@@ -5656,10 +5603,6 @@ window.processarAcaoInimiga = function(acao) {
             </div>
         `;
         document.body.insertAdjacentHTML('beforeend', modalHTML);
-        setTimeout(() => {
-            let mod = document.getElementById('overlay-roleta-local');
-            if (mod) mod.remove();
-        }, 2500);
+        setTimeout(() => { let mod = document.getElementById('overlay-roleta-local'); if (mod) mod.remove(); }, 2500);
     }
-
 };
