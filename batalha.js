@@ -3515,23 +3515,18 @@ window.iniciarTurnoReal = function(primeiroJogador) {
 
 
     let iniciarOpc = () => {
-
         window.sortearLocalAnimado(primeiroJogador, () => {
-
             if (primeiroJogador === 'jogador') {
-
                 window.mostrarMensagemScanner("Seu turno! Movimente suas criaturas.");
-
             } else {
-
                 window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
-
-                setTimeout(() => { window.passarTurno(); }, 3000);
-
+                
+                // 🤖 Só o Bot passa o turno sozinho no começo do jogo! No online a tela só aguarda.
+                if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+                    setTimeout(() => { window.passarTurno(); }, 3000);
+                }
             }
-
         });
-
     };
 
 
