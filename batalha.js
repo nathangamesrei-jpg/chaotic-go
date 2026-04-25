@@ -255,381 +255,184 @@ function embaralharArray(array) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 window.carregarDeckParaBatalha = function(salaId, souP1) {
-
     campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
-
     window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
-
     window.slotSelecionadoMovimento = null;
-
     window.jogadorMugics = []; 
-
     window.lixoAtaques = []; 
-
     window.lixoAtaquesOponente = 0; 
-
     window.cemiterio = [];
-
     window.cemiterioOponente = [];
-
-
+    window.deckInimigoMontado = false; // 🔥 O CADEADO DE SEGURANÇA!
 
     if (typeof limparDestaquesMovimento === "function") limparDestaquesMovimento();
 
-
-
     let deck = window.estadoDrome.deckSelecionado;
-
     if (!deck || !deck.criaturas) return;
 
-
-
     // 1. CARREGA O SEU DECK (P1 ou P2 local)
-
     if (deck.ataques && deck.ataques.length > 0) {
-
         window.baralhoAtaques = embaralharArray(deck.ataques); 
-
         window.maoAtaques = window.baralhoAtaques.splice(0, 3); 
-
     } else {
-
         window.baralhoAtaques = [];
-
         window.maoAtaques = [];
-
     }
-
-
 
     if (deck.mugics && deck.mugics.length > 0) {
-
         deck.mugics.forEach(idMagia => {
-
             if (idMagia) {
-
                 let magiaReal = window.inventario.find(c => c.id == idMagia);
-
                 if (magiaReal) window.jogadorMugics.push(magiaReal);
-
             }
-
         });
-
     }
-
-
 
     let chaves = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
-
     
-
     chaves.forEach((chave, index) => {
-
         let idCarta = deck.criaturas[index]; 
-
         let idEquip = deck.equipamentos ? deck.equipamentos[index] : null; 
-
         
-
         if (idCarta) {
-
             let cartaOriginal = window.inventario.find(c => c.id == idCarta);
-
             let equipOriginal = idEquip ? window.inventario.find(c => c.id == idEquip) : null; 
-
             
-
             if (cartaOriginal) {
-
                 let fichasReais = 0;
-
                 let temEfeitoReal = false;
-
                 let textoCartaReal = "";
 
-
-
                 if (typeof MONSTROS !== 'undefined') {
-
                     let cartaDB = MONSTROS.find(m => m.nome === cartaOriginal.nome);
-
                     if (cartaDB) {
-
                         if (cartaDB.fichasHabilidade !== undefined) fichasReais = parseInt(cartaDB.fichasHabilidade);
-
                         temEfeitoReal = cartaDB.temEfeito || false;
-
                         textoCartaReal = cartaDB.textoCarta || "";
-
                     }
-
                 }
-
-
 
                 campoJogador[chave] = {
-
                     dono: 'jogador',
-
                     nome: cartaOriginal.nome,
-
                     tribo: cartaOriginal.tribo || "Azul",
-
                     elementos: cartaOriginal.elementos || [],
-
                     cartaBlank: cartaOriginal.img,
-
                     statsMax: { 
-
                         coragem: cartaOriginal.stats?.c || 0, 
-
                         poder: cartaOriginal.stats?.p || 0, 
-
                         sabedoria: cartaOriginal.stats?.s || 0, 
-
                         velocidade: cartaOriginal.stats?.v || 0, 
-
                         energia: cartaOriginal.stats?.e || 0 
-
                     },
-
                     hpAtual: cartaOriginal.stats?.e || 0,
-
                     fichasHabilidade: fichasReais,
-
                     temEfeito: temEfeitoReal,
-
                     textoCarta: textoCartaReal,
-
                     equipamento: equipOriginal ? { nome: equipOriginal.nome, img: equipOriginal.img, efeito: equipOriginal.efeito } : null,
-
                     equipamentoRevelado: false
-
                 };
-
             }
-
         }
-
     });
 
-
-
     // 2. PUXA O DECK DO OPONENTE DA NUVEM (O Handshake)
-
     window.montarDeckOponente = function(deckOp) {
-
-        if (!deckOp) return;
-
+        // 🔥 TRAVA ATIVA: Se a mesa já montou, ele ignora os barulhos da Nuvem e protege o jogo!
+        if (!deckOp || window.deckInimigoMontado) return; 
+        window.deckInimigoMontado = true; 
         
-
-        // Se for bot (Modo Simulado), o deckOp é apenas os IDs numéricos. Então chamamos o tradutor!
-
         if (!deckOp.criaturas_objs && typeof window.expandirDeckParaOnline === "function") {
-
             deckOp = window.expandirDeckParaOnline(deckOp);
-
         }
-
-
 
         chaves.forEach((chave, index) => {
-
             let cartaOp = deckOp.criaturas_objs[index];
-
             let equipOp = deckOp.equipamentos_objs ? deckOp.equipamentos_objs[index] : null;
-
             
-
             if (cartaOp) {
-
                 let fichasReais = 0;
-
                 let temEfeitoReal = false;
-
                 let textoCartaReal = "";
 
-
-
                 if (typeof MONSTROS !== 'undefined') {
-
                     let cartaDB = MONSTROS.find(m => m.nome === cartaOp.nome);
-
                     if (cartaDB) {
-
                         if (cartaDB.fichasHabilidade !== undefined) fichasReais = parseInt(cartaDB.fichasHabilidade);
-
                         temEfeitoReal = cartaDB.temEfeito || false;
-
                         textoCartaReal = cartaDB.textoCarta || "";
-
                     }
-
                 }
 
-
-
                 window.campoOponente[chave] = {
-
                     dono: 'oponente',
-
                     nome: cartaOp.nome,
-
                     tribo: cartaOp.tribo || "Azul",
-
                     elementos: cartaOp.elementos || [],
-
                     cartaBlank: cartaOp.img,
-
                     statsMax: { 
-
                         coragem: cartaOp.stats?.c || 0, 
-
                         poder: cartaOp.stats?.p || 0, 
-
                         sabedoria: cartaOp.stats?.s || 0, 
-
                         velocidade: cartaOp.stats?.v || 0, 
-
                         energia: cartaOp.stats?.e || 0 
-
                     },
-
                     hpAtual: cartaOp.stats?.e || 0,
-
                     fichasHabilidade: fichasReais,
-
                     temEfeito: temEfeitoReal,
-
                     textoCarta: textoCartaReal,
-
                     equipamento: equipOp ? { nome: equipOp.nome, img: equipOp.img, efeito: equipOp.efeito } : null,
-
                     equipamentoRevelado: false
-
                 };
-
             }
-
         });
-
-
-
-        // Configura o tamanho da mão e do baralho inimigo com base nos dados reais dele!
 
         window.qtdBaralhoOponente = deckOp.ataques_objs ? deckOp.ataques_objs.length : 20;
-
         window.qtdMaoOponente = 3;
-
-        window.qtdBaralhoOponente -= 3; // Retira 3 para a mão inicial
-
-
+        window.qtdBaralhoOponente -= 3; 
 
         atualizarTelaBatalha(); 
-
         
-
-       // 🌐 GRAVA OS DADOS DA SALA ONLINE E LIGA O RÁDIO DE TURNOS!
-
         if (salaId && salaId !== "sala_simulada") {
-
             window.salaBatalhaAtual = salaId;
-
             window.souP1Batalha = souP1;
-
-            window.iniciarEscutaDeTurnoOnline(); // Rádio 1: Escuta os Turnos e o Jokenpo!
-
+            window.iniciarEscutaDeTurnoOnline(); 
             if (typeof window.iniciarEscutaAcoesOnline === 'function') {
-
-                window.iniciarEscutaAcoesOnline(); // Rádio 2: Escuta os movimentos e as magias!
-
+                window.iniciarEscutaAcoesOnline(); 
             }
-
-            if (typeof window.iniciarEscutaAcoesOnline === 'function') {
-
-                window.iniciarEscutaAcoesOnline(); // Rádio 2: Escuta os movimentos de tabuleiro!
-
-            } 
-
         }
-
         
-
-        // CHAMA O JOKENPO PRA TODO MUNDO (Bot ou Online)!
-
         setTimeout(() => { window.abrirJokenpo(); }, 800); 
-
     };
 
-
-
-    // CONEXÃO COM O SERVIDOR
-
     if (salaId && salaId !== "sala_simulada") {
-
         window.mostrarMensagemScanner("📡 Conectando ao oponente...");
-
         
-
-        // Fica escutando a sala para baixar o deck do oponente assim que ele soltar na rede
-
         window._dbGet('salas_drome/' + salaId).then(snap => {
-
             let sala = snap.val();
-
             let deckInimigo = souP1 ? sala.p2.deck : sala.p1.deck;
-
             
-
-            // O Jogador 1 pode ter entrado frações de segundo antes do Jogador 2 colocar o deck.
-
             if (!deckInimigo) {
-
                 window.mostrarMensagemScanner("Aguardando sincronização do oponente...");
-
-                // Escuta até a rede dizer "status pronta" e o P2 jogar o deck
-
                 window._dbOn('salas_drome/' + salaId, snapEspera => {
-
                     let s = snapEspera.val();
-
                     if (s && s.status === "pronta") {
-
                         let deckAtualizado = souP1 ? s.p2.deck : s.p1.deck;
-
                         if (deckAtualizado) {
-
                             window.mostrarMensagemScanner("⚡ Sinal interceptado! Carregando monstros...");
-
                             window.montarDeckOponente(deckAtualizado);
-
                         }
-
                     }
-
                 });
-
             } else {
-
                 window.mostrarMensagemScanner("⚡ Sinal interceptado! Carregando monstros...");
-
                 window.montarDeckOponente(deckInimigo);
-
             }
-
         });
-
     } else {
-
-        // Se não tiver amigo online, roda a partida Treino Simulado como sempre
-
         window.mostrarMensagemScanner("Simulando batalha...");
-
         window.montarDeckOponente(window.estadoDrome.deckSelecionado);
-
     }
-
 };
 
 
