@@ -3195,20 +3195,8 @@ window.resolverBurst = function() {
     if (window.pilhaBurst.length === 0) {
         window.mostrarMensagemScanner("Todas as ações resolvidas.");
         atualizarTelaBatalha();
-        
-        // 🌐 MASTER SYNC: Envia a mesa como Texto Seguro (JSON) para o Firebase não barrar!
-        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && window.estadoTurno.jogadorAtual === 'jogador') {
-            setTimeout(() => {
-                window.enviarAcaoRede({
-                    tipo: 'sincronizar_mesa',
-                    campoJog: JSON.stringify(window.campoJogador),
-                    campoOp: JSON.stringify(window.campoOponente)
-                });
-            }, 800); 
-        }
         return;
     }
-
 
 
     let acaoAtual = window.pilhaBurst.pop();
@@ -4389,6 +4377,11 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 if (danoExtra > 0) msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
                 
                 window.mostrarMensagemScanner(msgScanner);
+
+                // 🌐 AVISA A NUVEM O DANO EXATO E QUEM APANHOU!
+                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                    window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
+                }
                 
                 let elAlvo = document.getElementById(idMonstroInimigo);
                 if(elAlvo) {
@@ -5354,18 +5347,22 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
         setTimeout(() => window.resolverBurst(), 1000);
     }
-    else if (acao.tipo === 'sincronizar_mesa') {
-        // Desempacota o texto e transforma em tabuleiro de novo!
-        let op = JSON.parse(acao.campoOp);
-        let jog = JSON.parse(acao.campoJog);
+   else if (acao.tipo === 'dano') {
+        // O inimigo avisou que bateu. Espelha a carta e tira a vida!
+        let alvoReal = acao.alvo.includes('jog-') ? acao.alvo.replace('jog-', 'op-') : acao.alvo.replace('op-', 'jog-');
+        let criatura = obterCriaturaNoSlot(alvoReal);
         
-        window.campoJogador = op || { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
-        window.campoOponente = jog || { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
-        
-        if(window.campoJogador) Object.keys(window.campoJogador).forEach(k => { if(window.campoJogador[k]) window.campoJogador[k].dono = 'jogador'; });
-        if(window.campoOponente) Object.keys(window.campoOponente).forEach(k => { if(window.campoOponente[k]) window.campoOponente[k].dono = 'oponente'; });
-
-        atualizarTelaBatalha();
+        if (criatura) {
+            criatura.hpAtual -= acao.valor;
+            if (criatura.hpAtual < 0) criatura.hpAtual = 0;
+            
+            let elAlvo = document.getElementById(alvoReal);
+            if(elAlvo) {
+                elAlvo.style.animation = "shake 0.5s";
+                setTimeout(() => { elAlvo.style.animation = ""; }, 500);
+            }
+            atualizarTelaBatalha();
+        }
     }
     else if (acao.tipo === 'morte') {
         // Se a nuvem mandou matar, espelha o ID e explode!
