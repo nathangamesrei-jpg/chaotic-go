@@ -4328,19 +4328,25 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         let criaturaInimiga = obterCriaturaNoSlot(idMonstroInimigo); 
         
         if (minhaCriatura) {
-            // 1. CHECAGEM ELEMENTAL
-            if (ataqueDB.danoElemental) {
+            // 1. CHECAGEM ELEMENTAL (ROBUSTA)
+            let dFogo = ataqueDB.fogo || ataqueDB.danoElemental?.fogo || 0;
+            let dAgua = ataqueDB.agua || ataqueDB.danoElemental?.agua || 0;
+            let dTerra = ataqueDB.terra || ataqueDB.danoElemental?.terra || 0;
+            let dAr = ataqueDB.ar || ataqueDB.vento || ataqueDB.danoElemental?.ar || ataqueDB.danoElemental?.vento || 0;
+
+            if (dFogo > 0 || dAgua > 0 || dTerra > 0 || dAr > 0) {
                 let elemsBrutos = minhaCriatura.elementos;
                 if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
                     let dbCarta = MONSTROS.find(m => m.nome === minhaCriatura.nome);
                     if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
                 }
+                // Converte tudo pra texto limpo para evitar erros de acentuação e maiúsculas
                 let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
 
-                if (textoElementos.includes('fogo') && ataqueDB.danoElemental.fogo > 0) { danoExtra += ataqueDB.danoElemental.fogo; msgBonus += "🔥 "; }
-                if (textoElementos.includes('agua') && ataqueDB.danoElemental.agua > 0) { danoExtra += ataqueDB.danoElemental.agua; msgBonus += "🌊 "; }
-                if (textoElementos.includes('terra') && ataqueDB.danoElemental.terra > 0) { danoExtra += ataqueDB.danoElemental.terra; msgBonus += "⛰️ "; }
-                if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && ataqueDB.danoElemental.vento > 0) { danoExtra += ataqueDB.danoElemental.vento; msgBonus += "☁️ "; }
+                if (textoElementos.includes('fogo') && dFogo > 0) { danoExtra += parseInt(dFogo); msgBonus += `[+${dFogo} 🔥] `; }
+                if (textoElementos.includes('agua') && dAgua > 0) { danoExtra += parseInt(dAgua); msgBonus += `[+${dAgua} 🌊] `; }
+                if (textoElementos.includes('terra') && dTerra > 0) { danoExtra += parseInt(dTerra); msgBonus += `[+${dTerra} ⛰️] `; }
+                if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && dAr > 0) { danoExtra += parseInt(dAr); msgBonus += `[+${dAr} ☁️] `; }
             }
 
             // 2. CHECAGEM DE ATRIBUTOS (STAT CHECK) 🔥
