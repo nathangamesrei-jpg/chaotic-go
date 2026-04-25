@@ -3901,16 +3901,11 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 
         
 
-        // 🔥 APLICA A INICIATIVA 🔥
-
+       // 🔥 APLICA A INICIATIVA 🔥
         window.estadoTurno.jogadorAtual = vencedorIniciativa;
-
         window.pontosAtaque[vencedorIniciativa] += 1; 
-
         if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
-
         
-
         let btn = document.getElementById('btn-passar-turno');
 
         
@@ -4528,183 +4523,105 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
 
 
 window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaque) {
-
     let modalAtaque = document.getElementById('overlay-ataque');
-
     if (modalAtaque) modalAtaque.remove();
 
-
-
     window.pontosAtaque['jogador'] -= custo;
-
     window.maoAtaques.splice(indexMao, 1);
-
     window.lixoAtaques.push(idAtaque);
-
     atualizarDecksEMaoCards();
-
     
-
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
-
-
     // 🔥 LÓGICA DO DANO (ELEMENTAL + CHECAGEM DE ATRIBUTOS) 🔥
-
     let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === nomeAtaque) : null;
-
     let danoExtra = 0;
-
     let msgBonus = "";
 
+    // 🔥 FIX DO BUMERANGUE: Identifica quem é o seu monstro e quem é o monstro inimigo no duelo atual!
+    let idMeuMonstro = null;
+    let idMonstroInimigo = null;
 
+    if (window.estadoCombate && window.estadoCombate.ativo) {
+        let p1Card = obterCriaturaNoSlot(window.estadoCombate.atacante);
+        let p2Card = obterCriaturaNoSlot(window.estadoCombate.defensor);
 
-    if (ataqueDB && window.estadoCombate && window.estadoCombate.atacante) {
+        if (p1Card && p1Card.dono === 'jogador') { idMeuMonstro = window.estadoCombate.atacante; } 
+        else { idMonstroInimigo = window.estadoCombate.atacante; }
 
-        let atacante = obterCriaturaNoSlot(window.estadoCombate.atacante);
-
-        let defensor = obterCriaturaNoSlot(window.estadoCombate.defensor); // 🔥 Puxa o defensor para comparar stats!
-
-        
-
-        if (atacante) {
-
-            // 1. CHECAGEM ELEMENTAL
-
-            if (ataqueDB.danoElemental) {
-
-                let elemsBrutos = atacante.elementos;
-
-                if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
-
-                    let dbCarta = MONSTROS.find(m => m.nome === atacante.nome);
-
-                    if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
-
-                }
-
-                let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-
-
-
-                if (textoElementos.includes('fogo') && ataqueDB.danoElemental.fogo > 0) { danoExtra += ataqueDB.danoElemental.fogo; msgBonus += "🔥 "; }
-
-                if (textoElementos.includes('agua') && ataqueDB.danoElemental.agua > 0) { danoExtra += ataqueDB.danoElemental.agua; msgBonus += "🌊 "; }
-
-                if (textoElementos.includes('terra') && ataqueDB.danoElemental.terra > 0) { danoExtra += ataqueDB.danoElemental.terra; msgBonus += "⛰️ "; }
-
-                if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && ataqueDB.danoElemental.vento > 0) { danoExtra += ataqueDB.danoElemental.vento; msgBonus += "☁️ "; }
-
-            }
-
-
-
-            // 2. CHECAGEM DE ATRIBUTOS (STAT CHECK) 🔥
-
-            if (ataqueDB.checkAtributo && defensor) {
-
-                let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); // 'coragem', 'poder', 'sabedoria', 'velocidade'
-
-                let bonus = ataqueDB.checkAtributo.danoExtra;
-
-                
-
-                let valAta = atacante.statsMax ? (atacante.statsMax[attr] || 0) : 0;
-
-                let valDef = defensor.statsMax ? (defensor.statsMax[attr] || 0) : 0;
-
-
-
-                // Se o seu status for MAIOR que o do inimigo, ganha o dano bônus!
-
-                if (valAta > valDef) {
-
-                    danoExtra += bonus;
-
-                    let iconesAttr = { 'coragem': '❤️', 'poder': '⚡', 'sabedoria': '👁️', 'velocidade': '💨' };
-
-                    msgBonus += `[+${bonus} Check ${iconesAttr[attr] || ''}] `;
-
-                }
-
-            }
-
-        }
-
+        if (p2Card && p2Card.dono === 'jogador') { idMeuMonstro = window.estadoCombate.defensor; } 
+        else { idMonstroInimigo = window.estadoCombate.defensor; }
     }
 
+    if (ataqueDB && idMeuMonstro && idMonstroInimigo) {
+        let minhaCriatura = obterCriaturaNoSlot(idMeuMonstro);
+        let criaturaInimiga = obterCriaturaNoSlot(idMonstroInimigo); 
+        
+        if (minhaCriatura) {
+            // 1. CHECAGEM ELEMENTAL
+            if (ataqueDB.danoElemental) {
+                let elemsBrutos = minhaCriatura.elementos;
+                if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
+                    let dbCarta = MONSTROS.find(m => m.nome === minhaCriatura.nome);
+                    if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
+                }
+                let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
 
+                if (textoElementos.includes('fogo') && ataqueDB.danoElemental.fogo > 0) { danoExtra += ataqueDB.danoElemental.fogo; msgBonus += "🔥 "; }
+                if (textoElementos.includes('agua') && ataqueDB.danoElemental.agua > 0) { danoExtra += ataqueDB.danoElemental.agua; msgBonus += "🌊 "; }
+                if (textoElementos.includes('terra') && ataqueDB.danoElemental.terra > 0) { danoExtra += ataqueDB.danoElemental.terra; msgBonus += "⛰️ "; }
+                if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && ataqueDB.danoElemental.vento > 0) { danoExtra += ataqueDB.danoElemental.vento; msgBonus += "☁️ "; }
+            }
 
-    // Calcula a força total da pancada
+            // 2. CHECAGEM DE ATRIBUTOS (STAT CHECK) 🔥
+            if (ataqueDB.checkAtributo && criaturaInimiga) {
+                let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); 
+                let bonus = ataqueDB.checkAtributo.danoExtra;
+                
+                let valAta = minhaCriatura.statsMax ? (minhaCriatura.statsMax[attr] || 0) : 0;
+                let valDef = criaturaInimiga.statsMax ? (criaturaInimiga.statsMax[attr] || 0) : 0;
+
+                if (valAta > valDef) {
+                    danoExtra += bonus;
+                    let iconesAttr = { 'coragem': '❤️', 'poder': '⚡', 'sabedoria': '👁️', 'velocidade': '💨' };
+                    msgBonus += `[+${bonus} Check ${iconesAttr[attr] || ''}] `;
+                }
+            }
+        }
+    }
 
     let danoTotal = danoBase + danoExtra;
 
-
-
     let acaoDoAtaque = {
-
         dono: 'jogador',
-
         nomeAcao: nomeAtaque,
-
         tipo: 'ataque',
-
         executar: function() {
-
-            let idDefensor = window.estadoCombate.defensor;
-
-            let alvo = obterCriaturaNoSlot(idDefensor);
-
+            if (!idMonstroInimigo) return;
+            let alvo = obterCriaturaNoSlot(idMonstroInimigo);
             if (alvo) {
-
                 alvo.hpAtual -= danoTotal; 
-
                 if(window.tocarSFX) window.tocarSFX('notificacao'); 
-
                 
-
                 let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
-
-                if (danoExtra > 0) {
-
-                    msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
-
-                }
-
+                if (danoExtra > 0) msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
                 
-
                 window.mostrarMensagemScanner(msgScanner);
-
                 
-
-                let elAlvo = document.getElementById(idDefensor);
-
+                let elAlvo = document.getElementById(idMonstroInimigo);
                 if(elAlvo) {
-
                     elAlvo.style.animation = "shake 0.5s";
-
                     setTimeout(() => { elAlvo.style.animation = ""; }, 500);
-
                 }
-
                 if (alvo.hpAtual <= 0) {
-
                     alvo.hpAtual = 0;
-
-                    setTimeout(() => window.encerrarCombateMorte(idDefensor), 1000);
-
+                    setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
                 }
-
                 atualizarTelaBatalha();
-
             }
-
         }
-
     };
-
     window.adicionarAoBurst(acaoDoAtaque);
-
 };
 
 /////////////////////////////////////////////////////////////////////////////////
