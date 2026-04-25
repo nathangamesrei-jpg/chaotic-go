@@ -3755,61 +3755,41 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 /////////////////////////////////////////////////////////////////////
 
 window.passarTurno = function(ignorarLimite) {
-
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-
-
     if (emCombate && window.estadoTurno.jogadorAtual === 'jogador' && ignorarLimite !== true) {
-
         if (window.maoAtaques && window.maoAtaques.length > 5) {
-
             window.abrirModalDescarte();
-
             return; 
-
         }
-
     }
-
-
 
     // 🌐 SE FOR ONLINE: Envia o comando de passar o turno para a nuvem!
-
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-
         if (window.estadoTurno.jogadorAtual === 'jogador') {
-
             let proximoTurno = window.souP1Batalha ? 'p2' : 'p1';
-
             window.mostrarMensagemScanner("Enviando turno...");
-
             
-
-            // Oculta o botão instantaneamente para evitar duplo-clique
-
             let btn = document.getElementById('btn-passar-turno');
-
-            if (btn) btn.style.display = 'none';
-
+            if (btn) btn.style.display = 'none'; // Some pra não clicar duas vezes
             
-
-            window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { turno_ativo: proximoTurno });
-
-            return; // Interrompe aqui. A tela só vira quando o Firebase devolver o sinal.
-
+            // 🔥 FIX: Força a atualização do turno usando o Set ao invés de Update puro
+            // para garantir que a Nuvem crie o caminho caso ele não exista!
+            window._dbSet('salas_drome/' + window.salaBatalhaAtual + '/turno_ativo', proximoTurno).then(() => {
+                // Sucesso! A nuvem vai escutar e rodar a tela local via Rádio.
+            }).catch(() => {
+                // Se der erro de rede, destrava o botão e roda localmente pra não bugar o jogo!
+                if(btn) btn.style.display = 'block';
+                window.executarPassagemDeTurnoLocal();
+            });
+            
+            return; 
         }
-
     }
 
-
-
-    // Se for Bot (ou se a nuvem confirmou), roda o script local!
-
+    // Se for Bot ou Modo Simulado, roda o script local direto!
     window.executarPassagemDeTurnoLocal();
-
 };
-
 
 
 // 🌐 O RÁDIO DO FIREBASE: Fica escutando quem é o dono do turno
