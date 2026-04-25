@@ -4308,7 +4308,6 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
     let danoExtra = 0;
     let msgBonus = "";
 
-    // 🔥 FIX DO BUMERANGUE: Identifica quem é o seu monstro e quem é o monstro inimigo no duelo atual!
     let idMeuMonstro = null;
     let idMonstroInimigo = null;
 
@@ -4328,7 +4327,6 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         let criaturaInimiga = obterCriaturaNoSlot(idMonstroInimigo); 
         
         if (minhaCriatura) {
-            // 1. CHECAGEM ELEMENTAL (ROBUSTA)
             let dFogo = ataqueDB.fogo || ataqueDB.danoElemental?.fogo || 0;
             let dAgua = ataqueDB.agua || ataqueDB.danoElemental?.agua || 0;
             let dTerra = ataqueDB.terra || ataqueDB.danoElemental?.terra || 0;
@@ -4340,7 +4338,6 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                     let dbCarta = MONSTROS.find(m => m.nome === minhaCriatura.nome);
                     if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
                 }
-                // Converte tudo pra texto limpo para evitar erros de acentuação e maiúsculas
                 let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
 
                 if (textoElementos.includes('fogo') && dFogo > 0) { danoExtra += parseInt(dFogo); msgBonus += `[+${dFogo} 🔥] `; }
@@ -4349,14 +4346,11 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && dAr > 0) { danoExtra += parseInt(dAr); msgBonus += `[+${dAr} ☁️] `; }
             }
 
-            // 2. CHECAGEM DE ATRIBUTOS (STAT CHECK) 🔥
             if (ataqueDB.checkAtributo && criaturaInimiga) {
                 let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); 
                 let bonus = ataqueDB.checkAtributo.danoExtra;
-                
                 let valAta = minhaCriatura.statsMax ? (minhaCriatura.statsMax[attr] || 0) : 0;
                 let valDef = criaturaInimiga.statsMax ? (criaturaInimiga.statsMax[attr] || 0) : 0;
-
                 if (valAta > valDef) {
                     danoExtra += bonus;
                     let iconesAttr = { 'coragem': '❤️', 'poder': '⚡', 'sabedoria': '👁️', 'velocidade': '💨' };
@@ -4384,7 +4378,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 
                 window.mostrarMensagemScanner(msgScanner);
 
-                // 🌐 AVISA A NUVEM O DANO EXATO E QUEM APANHOU!
+                // 🌐 O TRANSMISSOR VITAL QUE FALTAVA: Avisa a rede pra tirar o HP no PC do Inimigo!
                 if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
                     window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
                 }
@@ -5319,9 +5313,16 @@ window.iniciarEscutaAcoesOnline = function() {
 
 // 🤖 O FANTASMA: Pega o sinal do rádio e mexe as cartas na sua mesa
 window.processarAcaoInimiga = function(acao) {
+    
+    // 🔄 O TRADUTOR DE ESPELHO: O que é 'jog' pra ele, é 'op' pra você, e vice-versa!
+    const inverterId = (id) => {
+        if (!id) return id;
+        return id.startsWith('jog-') ? id.replace('jog-', 'op-') : id.replace('op-', 'jog-');
+    };
+
     if (acao.tipo === 'mover') {
-        let origemReal = acao.origem.replace('jog-', 'op-');
-        let destinoReal = acao.destino.replace('jog-', 'op-');
+        let origemReal = inverterId(acao.origem);
+        let destinoReal = inverterId(acao.destino);
         let criatura = obterCriaturaNoSlot(origemReal);
         setarCriaturaNoSlot(destinoReal, criatura); 
         setarCriaturaNoSlot(origemReal, null); 
@@ -5331,13 +5332,32 @@ window.processarAcaoInimiga = function(acao) {
         atualizarTelaBatalha();
     }
     else if (acao.tipo === 'combate') {
-        let origemReal = acao.origem.replace('jog-', 'op-');
-        let destinoReal = acao.destino.replace('jog-', 'op-').replace('op-', 'jog-'); 
+        let origemReal = inverterId(acao.origem);
+        let destinoReal = inverterId(acao.destino);
         let criatura = obterCriaturaNoSlot(origemReal);
         if(criatura) criatura.moveuNesteTurno = true;
         window.mostrarMensagemScanner("⚔️ ALERTA: O INIMIGO INICIOU UM COMBATE!");
         if(typeof window.iniciarCombate === 'function') window.iniciarCombate(origemReal, destinoReal);
         atualizarTelaBatalha();
+    }
+    else if (acao.tipo === 'dano') {
+        let alvoReal = inverterId(acao.alvo);
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura.hpAtual -= acao.valor;
+            if (criatura.hpAtual < 0) criatura.hpAtual = 0;
+            
+            let elAlvo = document.getElementById(alvoReal);
+            if(elAlvo) {
+                elAlvo.style.animation = "shake 0.5s";
+                setTimeout(() => { elAlvo.style.animation = ""; }, 500);
+            }
+            atualizarTelaBatalha();
+        }
+    }
+    else if (acao.tipo === 'morte') {
+        let alvoReal = inverterId(acao.alvo);
+        window.encerrarCombateMorte(alvoReal);
     }
     else if (acao.tipo === 'abrir_burst') {
         let acaoInimiga = {
@@ -5352,28 +5372,6 @@ window.processarAcaoInimiga = function(acao) {
         window.aguardandoResposta = false;
         window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
         setTimeout(() => window.resolverBurst(), 1000);
-    }
-   else if (acao.tipo === 'dano') {
-        // O inimigo avisou que bateu. Espelha a carta e tira a vida!
-        let alvoReal = acao.alvo.includes('jog-') ? acao.alvo.replace('jog-', 'op-') : acao.alvo.replace('op-', 'jog-');
-        let criatura = obterCriaturaNoSlot(alvoReal);
-        
-        if (criatura) {
-            criatura.hpAtual -= acao.valor;
-            if (criatura.hpAtual < 0) criatura.hpAtual = 0;
-            
-            let elAlvo = document.getElementById(alvoReal);
-            if(elAlvo) {
-                elAlvo.style.animation = "shake 0.5s";
-                setTimeout(() => { elAlvo.style.animation = ""; }, 500);
-            }
-            atualizarTelaBatalha();
-        }
-    }
-    else if (acao.tipo === 'morte') {
-        // Se a nuvem mandou matar, espelha o ID e explode!
-        let alvoReal = acao.alvo.includes('jog-') ? acao.alvo.replace('jog-', 'op-') : acao.alvo.replace('op-', 'jog-');
-        window.encerrarCombateMorte(alvoReal);
     }
     else if (acao.tipo === 'definir_local') {
         window.localAtivoAtual = acao.img;
