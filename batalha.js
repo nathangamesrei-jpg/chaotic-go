@@ -3515,18 +3515,29 @@ window.iniciarTurnoReal = function(primeiroJogador) {
 
 
     let iniciarOpc = () => {
-        window.sortearLocalAnimado(primeiroJogador, () => {
-            if (primeiroJogador === 'jogador') {
+        if (primeiroJogador === 'jogador') {
+            // É a MINHA vez de começar, eu sorteio o Local do meu deck!
+            window.sortearLocalAnimado('jogador', () => {
                 window.mostrarMensagemScanner("Seu turno! Movimente suas criaturas.");
-            } else {
-                window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
                 
-                // 🤖 Só o Bot passa o turno sozinho no começo do jogo! No online a tela só aguarda.
-                if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
-                    setTimeout(() => { window.passarTurno(); }, 3000);
+                // 🌐 ONLINE: Manda a foto do local sorteado pro rádio do inimigo!
+                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                    window.enviarAcaoRede({ tipo: 'definir_local', img: window.localAtivoAtual });
                 }
+            });
+        } else {
+            // É a vez do INIMIGO. Eu NÃO sorteio, espero o rádio tocar.
+            if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+                // 🤖 Modo Bot: Sorteia pra ele e deixa rolar
+                window.sortearLocalAnimado('oponente', () => {
+                    window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
+                    setTimeout(() => { window.passarTurno(); }, 3000);
+                });
+            } else {
+                // 🌐 Modo Online: Fica parado esperando a Nuvem avisar o local
+                window.mostrarMensagemScanner("Aguardando o oponente revelar o Local...");
             }
-        });
+        }
     };
 
 
@@ -5619,15 +5630,36 @@ window.processarAcaoInimiga = function(acao) {
     // 5. SINCRONIZAÇÃO MESTRA DE MESA (Garante que os HPs fiquem iguais pós-dano)
 
     else if (acao.tipo === 'sincronizar_mesa') {
-
         // O que é campoJogador para ele, é campoOponente para mim, e vice-versa!
-
         window.campoJogador = acao.campoOp;
-
         window.campoOponente = acao.campoJog;
+        
+        // 🔥 CORREÇÃO VITAL: Restaura a etiqueta de "Dono" para não congelar o Tabuleiro do Receptor!
+        if(window.campoJogador) Object.keys(window.campoJogador).forEach(k => { if(window.campoJogador[k]) window.campoJogador[k].dono = 'jogador'; });
+        if(window.campoOponente) Object.keys(window.campoOponente).forEach(k => { if(window.campoOponente[k]) window.campoOponente[k].dono = 'oponente'; });
 
         atualizarTelaBatalha();
-
+    }
+    // 6. SINCRONIZAÇÃO DE LOCAL (Quando o oponente sorteia o local dele)
+    else if (acao.tipo === 'definir_local') {
+        window.localAtivoAtual = acao.img;
+        if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
+        
+        window.mostrarMensagemScanner("O Oponente revelou o Local da batalha!");
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        
+        // Faz uma animação rápida pra mostrar a carta revelada na tela
+        const modalHTML = `
+            <div class="modal-overlay" id="overlay-roleta-local" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <h2 style="color: #e53935; font-family: 'Arial Black', sans-serif; letter-spacing: 2px; text-shadow: 0 0 15px #e53935; margin-bottom: 20px; text-transform: uppercase;">LOCAL INIMIGO REVELADO!</h2>
+                <div style="width: 400px; height: 280px; background-image: url('${acao.img}'); background-size: 100% 100%; background-position: center; border: 4px solid #e53935; border-radius: 15px; box-shadow: 0 0 40px #e53935; animation: popInCard 0.5s ease-out forwards;"></div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        setTimeout(() => {
+            let mod = document.getElementById('overlay-roleta-local');
+            if (mod) mod.remove();
+        }, 2500);
     }
 
 };
