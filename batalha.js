@@ -3843,7 +3843,10 @@ window.executarPassagemDeTurnoLocal = function() {
     if (window.estadoTurno.jogadorAtual === 'jogador') {
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
+        
+        // 🔥 CORREÇÃO: Reseta o cansaço de movimento para AMBOS os campos ao trocar o turno
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        if(window.campoJogador) Object.values(window.campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
         if (emCombate) {
             window.pontosAtaque['oponente'] += 1;
@@ -3918,18 +3921,32 @@ window.executarPassagemDeTurnoLocal = function() {
             if (emCombate) {
                 window.mostrarMensagemScanner("Sua vez de atacar! +1 Ponto e +1 Carta.");
             } else {
-                // 🔥 FIX DO LOCAL: Você sorteia o Local na sua Fase de Movimento!
-                window.sortearLocalAnimado('jogador', () => {
+                // 🔥 CORREÇÃO DO LOCAL: Só sorteia UM local por Fase de Movimento.
+                // Usamos uma variável de controle para impedir que rode novamente
+                if (!window.localSorteadoNesteTurno) {
+                    window.localSorteadoNesteTurno = true;
+                    window.sortearLocalAnimado('jogador', () => {
+                        window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
+                        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                            window.enviarAcaoRede({ tipo: 'definir_local', img: window.localAtivoAtual });
+                        }
+                    });
+                } else {
                     window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
-                    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                        window.enviarAcaoRede({ tipo: 'definir_local', img: window.localAtivoAtual });
-                    }
-                });
+                }
             }
         });
     }
     
-   atualizarTelaBatalha(); 
+   // 🔥 CORREÇÃO DO LOCAL: Reseta a trava do local sempre que o combate acabar,
+   // para que na próxima fase de movimento ele permita sortear de novo.
+   if (emCombate === false && window.estadoTurno.jogadorAtual === 'jogador') {
+      window.localSorteadoNesteTurno = false;
+   }
+
+   atualizarTelaBatalha();
+
+    
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
     // 🔥 DESTRANCA A PORTA PARA O PRÓXIMO TURNO RÁPIDO PUDER ENTRAR!
