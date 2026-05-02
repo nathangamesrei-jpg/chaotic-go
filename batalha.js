@@ -3761,15 +3761,15 @@ window.passarTurno = function(ignorarLimite) {
             let btn = document.getElementById('btn-passar-turno');
             if (btn) btn.style.display = 'none'; // Some pra não clicar duas vezes
             
-            // 🔥 FIX: Força a atualização do turno usando o Set ao invés de Update puro
-            // para garantir que a Nuvem crie o caminho caso ele não exista!
-            window._dbSet('salas_drome/' + window.salaBatalhaAtual + '/turno_ativo', proximoTurno).then(() => {
-                // Sucesso! A nuvem vai escutar e rodar a tela local via Rádio.
-            }).catch(() => {
-                // Se der erro de rede, destrava o botão e roda localmente pra não bugar o jogo!
-                if(btn) btn.style.display = 'block';
-                window.executarPassagemDeTurnoLocal();
-            });
+            // 🔥 O conserto do Erro Silencioso: Usando a função nativa sem promessas
+            window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { turno_ativo: proximoTurno });
+            
+            // Trava de segurança: Se a rede lagar e a tela não girar em 2.5s, força a passagem pra não bugar!
+            setTimeout(() => {
+                if (window.estadoTurno.jogadorAtual === 'jogador') {
+                    window.executarPassagemDeTurnoLocal();
+                }
+            }, 2500);
             
             return; 
         }
@@ -3840,167 +3840,104 @@ window.iniciarEscutaDeTurnoOnline = function() {
 // O verdadeiro motor que vira a mesa (Separado do clique do botão)
 
 window.executarPassagemDeTurnoLocal = function() {
-
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-
-
     if (typeof window.qtdMaoOponente === 'undefined') window.qtdMaoOponente = 3;
-
     if (typeof window.qtdBaralhoOponente === 'undefined') window.qtdBaralhoOponente = 17;
-
     if (typeof window.lixoAtaquesOponente === 'undefined') window.lixoAtaquesOponente = 0;
-
     if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
 
-
-
     if (window.estadoTurno.jogadorAtual === 'jogador') {
-
         window.estadoTurno.jogadorAtual = 'oponente';
-
         window.estadoTurno.turnoNumero++;
-
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
-
         
-
         if (emCombate) {
-
             window.pontosAtaque['oponente'] += 1;
-
-            
-
             if (window.qtdBaralhoOponente <= 0 && window.lixoAtaquesOponente > 0) {
-
                 window.qtdBaralhoOponente = window.lixoAtaquesOponente;
-
                 window.lixoAtaquesOponente = 0;
-
             }
-
-
-
             if (window.qtdBaralhoOponente > 0) {
-
                 window.qtdMaoOponente++; 
-
                 window.qtdBaralhoOponente--; 
-
             }
-
         }
-
-
 
         let btn = document.getElementById('btn-passar-turno');
-
         if(btn) { 
-
             btn.style.display = 'block'; 
-
             btn.disabled = true; 
-
             btn.innerHTML = "TURNO<br>OPONENTE"; 
-
         }
-
         
-
         window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
-
-            window.mostrarMensagemScanner(emCombate ? "Turno do oponente no combate..." : "Turno de movimento do oponente...");
-
-            
-
-            // 🤖 SE FOR BOT (Muda o turno sozinho dps de 4s)
-
-            if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
-
-                setTimeout(() => { window.passarTurno(); }, 4000);
-
+            if (emCombate) {
+                window.mostrarMensagemScanner("Turno do oponente no combate...");
+                if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+                    setTimeout(() => { window.passarTurno(); }, 4000);
+                }
+            } else {
+                // 🔥 FIX DO LOCAL: Inimigo sorteia o Local na Fase de Movimento!
+                if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+                    window.sortearLocalAnimado('oponente', () => {
+                        window.mostrarMensagemScanner("Turno de movimento do oponente...");
+                        setTimeout(() => { window.passarTurno(); }, 4000);
+                    });
+                } else {
+                    window.mostrarMensagemScanner("Aguardando oponente revelar o Local...");
+                }
             }
-
         });
-
     } else {
-
         if (emCombate && window.qtdMaoOponente > 5) {
-
             let excesso = window.qtdMaoOponente - 5;
-
             window.qtdMaoOponente = 5;
-
             window.lixoAtaquesOponente += excesso;
-
         }
-
-
 
         window.estadoTurno.jogadorAtual = 'jogador';
-
         window.estadoTurno.turnoNumero++;
-
         Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
-
         
-
         if (emCombate) {
-
             window.pontosAtaque['jogador'] += 1;
-
             
-
             if ((!window.baralhoAtaques || window.baralhoAtaques.length === 0) && window.lixoAtaques && window.lixoAtaques.length > 0) {
-
                 window.mostrarMensagemScanner("Baralho vazio! Reembaralhando o Lixo...");
-
                 window.baralhoAtaques = embaralharArray(window.lixoAtaques);
-
                 window.lixoAtaques = []; 
-
             }
-
-
 
             if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
-
                 window.maoAtaques.push(window.baralhoAtaques.shift());
-
             }
-
         }
-
-
 
         let btn = document.getElementById('btn-passar-turno');
-
         if(btn) { 
-
             btn.style.display = 'block'; 
-
             btn.disabled = false; 
-
             btn.innerHTML = "PASSAR<br>TURNO"; 
-
         }
-
         
-
         window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
-
-            window.mostrarMensagemScanner(emCombate ? "Sua vez de atacar! +1 Ponto e +1 Carta." : "Sua vez! Movimente suas criaturas.");
-
+            if (emCombate) {
+                window.mostrarMensagemScanner("Sua vez de atacar! +1 Ponto e +1 Carta.");
+            } else {
+                // 🔥 FIX DO LOCAL: Você sorteia o Local na sua Fase de Movimento!
+                window.sortearLocalAnimado('jogador', () => {
+                    window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
+                    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                        window.enviarAcaoRede({ tipo: 'definir_local', img: window.localAtivoAtual });
+                    }
+                });
+            }
         });
-
     }
-
     
-
     atualizarTelaBatalha(); 
-
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
-
 };
 
 // ==========================================
