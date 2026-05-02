@@ -3749,10 +3749,11 @@ window.passarTurno = function(ignorarLimite) {
             let btn = document.getElementById('btn-passar-turno');
             if (btn) btn.style.display = 'none'; // Some pra não clicar duas vezes
             
-            // 🔥 O conserto do Erro Silencioso: Usando a função nativa sem promessas
-            window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { turno_ativo: proximoTurno });
+            // 🔥 O SEGREDO DO ANTI-TRAVAMENTO: Colamos um carimbo de tempo para o Firebase NUNCA ignorar a mensagem!
+            let turnoComCarimbo = proximoTurno + '_' + Date.now();
+            window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { turno_ativo: turnoComCarimbo });
             
-            // Trava de segurança: Se a rede lagar e a tela não girar em 2.5s, força a passagem pra não bugar!
+            // Trava de segurança extra
             setTimeout(() => {
                 if (window.estadoTurno.jogadorAtual === 'jogador') {
                     window.executarPassagemDeTurnoLocal();
@@ -3770,7 +3771,6 @@ window.passarTurno = function(ignorarLimite) {
 
 
 
-
 // 🌐 O RÁDIO DO FIREBASE: Fica escutando quem é o dono do turno
 
 // 🔥 SISTEMA DE FILA PARA TURNOS RÁPIDOS
@@ -3780,7 +3780,16 @@ window.processandoTurno = false;
 window.iniciarEscutaDeTurnoOnline = function() {
     window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/turno_ativo', (snapshot) => {
         if (!snapshot.exists()) return;
-        let turnoVigente = snapshot.val(); // Retorna 'p1' ou 'p2'
+        
+        // Recebe o pacote do Firebase (Ex: "p1_1714000000")
+        let turnoBruto = snapshot.val(); 
+        
+        // 🔥 Limpa o carimbo de tempo e pega só o 'p1' ou 'p2'
+        let turnoVigente = turnoBruto;
+        if (typeof turnoBruto === 'string' && turnoBruto.includes('_')) {
+            turnoVigente = turnoBruto.split('_')[0]; 
+        }
+        
         let minhaVez = (window.souP1Batalha && turnoVigente === 'p1') || (!window.souP1Batalha && turnoVigente === 'p2');
         
         // Coloca o pedido de turno na fila para não atropelar animações!
@@ -3788,6 +3797,9 @@ window.iniciarEscutaDeTurnoOnline = function() {
         window.processarFilaDeTurnos();
     });
 };
+
+
+
 
 window.processarFilaDeTurnos = function() {
     if (window.processandoTurno || window.filaDeTurnos.length === 0) return;
