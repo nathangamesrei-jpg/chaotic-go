@@ -5345,7 +5345,9 @@ window.processarAcaoInimiga = function(acao) {
         let criatura = obterCriaturaNoSlot(alvoReal);
         if (criatura) {
             criatura.hpAtual -= acao.valor;
-            if (criatura.hpAtual < 0) criatura.hpAtual = 0;
+            if (criatura.hpAtual <= 0) {
+                criatura.hpAtual = 0;
+            }
             
             let elAlvo = document.getElementById(alvoReal);
             if(elAlvo) {
@@ -5353,12 +5355,18 @@ window.processarAcaoInimiga = function(acao) {
                 setTimeout(() => { elAlvo.style.animation = ""; }, 500);
             }
             atualizarTelaBatalha();
+
+            // 🔥 SE A CRIATURA MORRER APÓS O DANO, RODA A EXPLOSÃO! 🔥
+            if (criatura.hpAtual === 0) {
+                setTimeout(() => window.encerrarCombateMorte(alvoReal), 1000);
+            }
         }
     }
     else if (acao.tipo === 'morte') {
         let alvoReal = inverterId(acao.alvo);
         window.encerrarCombateMorte(alvoReal);
     }
+        
     else if (acao.tipo === 'abrir_burst') {
         let acaoInimiga = {
             dono: 'oponente',
