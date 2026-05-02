@@ -3563,32 +3563,20 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 
 
 
-    // 🔥 CÁLCULO DE INICIATIVA 🔥
-
+    // 🔥 CÁLCULO DE INICIATIVA CORRIGIDO 🔥
     let atributoIniciativa = locDB && locDB.iniciativa ? locDB.iniciativa.toLowerCase() : "velocidade"; // Velocidade é o padrão se falhar
-
     let prop = 'velocidade';
-
     if (atributoIniciativa.includes('coragem')) prop = 'coragem';
-
     if (atributoIniciativa.includes('poder')) prop = 'poder';
-
     if (atributoIniciativa.includes('sabedoria')) prop = 'sabedoria';
 
+    // 💡 PASSO EDUCATIVO: Forçamos o uso do Number() para garantir que "5" não seja maior que "25" por erro de texto
+    let valAta = atacante.statsMax ? Number(atacante.statsMax[prop]) : 0;
+    let valDef = defensor.statsMax ? Number(defensor.statsMax[prop]) : 0;
 
-
-    let valAta = atacante.statsMax ? atacante.statsMax[prop] : 0;
-
-    let valDef = defensor.statsMax ? defensor.statsMax[prop] : 0;
-
-
-
-    let vencedorIniciativa = atacante.dono; // Empate vai pro atacante
-
+    let vencedorIniciativa = atacante.dono; // Regra de Ouro: Empate vai para o Atacante (quem iniciou a briga)
     if (valDef > valAta) {
-
         vencedorIniciativa = defensor.dono;
-
     }
 
 
