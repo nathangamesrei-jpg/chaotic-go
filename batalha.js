@@ -3785,54 +3785,47 @@ window.passarTurno = function(ignorarLimite) {
 
 // 🌐 O RÁDIO DO FIREBASE: Fica escutando quem é o dono do turno
 
+// 🔥 SISTEMA DE FILA PARA TURNOS RÁPIDOS
+window.filaDeTurnos = [];
+window.processandoTurno = false;
+
 window.iniciarEscutaDeTurnoOnline = function() {
-
     window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/turno_ativo', (snapshot) => {
-
         if (!snapshot.exists()) return;
-
         let turnoVigente = snapshot.val(); // Retorna 'p1' ou 'p2'
-
-        
-
         let minhaVez = (window.souP1Batalha && turnoVigente === 'p1') || (!window.souP1Batalha && turnoVigente === 'p2');
-
         
-
-        // Remove a tela do Jokenpo (Pra quem perdeu e ficou esperando o sinal)
-
-        let modalJokenpo = document.getElementById('overlay-jokenpo');
-
-        if (modalJokenpo) modalJokenpo.remove();
-
-
-
-        // 1. PRIMEIRA LARGADA DO JOGO: Se o jogo acabou de sair do Jokenpo!
-
-        if (window.estadoTurno.fase !== 'principal') {
-
-            window.iniciarTurnoReal(minhaVez ? 'jogador' : 'oponente');
-
-        } 
-
-        // 2. MUDANÇA DE TURNO NORMAL NO MEIO DO JOGO
-
-        else {
-
-            if (minhaVez && window.estadoTurno.jogadorAtual === 'oponente') {
-
-                window.executarPassagemDeTurnoLocal();
-
-            } else if (!minhaVez && window.estadoTurno.jogadorAtual === 'jogador') {
-
-                window.executarPassagemDeTurnoLocal();
-
-            }
-
-        }
-
+        // Coloca o pedido de turno na fila para não atropelar animações!
+        window.filaDeTurnos.push(minhaVez);
+        window.processarFilaDeTurnos();
     });
+};
 
+window.processarFilaDeTurnos = function() {
+    if (window.processandoTurno || window.filaDeTurnos.length === 0) return;
+    window.processandoTurno = true; // Tranca a porta!
+    
+    let minhaVez = window.filaDeTurnos.shift();
+    
+    let modalJokenpo = document.getElementById('overlay-jokenpo');
+    if (modalJokenpo) modalJokenpo.remove();
+
+    if (window.estadoTurno.fase !== 'principal') {
+        window.iniciarTurnoReal(minhaVez ? 'jogador' : 'oponente');
+        // Libera a porta mais rápido na primeira rodada
+        setTimeout(() => { window.processandoTurno = false; window.processarFilaDeTurnos(); }, 1000);
+    } 
+    else {
+        if (minhaVez && window.estadoTurno.jogadorAtual === 'oponente') {
+            window.executarPassagemDeTurnoLocal();
+        } else if (!minhaVez && window.estadoTurno.jogadorAtual === 'jogador') {
+            window.executarPassagemDeTurnoLocal();
+        } else {
+            // Se já for a vez de quem foi chamado, só ignora e destranca!
+            window.processandoTurno = false; 
+            window.processarFilaDeTurnos();
+        }
+    }
 };
 
 
@@ -3936,8 +3929,14 @@ window.executarPassagemDeTurnoLocal = function() {
         });
     }
     
-    atualizarTelaBatalha(); 
+   atualizarTelaBatalha(); 
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+
+    // 🔥 DESTRANCA A PORTA PARA O PRÓXIMO TURNO RÁPIDO PUDER ENTRAR!
+    setTimeout(() => {
+        window.processandoTurno = false;
+        window.processarFilaDeTurnos();
+    }, 1500); // 1.5s é o tempo exato pro Banner sair da tela e não bugar nada.
 };
 
 // ==========================================
