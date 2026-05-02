@@ -3780,6 +3780,9 @@ window.passarTurno = function(ignorarLimite) {
 };
 
 
+
+
+
 // 🌐 O RÁDIO DO FIREBASE: Fica escutando quem é o dono do turno
 
 window.iniciarEscutaDeTurnoOnline = function() {
