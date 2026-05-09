@@ -1900,43 +1900,20 @@ setTimeout(() => {
     }
 
     ['jog', 'op'].forEach(lado => {
-
         ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
-
             let el = document.getElementById(`${lado}-${slot}`);
-
             if (el) {
-
                 if (el.parentElement) el.parentElement.style.pointerEvents = "none";
-
                 el.style.pointerEvents = "auto";
-
                 
-
-                // 🔥 FIX REAL: Se for carta do Oponente, usa o clique simples igual carta de ataque!
-
-                if (lado === 'op') {
-
-                    el.onpointerdown = null;
-
-                    el.ontouchstart = null;
-
-                    el.onclick = () => window.lidarComCliqueTabuleiro(`op-${slot}`);
-
-                } else {
-
-                    // Nas suas cartas, mantém o sistema de arrastar e soltar
-
-                    el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
-
-                    el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
-
-                }
-
+                // 🔥 FIM DA PARALISIA: Todos os slots recebem os mesmos poderes!
+                // O código interno da 'iniciarInteracaoSlot' já é inteligente o suficiente
+                // para saber se a carta ali dentro é sua ou do inimigo.
+                el.onclick = null; // Limpa clicks velhos
+                el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+                el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
             }
-
         });
-
     });
 
 }, 1000);
