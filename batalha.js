@@ -1437,23 +1437,20 @@ window.lidarComCliqueTabuleiro = function(fullId) {
 
 
 
-   if (!criaturaAlvo) {
-        // Mover para um espaço vazio é sempre permitido (se a criatura não estiver cansada)
+if (!criaturaAlvo) {
+        // Mover para um espaço vazio sempre é permitido
         setarCriaturaNoSlot(fullId, criaturaOrigem); setarCriaturaNoSlot(idOrigem, null); criaturaOrigem.moveuNesteTurno = true; window.mostrarMensagemScanner("Avançando!");
         if (typeof window.enviarAcaoRede === 'function') window.enviarAcaoRede({ tipo: 'mover', origem: idOrigem, destino: fullId });
     } else if (criaturaAlvo.dono === 'oponente') {
-        // 🔥 REGRA OFICIAL TCG: Checa se um combate JÁ ACONTECEU ou JÁ COMEÇOU neste turno!
-        if (window.combateIniciadoNesteTurno || (window.estadoCombate && window.estadoCombate.ativo)) {
-            window.mostrarMensagemScanner("❌ AÇÃO INVÁLIDA: Você só pode iniciar UM combate por turno! Passe a vez.");
-            if(window.tocarSFX) window.tocarSFX('erro'); // Opcional, toca um som de erro se tiver
+        
+        // 🔥 A TRAVA DE DESTRUIÇÃO: Checa se uma criatura já foi morta neste turno
+        // ou se já existe um combate acontecendo agora!
+        if (window.combateFinalizadoNesteTurno || (window.estadoCombate && window.estadoCombate.ativo)) {
+            window.mostrarMensagemScanner("❌ AÇÃO INVÁLIDA: Uma criatura já foi destruída neste turno! Você deve passar a vez.");
             limparDestaquesMovimento(); window.slotSelecionadoMovimento = null; return;
         }
 
-        // Se passar pelo bloqueio acima, ele levanta a Bandeira de Combate
-        window.combateIniciadoNesteTurno = true;
-        criaturaOrigem.moveuNesteTurno = true; 
-        window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
-        
+        criaturaOrigem.moveuNesteTurno = true; window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
         if (typeof window.enviarAcaoRede === 'function') window.enviarAcaoRede({ tipo: 'combate', origem: idOrigem, destino: fullId });
         if(typeof window.iniciarCombate === 'function') window.iniciarCombate(idOrigem, fullId);
     }
