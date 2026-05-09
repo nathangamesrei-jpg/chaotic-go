@@ -2695,148 +2695,83 @@ window.localAtivoAtual = null;
 
 
 
-window.sortearLocalAnimado = function(jogadorDaVez, callback) {
-
+window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = null) {
     let deck = window.estadoDrome.deckSelecionado;
-
     let imagensLocais = [];
-
     
-
     if (deck && deck.locais && deck.locais.length > 0) {
-
         imagensLocais = deck.locais.map(id => {
-
             let localEncontrado = null;
-
             if (typeof LOCAIS_DB !== 'undefined') localEncontrado = LOCAIS_DB.find(x => x.id == id || x.nome == id);
-
             if (!localEncontrado && window.inventario) localEncontrado = window.inventario.find(x => x.id == id || x.nome == id);
-
             return localEncontrado ? (localEncontrado.img || localEncontrado.cartaBlank) : null;
-
         }).filter(img => img !== null && img !== undefined);
-
     }
-
-
 
     if (imagensLocais.length === 0) {
-
-        console.error("⚠️ DEBBUG: Nenhum local encontrado no Deck Salvo! Mostrando apenas o verso.");
-
         imagensLocais = [URL_FUNDO_CARTA];
-
     }
 
-
+    // 🧠 PREVISÃO DO FUTURO: Escolhemos a carta ANTES da animação!
+    let resultadoFinal = localForcado;
+    if (!resultadoFinal) {
+        resultadoFinal = imagensLocais[Math.floor(Math.random() * imagensLocais.length)];
+        
+        // 📡 AVISA A NUVEM INSTANTANEAMENTE: "Girem a roleta e parem nesta carta!"
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && jogadorDaVez === 'jogador') {
+            window.enviarAcaoRede({ tipo: 'girar_roleta_local', img: resultadoFinal });
+        }
+    }
 
     const roletaHTML = `
-
         <div class="modal-overlay" id="overlay-roleta-local" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-
             <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif; letter-spacing: 5px; text-shadow: 0 0 15px #00bcd4; margin-bottom: 20px; animation: pulse 1s infinite;">SORTEANDO LOCAL...</h2>
-
             <div id="roleta-imagem" style="width: 400px; height: 280px; background-size: 100% 100%; background-repeat: no-repeat; background-position: center; border: 4px solid #fff; border-radius: 15px; box-shadow: 0 0 40px #fff; transition: background-image 0.1s;"></div>
-
         </div>
-
     `;
-
     document.body.insertAdjacentHTML('beforeend', roletaHTML);
 
-
-
     let divImagem = document.getElementById('roleta-imagem');
-
     let tempo = 50; 
-
     let giros = 0;
-
-    let indexSorteio = 0;
-
-
 
     if(window.tocarSFX) window.tocarSFX('notificacao');
 
-
-
     function girar() {
-
-        indexSorteio = Math.floor(Math.random() * imagensLocais.length);
-
-        divImagem.style.backgroundImage = `url('${imagensLocais[indexSorteio]}')`;
-
+        // Gira mostrando cartas aleatórias pra fazer suspense
+        divImagem.style.backgroundImage = `url('${imagensLocais[Math.floor(Math.random() * imagensLocais.length)]}')`;
         
-
         giros++;
-
         tempo += 10; 
 
-
-
         if (giros < 25) {
-
             setTimeout(girar, tempo);
-
         } else {
-
+            // 🔥 FREIO OBRIGATÓRIO: A roleta para exatamente na carta prevista!
+            divImagem.style.backgroundImage = `url('${resultadoFinal}')`;
             divImagem.style.borderColor = "#ffd700";
-
             divImagem.style.boxShadow = "0 0 50px #ffd700";
-
-            let titulo = document.querySelector('#overlay-roleta-local h2');
-
-            if(titulo) {
-
-                titulo.innerText = "LOCAL DEFINIDO!";
-
-                titulo.style.color = "#ffd700";
-
-            }
-
             
-
-            window.localAtivoAtual = imagensLocais[indexSorteio];
-
+            let titulo = document.querySelector('#overlay-roleta-local h2');
+            if(titulo) {
+                titulo.innerText = "LOCAL DEFINIDO!";
+                titulo.style.color = "#ffd700";
+            }
+            
+            window.localAtivoAtual = resultadoFinal;
             if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
 
-
-
             setTimeout(() => {
-
                 let modal = document.getElementById('overlay-roleta-local');
-
                 if (modal) modal.remove();
-
                 
-
-                if(callback) {
-
-                    try {
-
-                        callback();
-
-                    } catch(e) {
-
-                        console.error("Erro no callback após roleta:", e);
-
-                    }
-
-                }
-
+                if(callback) callback();
             }, 2000); 
-
         }
-
     }
-
     
-
     girar(); 
-
 };
-
 
 
 const scannerOriginal = window.mostrarMensagemScanner;
@@ -3293,32 +3228,23 @@ window.iniciarTurnoReal = function(primeiroJogador) {
 
 
 
-    let iniciarOpc = () => {
+   let iniciarOpc = () => {
         if (primeiroJogador === 'jogador') {
-            // É a MINHA vez de começar, eu sorteio o Local do meu deck!
             window.sortearLocalAnimado('jogador', () => {
                 window.mostrarMensagemScanner("Seu turno! Movimente suas criaturas.");
-                
-                // 🌐 ONLINE: Manda a foto do local sorteado pro rádio do inimigo!
-                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                    window.enviarAcaoRede({ tipo: 'definir_local', img: window.localAtivoAtual });
-                }
+                // O rádio agora é acionado por dentro da roleta!
             });
         } else {
-            // É a vez do INIMIGO. Eu NÃO sorteio, espero o rádio tocar.
             if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
-                // 🤖 Modo Bot: Sorteia pra ele e deixa rolar
                 window.sortearLocalAnimado('oponente', () => {
                     window.mostrarMensagemScanner("Aguarde a jogada do oponente...");
                     setTimeout(() => { window.passarTurno(); }, 3000);
                 });
             } else {
-                // 🌐 Modo Online: Fica parado esperando a Nuvem avisar o local
-                window.mostrarMensagemScanner("Aguardando o oponente revelar o Local...");
+                window.mostrarMensagemScanner("Aguardando oponente sortear o Local...");
             }
         }
     };
-
 
 
     if (primeiroJogador === 'jogador') {
@@ -3844,7 +3770,7 @@ window.executarPassagemDeTurnoLocal = function() {
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
         
-        // 🔥 CORREÇÃO: Reseta o cansaço de movimento para AMBOS os campos ao trocar o turno
+        // 🔥 FAXINA DO TURNO: Limpa o cansaço dos dois exércitos! (Fim da Paralisia)
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         if(window.campoJogador) Object.values(window.campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
@@ -3874,14 +3800,13 @@ window.executarPassagemDeTurnoLocal = function() {
                     setTimeout(() => { window.passarTurno(); }, 4000);
                 }
             } else {
-                // 🔥 FIX DO LOCAL: Inimigo sorteia o Local na Fase de Movimento!
                 if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
                     window.sortearLocalAnimado('oponente', () => {
                         window.mostrarMensagemScanner("Turno de movimento do oponente...");
                         setTimeout(() => { window.passarTurno(); }, 4000);
                     });
                 } else {
-                    window.mostrarMensagemScanner("Aguardando oponente revelar o Local...");
+                    window.mostrarMensagemScanner("Aguardando oponente sortear o Local...");
                 }
             }
         });
@@ -3894,7 +3819,10 @@ window.executarPassagemDeTurnoLocal = function() {
 
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
-        Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        
+        // 🔥 FAXINA DO TURNO: Limpa o cansaço dos dois exércitos!
+        if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        if(window.campoJogador) Object.values(window.campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
         if (emCombate) {
             window.pontosAtaque['jogador'] += 1;
@@ -3921,15 +3849,11 @@ window.executarPassagemDeTurnoLocal = function() {
             if (emCombate) {
                 window.mostrarMensagemScanner("Sua vez de atacar! +1 Ponto e +1 Carta.");
             } else {
-                // 🔥 CORREÇÃO DO LOCAL: Só sorteia UM local por Fase de Movimento.
-                // Usamos uma variável de controle para impedir que rode novamente
+                // 🔥 TRAVA DO CASSINO: Só sorteia UM local por Fase de Movimento.
                 if (!window.localSorteadoNesteTurno) {
                     window.localSorteadoNesteTurno = true;
                     window.sortearLocalAnimado('jogador', () => {
                         window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
-                        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                            window.enviarAcaoRede({ tipo: 'definir_local', img: window.localAtivoAtual });
-                        }
                     });
                 } else {
                     window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
@@ -3938,22 +3862,18 @@ window.executarPassagemDeTurnoLocal = function() {
         });
     }
     
-   // 🔥 CORREÇÃO DO LOCAL: Reseta a trava do local sempre que o combate acabar,
-   // para que na próxima fase de movimento ele permita sortear de novo.
+   // 🔥 FAXINA DO CASSINO: Libera a roleta quando o combate acaba para a nova fase.
    if (emCombate === false && window.estadoTurno.jogadorAtual === 'jogador') {
       window.localSorteadoNesteTurno = false;
    }
 
-   atualizarTelaBatalha();
+   atualizarTelaBatalha(); 
+   if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
-    
-    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
-
-    // 🔥 DESTRANCA A PORTA PARA O PRÓXIMO TURNO RÁPIDO PUDER ENTRAR!
-    setTimeout(() => {
-        window.processandoTurno = false;
-        window.processarFilaDeTurnos();
-    }, 1500); // 1.5s é o tempo exato pro Banner sair da tela e não bugar nada.
+   setTimeout(() => {
+       window.processandoTurno = false;
+       window.processarFilaDeTurnos();
+   }, 1500);
 };
 
 // ==========================================
@@ -5337,20 +5257,12 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
         setTimeout(() => window.resolverBurst(), 1000);
     }
-    else if (acao.tipo === 'definir_local') {
-        window.localAtivoAtual = acao.img;
-        if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
+    else if (acao.tipo === 'girar_roleta_local') {
+        // 🔥 A NUVEM AVISOU: O Inimigo iniciou a roleta dele lá, faça a mesma coisa aqui com a carta que ele escolheu!
+        window.mostrarMensagemScanner("O Oponente está sorteando o Local...");
         
-        window.mostrarMensagemScanner("O Oponente revelou o Local da batalha!");
-        if(window.tocarSFX) window.tocarSFX('notificacao');
-        
-        const modalHTML = `
-            <div class="modal-overlay" id="overlay-roleta-local" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <h2 style="color: #e53935; font-family: 'Arial Black', sans-serif; letter-spacing: 2px; text-shadow: 0 0 15px #e53935; margin-bottom: 20px; text-transform: uppercase;">LOCAL INIMIGO REVELADO!</h2>
-                <div style="width: 400px; height: 280px; background-image: url('${acao.img}'); background-size: 100% 100%; background-position: center; border: 4px solid #e53935; border-radius: 15px; box-shadow: 0 0 40px #e53935; animation: popInCard 0.5s ease-out forwards;"></div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        setTimeout(() => { let mod = document.getElementById('overlay-roleta-local'); if (mod) mod.remove(); }, 2500);
+        window.sortearLocalAnimado('oponente', () => {
+            window.mostrarMensagemScanner("Local revelado! Aguarde a jogada do oponente.");
+        }, acao.img); // A variável acao.img entra como o 'localForcado' na função!
     }
 };
