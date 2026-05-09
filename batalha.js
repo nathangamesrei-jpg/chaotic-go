@@ -3757,7 +3757,6 @@ window.processarFilaDeTurnos = function() {
 
 
 // O verdadeiro motor que vira a mesa (Separado do clique do botão)
-
 window.executarPassagemDeTurnoLocal = function() {
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
@@ -3771,8 +3770,9 @@ window.executarPassagemDeTurnoLocal = function() {
         window.estadoTurno.turnoNumero++;
         
         // 🔥 FAXINA DO TURNO: Limpa o cansaço dos dois exércitos! (Fim da Paralisia)
+        // NOTA EDUCATIVA: Retiramos o "window." do campoJogador para o JS conseguir ler a variável!
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
-        if(window.campoJogador) Object.values(window.campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        if(campoJogador) Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
         if (emCombate) {
             window.pontosAtaque['oponente'] += 1;
@@ -3820,9 +3820,9 @@ window.executarPassagemDeTurnoLocal = function() {
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
         
-        // 🔥 FAXINA DO TURNO: Limpa o cansaço dos dois exércitos!
+        // 🔥 FAXINA DO TURNO (O seu lado):
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
-        if(window.campoJogador) Object.values(window.campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
+        if(campoJogador) Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
         if (emCombate) {
             window.pontosAtaque['jogador'] += 1;
@@ -3849,7 +3849,6 @@ window.executarPassagemDeTurnoLocal = function() {
             if (emCombate) {
                 window.mostrarMensagemScanner("Sua vez de atacar! +1 Ponto e +1 Carta.");
             } else {
-                // 🔥 TRAVA DO CASSINO: Só sorteia UM local por Fase de Movimento.
                 if (!window.localSorteadoNesteTurno) {
                     window.localSorteadoNesteTurno = true;
                     window.sortearLocalAnimado('jogador', () => {
@@ -3862,7 +3861,6 @@ window.executarPassagemDeTurnoLocal = function() {
         });
     }
     
-   // 🔥 FAXINA DO CASSINO: Libera a roleta quando o combate acaba para a nova fase.
    if (emCombate === false && window.estadoTurno.jogadorAtual === 'jogador') {
       window.localSorteadoNesteTurno = false;
    }
@@ -3873,7 +3871,7 @@ window.executarPassagemDeTurnoLocal = function() {
    setTimeout(() => {
        window.processandoTurno = false;
        window.processarFilaDeTurnos();
-   }, 1500);
+   }, 1500); 
 };
 
 // ==========================================
