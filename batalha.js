@@ -2674,27 +2674,31 @@ window.localAtivoAtual = null;
 
 window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = null) {
     let deck = window.estadoDrome.deckSelecionado;
-    let imagensLocais = [];
+    let imagensDoDeck = [];
     
+    // 1. CARREGA OS POSSÍVEIS RESULTADOS REAIS (Do Deck de quem está jogando)
     if (deck && deck.locais && deck.locais.length > 0) {
-        imagensLocais = deck.locais.map(id => {
-            let localEncontrado = null;
-            if (typeof LOCAIS_DB !== 'undefined') localEncontrado = LOCAIS_DB.find(x => x.id == id || x.nome == id);
-            if (!localEncontrado && window.inventario) localEncontrado = window.inventario.find(x => x.id == id || x.nome == id);
-            return localEncontrado ? (localEncontrado.img || localEncontrado.cartaBlank) : null;
+        imagensDoDeck = deck.locais.map(id => {
+            let loc = null;
+            if (typeof LOCAIS_DB !== 'undefined') loc = LOCAIS_DB.find(x => x.id == id || x.nome == id);
+            if (!loc && window.inventario) loc = window.inventario.find(x => x.id == id || x.nome == id);
+            return loc ? (loc.img || loc.cartaBlank) : null;
         }).filter(img => img !== null && img !== undefined);
     }
+    if (imagensDoDeck.length === 0) imagensDoDeck = [URL_FUNDO_CARTA];
 
-    if (imagensLocais.length === 0) {
-        imagensLocais = [URL_FUNDO_CARTA];
+    // 2. 🔥 NOVO: CARREGA O EFEITO VISUAL DE CASSINO (Pisca todas as cartas do jogo para ficar bonito pra ambos)
+    let imagensParaPiscar = [...imagensDoDeck];
+    if (typeof LOCAIS_DB !== 'undefined' && LOCAIS_DB.length > 0) {
+        imagensParaPiscar = LOCAIS_DB.map(loc => loc.img || loc.cartaBlank).filter(Boolean);
     }
 
-    // 🧠 PREVISÃO DO FUTURO: Escolhemos a carta ANTES da animação!
+    // 3. DECIDE A CARTA VENCEDORA ANTES DA ANIMAÇÃO (Previsão do Futuro)
     let resultadoFinal = localForcado;
     if (!resultadoFinal) {
-        resultadoFinal = imagensLocais[Math.floor(Math.random() * imagensLocais.length)];
+        resultadoFinal = imagensDoDeck[Math.floor(Math.random() * imagensDoDeck.length)];
         
-        // 📡 AVISA A NUVEM INSTANTANEAMENTE: "Girem a roleta e parem nesta carta!"
+        // 📡 Se for você sorteando no online, avisa a Nuvem IMEDIATAMENTE onde a roleta vai parar
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && jogadorDaVez === 'jogador') {
             window.enviarAcaoRede({ tipo: 'girar_roleta_local', img: resultadoFinal });
         }
@@ -2715,8 +2719,8 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     if(window.tocarSFX) window.tocarSFX('notificacao');
 
     function girar() {
-        // Gira mostrando cartas aleatórias pra fazer suspense
-        divImagem.style.backgroundImage = `url('${imagensLocais[Math.floor(Math.random() * imagensLocais.length)]}')`;
+        // 🔥 CORREÇÃO VISUAL: Usa a piscina global de imagens para piscar maravilhosamente nas DUAS telas
+        divImagem.style.backgroundImage = `url('${imagensParaPiscar[Math.floor(Math.random() * imagensParaPiscar.length)]}')`;
         
         giros++;
         tempo += 10; 
@@ -2724,7 +2728,7 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
         if (giros < 25) {
             setTimeout(girar, tempo);
         } else {
-            // 🔥 FREIO OBRIGATÓRIO: A roleta para exatamente na carta prevista!
+            // FREIO OBRIGATÓRIO: A roleta para cravada na carta prevista pela lógica/nuvem
             divImagem.style.backgroundImage = `url('${resultadoFinal}')`;
             divImagem.style.borderColor = "#ffd700";
             divImagem.style.boxShadow = "0 0 50px #ffd700";
