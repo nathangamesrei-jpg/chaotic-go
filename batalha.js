@@ -2985,20 +2985,18 @@ window.encerrarCombateMorte = function(idMorto) {
 
         
 
-        // 3. O BARALHO DO BOT: Reseta a matemática para 17 no deck, 3 na mão e 0 no lixo
-
+       // 3. O BARALHO DO BOT: Reseta a matemática para 17 no deck, 3 na mão e 0 no lixo
         window.qtdBaralhoOponente = 17;
-
         window.qtdMaoOponente = 3;
-
         window.lixoAtaquesOponente = 0;
-
         
-
+        // 🔥 REGRA DO LOCAL: Avisa o jogo que o combate acabou de verdade, 
+        // e que o próximo jogador tem o direito de sortear um novo Local!
+        window.combateFinalizadoNesteTurno = true;
+        
         // Atualiza a tela para refletir tudo instantaneamente
-
         atualizarTelaBatalha();
-
+        
         if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
 
@@ -3734,6 +3732,7 @@ window.processarFilaDeTurnos = function() {
 
 
 // O verdadeiro motor que vira a mesa (Separado do clique do botão)
+// O verdadeiro motor que vira a mesa (Separado do clique do botão)
 window.executarPassagemDeTurnoLocal = function() {
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
@@ -3746,8 +3745,7 @@ window.executarPassagemDeTurnoLocal = function() {
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
         
-        // 🔥 FAXINA DO TURNO: Limpa o cansaço dos dois exércitos! (Fim da Paralisia)
-        // NOTA EDUCATIVA: Retiramos o "window." do campoJogador para o JS conseguir ler a variável!
+        // 🔥 FAXINA DO TURNO: Limpa o cansaço dos dois exércitos!
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         if(campoJogador) Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
@@ -3777,13 +3775,23 @@ window.executarPassagemDeTurnoLocal = function() {
                     setTimeout(() => { window.passarTurno(); }, 4000);
                 }
             } else {
-                if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
-                    window.sortearLocalAnimado('oponente', () => {
-                        window.mostrarMensagemScanner("Turno de movimento do oponente...");
-                        setTimeout(() => { window.passarTurno(); }, 4000);
-                    });
+                // 🔥 TRAVA DO LOCAL (LADO DO INIMIGO): Só sorteia se teve combate antes!
+                if (window.combateFinalizadoNesteTurno) {
+                    window.combateFinalizadoNesteTurno = false; // Consome o bilhete
+                    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+                        window.sortearLocalAnimado('oponente', () => {
+                            window.mostrarMensagemScanner("Turno de movimento do oponente...");
+                            setTimeout(() => { window.passarTurno(); }, 4000);
+                        });
+                    } else {
+                        window.mostrarMensagemScanner("Aguardando oponente sortear o Local...");
+                    }
                 } else {
-                    window.mostrarMensagemScanner("Aguardando oponente sortear o Local...");
+                    // Turno calmo, ninguém morreu antes, então NÃO sorteia nada!
+                    window.mostrarMensagemScanner("Turno de movimento do oponente...");
+                    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+                        setTimeout(() => { window.passarTurno(); }, 4000);
+                    }
                 }
             }
         });
@@ -3826,21 +3834,19 @@ window.executarPassagemDeTurnoLocal = function() {
             if (emCombate) {
                 window.mostrarMensagemScanner("Sua vez de atacar! +1 Ponto e +1 Carta.");
             } else {
-                if (!window.localSorteadoNesteTurno) {
-                    window.localSorteadoNesteTurno = true;
+                // 🔥 TRAVA DO LOCAL (SEU LADO): Só sorteia se teve combate antes!
+                if (window.combateFinalizadoNesteTurno) {
+                    window.combateFinalizadoNesteTurno = false; // Consome o bilhete
                     window.sortearLocalAnimado('jogador', () => {
                         window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
                     });
                 } else {
+                    // Turno calmo, ninguém morreu antes, então NÃO sorteia nada!
                     window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
                 }
             }
         });
     }
-    
-   if (emCombate === false && window.estadoTurno.jogadorAtual === 'jogador') {
-      window.localSorteadoNesteTurno = false;
-   }
 
    atualizarTelaBatalha(); 
    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
