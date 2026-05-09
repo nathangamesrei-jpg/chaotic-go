@@ -1437,26 +1437,28 @@ window.lidarComCliqueTabuleiro = function(fullId) {
 
 
 
-    if (!criaturaAlvo) {
-
+   if (!criaturaAlvo) {
+        // Mover para um espaço vazio é sempre permitido (se a criatura não estiver cansada)
         setarCriaturaNoSlot(fullId, criaturaOrigem); setarCriaturaNoSlot(idOrigem, null); criaturaOrigem.moveuNesteTurno = true; window.mostrarMensagemScanner("Avançando!");
-
         if (typeof window.enviarAcaoRede === 'function') window.enviarAcaoRede({ tipo: 'mover', origem: idOrigem, destino: fullId });
-
     } else if (criaturaAlvo.dono === 'oponente') {
+        // 🔥 REGRA OFICIAL TCG: Checa se um combate JÁ ACONTECEU ou JÁ COMEÇOU neste turno!
+        if (window.combateIniciadoNesteTurno || (window.estadoCombate && window.estadoCombate.ativo)) {
+            window.mostrarMensagemScanner("❌ AÇÃO INVÁLIDA: Você só pode iniciar UM combate por turno! Passe a vez.");
+            if(window.tocarSFX) window.tocarSFX('erro'); // Opcional, toca um som de erro se tiver
+            limparDestaquesMovimento(); window.slotSelecionadoMovimento = null; return;
+        }
 
-        criaturaOrigem.moveuNesteTurno = true; window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
-
+        // Se passar pelo bloqueio acima, ele levanta a Bandeira de Combate
+        window.combateIniciadoNesteTurno = true;
+        criaturaOrigem.moveuNesteTurno = true; 
+        window.mostrarMensagemScanner("⚔️ COMBATE INICIADO!");
+        
         if (typeof window.enviarAcaoRede === 'function') window.enviarAcaoRede({ tipo: 'combate', origem: idOrigem, destino: fullId });
-
         if(typeof window.iniciarCombate === 'function') window.iniciarCombate(idOrigem, fullId);
-
     }
 
-
-
     limparDestaquesMovimento(); window.slotSelecionadoMovimento = null; atualizarTelaBatalha(); 
-
 };
 
 
@@ -3735,7 +3737,7 @@ window.processarFilaDeTurnos = function() {
 
 
 
-// O verdadeiro motor que vira a mesa (Separado do clique do botão)
+
 // O verdadeiro motor que vira a mesa (Separado do clique do botão)
 window.executarPassagemDeTurnoLocal = function() {
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
@@ -3744,6 +3746,9 @@ window.executarPassagemDeTurnoLocal = function() {
     if (typeof window.qtdBaralhoOponente === 'undefined') window.qtdBaralhoOponente = 17;
     if (typeof window.lixoAtaquesOponente === 'undefined') window.lixoAtaquesOponente = 0;
     if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
+
+    // 🔥 NOVA TRAVA GERAL: O turno rodou, então ninguém iniciou combate neste novo turno ainda.
+    window.combateIniciadoNesteTurno = false;
 
     if (window.estadoTurno.jogadorAtual === 'jogador') {
         window.estadoTurno.jogadorAtual = 'oponente';
@@ -3808,6 +3813,8 @@ window.executarPassagemDeTurnoLocal = function() {
 
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
+
+        window.combateIniciadoNesteTurno = false;
         
         // 🔥 FAXINA DO TURNO (O seu lado):
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
