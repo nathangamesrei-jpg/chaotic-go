@@ -2548,103 +2548,50 @@ window.enviarEscolhaDeTurno = function(quemComeca) {
 
 
 setTimeout(() => {
-
     if (!document.getElementById("css-botao-turno")) {
-
         let style = document.createElement('style');
-
         style.id = "css-botao-turno";
-
         style.innerHTML = `
-
             #btn-passar-turno {
-
-                position: absolute;
-
-                right: 5%; 
-
-                top: 45%;
-
-                width: 90px;
-
-                height: 50px;
-
-                background: #4CAF50;
-
-                color: black;
-
-                font-family: 'Arial Black', sans-serif;
-
-                font-size: 11px;
-
-                font-weight: bold;
-
-                border: 2px solid #fff;
-
-                border-radius: 8px;
-
-                cursor: pointer;
-
-                z-index: 10000;
-
-                box-shadow: 0 0 15px #4CAF50;
-
-                transition: 0.3s;
-
-                display: none; 
-
-                text-align: center;
-
-                line-height: 1.2;
-
+                position: absolute; right: 5%; top: 45%; width: 90px; height: 50px;
+                background: #4CAF50; color: black; font-family: 'Arial Black', sans-serif;
+                font-size: 11px; font-weight: bold; border: 2px solid #fff; border-radius: 8px;
+                cursor: pointer; z-index: 10000; box-shadow: 0 0 15px #4CAF50; transition: 0.3s;
+                display: none; text-align: center; line-height: 1.2;
             }
-
-            #btn-passar-turno:hover:not(:disabled) {
-
-                transform: scale(1.1);
-
-                background: #fff;
-
+            #btn-passar-turno:hover:not(:disabled) { transform: scale(1.1); background: #fff; }
+            #btn-passar-turno:disabled { background: #e53935 !important; color: white !important; box-shadow: 0 0 15px #e53935 !important; cursor: not-allowed; }
+            
+            /* 🔥 NOVO: BOTÃO DE CANCELAR RESPOSTA */
+            #btn-cancelar-burst {
+                position: absolute; right: 5%; top: calc(45% + 65px); width: 90px; height: 50px;
+                background: #e53935; color: white; font-family: 'Arial Black', sans-serif;
+                font-size: 10px; font-weight: bold; border: 2px solid #fff; border-radius: 8px;
+                cursor: pointer; z-index: 10000; box-shadow: 0 0 15px #e53935; transition: 0.3s;
+                display: none; text-align: center; line-height: 1.2;
             }
-
-            #btn-passar-turno:disabled {
-
-                background: #e53935 !important;
-
-                color: white !important;
-
-                box-shadow: 0 0 15px #e53935 !important;
-
-                cursor: not-allowed;
-
-            }
-
-            .esgotado {
-
-                filter: grayscale(80%) brightness(0.6);
-
-            }
-
+            #btn-cancelar-burst:hover { transform: scale(1.1); background: #fff; color: #e53935; }
+            
+            .esgotado { filter: grayscale(80%) brightness(0.6); }
         `;
-
         document.head.appendChild(style);
-
     }
-
-
 
     if (!document.getElementById('btn-passar-turno')) {
-
         let btn = document.createElement('button');
-
         btn.id = 'btn-passar-turno';
-
         btn.onclick = window.passarTurno;
-
         document.getElementById('tela-batalha').appendChild(btn);
-
     }
 
+    // 🔥 GERA O BOTÃO FÍSICO NA TELA
+    if (!document.getElementById('btn-cancelar-burst')) {
+        let btnC = document.createElement('button');
+        btnC.id = 'btn-cancelar-burst';
+        btnC.onclick = window.cancelarRespostaBurst;
+        btnC.innerHTML = "CANCELAR<br>RESPOSTA";
+        document.getElementById('tela-batalha').appendChild(btnC);
+    }
 }, 1500);
 
 
@@ -3024,126 +2971,91 @@ window.aguardandoResposta = false;
 
 
 
+window.pilhaBurst = []; 
+window.aguardandoResposta = false;
+
 window.adicionarAoBurst = function(acaoObj) {
-
     window.pilhaBurst.push(acaoObj);
-
     window.mostrarMensagemScanner(`⚡ BURST ATIVADO: ${acaoObj.nomeAcao} entrou na corrente!`);
 
-
+    // 🔥 INTELIGÊNCIA: Se VOCÊ acabou de jogar uma carta na corrente, a sua vez de responder acabou!
+    // O botão some e o sistema volta ao normal para aguardar o inimigo.
+    if (acaoObj.dono === 'jogador') {
+        window.aguardandoResposta = false;
+        let btnC = document.getElementById('btn-cancelar-burst');
+        if (btnC) btnC.style.display = 'none';
+    }
 
     // 🌐 MODO ONLINE: Avisa a rede e aguarda a resposta do inimigo!
-
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-
         if (acaoObj.dono === 'jogador') {
-
             window.mostrarMensagemScanner("⏳ Aguardando a resposta do Oponente...");
-
             window.enviarAcaoRede({ tipo: 'abrir_burst', nomeAcao: acaoObj.nomeAcao });
-
         } else {
-
-            // Se eu recebi a ação da rede, a tela pergunta se eu quero responder!
-
             setTimeout(() => window.perguntarResposta('jogador', acaoObj), 500);
-
         }
-
     } else {
-
         // 🤖 MODO BOT OFFLINE
-
         let jogadorAlvo = acaoObj.dono === 'jogador' ? 'oponente' : 'jogador';
-
         setTimeout(() => window.perguntarResposta(jogadorAlvo, acaoObj), 1000);
-
     }
-
 };
-
-
 
 window.iniciarRespostaBurst = function(jogadorAlvo) {
-
     document.getElementById('overlay-burst').remove();
-
     window.mostrarMensagemScanner(`⏳ Escolha a sua Magia ou Habilidade para responder!`);
-
+    
+    // 🔥 BOTÃO ENTRA EM CENA: O jogador quer responder, mostra a rota de fuga!
+    let btnC = document.getElementById('btn-cancelar-burst');
+    if (btnC) btnC.style.display = 'block';
 };
-
-
 
 window.negarRespostaBurst = function() {
-
     let modal = document.getElementById('overlay-burst');
-
     if(modal) modal.remove();
-
     
-
     window.aguardandoResposta = false;
-
     
-
-    // 🌐 Avisa o inimigo que você recusou responder
-
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-
         window.enviarAcaoRede({ tipo: 'fechar_burst' });
-
     }
-
     
-
     window.mostrarMensagemScanner("Você não respondeu. Resolvendo as ações...");
-
     setTimeout(() => window.resolverBurst(), 1000);
-
 };
 
-
-
 window.resolverBurst = function() {
+    // 🔥 FAXINA VISUAL: Garante que o botão vai sumir quando a corrente resolver
+    let btnC = document.getElementById('btn-cancelar-burst');
+    if (btnC) btnC.style.display = 'none';
+
     if (window.pilhaBurst.length === 0) {
         window.mostrarMensagemScanner("Todas as ações resolvidas.");
         atualizarTelaBatalha();
         return;
     }
 
-
     let acaoAtual = window.pilhaBurst.pop();
-
     window.mostrarMensagemScanner(`✨ Resolvendo: ${acaoAtual.nomeAcao}`);
-
     acaoAtual.executar();
-
     setTimeout(() => window.resolverBurst(), 2500);
-
 };
-
-
 
 window.cancelarRespostaBurst = function() {
-
     if (window.aguardandoResposta) {
-
         window.aguardandoResposta = false;
+        
+        // 🔥 BOTÃO SAI DE CENA: Ele clicou pra desistir da resposta
+        let btnC = document.getElementById('btn-cancelar-burst');
+        if (btnC) btnC.style.display = 'none';
 
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-
             window.enviarAcaoRede({ tipo: 'fechar_burst' });
-
         }
-
         window.mostrarMensagemScanner("Resposta cancelada. Resolvendo a corrente...");
-
         window.resolverBurst();
-
     }
-
 };
-
 
 
 window.atualizarSeusContadoresDeAtaque = function() {
