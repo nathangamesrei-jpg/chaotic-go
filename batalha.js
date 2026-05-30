@@ -2849,29 +2849,16 @@ window.encerrarCombateMorte = function(idMorto) {
     
 
     // 🔥 1. GUARDA O MORTO E O EQUIPAMENTO NO CEMITÉRIO PERMANENTE 🔥
-
     if (morto) {
-
         let isPlayer = morto.dono === 'jogador';
-
         let arrayCemiterio = isPlayer ? window.cemiterio : window.cemiterioOponente;
-
         
-
-        let cartaOriginal = window.inventario ? window.inventario.find(c => c.nome === morto.nome) : null;
-
-        if (cartaOriginal) arrayCemiterio.push(cartaOriginal.id);
-
+        // Em vez de procurar no inventário, joga o NOME da carta direto na cova!
+        arrayCemiterio.push(morto.nome);
         
-
         if (morto.equipamento) {
-
-            let equipOriginal = window.inventario ? window.inventario.find(c => c.nome === morto.equipamento.nome) : null;
-
-            if (equipOriginal) arrayCemiterio.push(equipOriginal.id);
-
+            arrayCemiterio.push(morto.equipamento.nome);
         }
-
     }
 
 
@@ -4396,12 +4383,27 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
 // 🔥 NOVO MOTOR: VISUALIZAR CEMITÉRIO (LIXO) 🔥
 // ==========================================
 
+// ==========================================
+// 🔥 NOVO MOTOR: VISUALIZAR CEMITÉRIO (LIXO) 🔥
+// ==========================================
+
 window.abrirModalVerLixo = function(dono) {
     if (document.getElementById('overlay-ver-lixo')) return;
 
     let cartasHTML = "";
     let titulo = dono === 'jogador' ? "SEU CEMITÉRIO (LIXO)" : "CEMITÉRIO DO OPONENTE";
     let cor = dono === 'jogador' ? "#4CAF50" : "#e53935";
+
+    // 🕵️‍♂️ FUNÇÃO DETETIVE: Acha a imagem da carta em TODOS os bancos de dados, não só no seu inventário!
+    const acharImagemCarta = (idOuNome) => {
+        let c = null;
+        if (window.inventario) c = window.inventario.find(x => x.id == idOuNome || x.nome == idOuNome);
+        if (!c && typeof MONSTROS !== 'undefined') c = MONSTROS.find(x => x.id == idOuNome || x.nome == idOuNome);
+        if (!c && typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => x.id == idOuNome || x.nome == idOuNome);
+        if (!c && typeof MAGIAS !== 'undefined') c = MAGIAS.find(x => x.id == idOuNome || x.nome == idOuNome);
+        if (!c && typeof EQUIPAMENTOS !== 'undefined') c = EQUIPAMENTOS.find(x => x.id == idOuNome || x.nome == idOuNome);
+        return c ? (c.img || c.cartaBlank) : URL_FUNDO_CARTA;
+    };
 
     let lixoArray = [];
     if (dono === 'jogador') {
@@ -4416,17 +4418,15 @@ window.abrirModalVerLixo = function(dono) {
     if (lixoArray.length === 0 && (dono === 'jogador' || Array.isArray(window.lixoAtaquesOponente))) {
         cartasHTML = `<p style="color:#aaa; font-size:12px; margin-top: 20px;">O lixo está vazio.</p>`;
     } else {
-        // Mapeia as cartas reais perfeitamente sincronizadas (Para Você e o Inimigo Online)
-        lixoArray.forEach(idCarta => {
-            let c = window.inventario.find(item => item.id == idCarta);
-            if (c) {
-                cartasHTML += `
-                    <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${c.img}')" style="width: 80px; height: 115px; background-image: url('${c.img}'); background-size: cover; background-position: center; border: 2px solid ${cor}; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8); cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>
-                `;
-            }
+        // Mapeia as cartas usando o Detetive
+        lixoArray.forEach(idOuNome => {
+            let imgEncontrada = acharImagemCarta(idOuNome);
+            cartasHTML += `
+                <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${imgEncontrada}')" style="width: 80px; height: 115px; background-image: url('${imgEncontrada}'); background-size: cover; background-position: center; border: 2px solid ${cor}; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8); cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>
+            `;
         });
 
-        // 🤖 MODO BOT OFFLINE: Simula cartas se estiver jogando contra a máquina
+        // 🤖 MODO BOT OFFLINE: Simula cartas de ataque se estiver jogando contra a máquina
         if (dono === 'oponente' && !Array.isArray(window.lixoAtaquesOponente) && window.lixoAtaquesOponente > 0) {
             let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
             for (let i = 0; i < window.lixoAtaquesOponente; i++) {
@@ -4450,7 +4450,6 @@ window.abrirModalVerLixo = function(dono) {
     `;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 };
-
 
 
 
