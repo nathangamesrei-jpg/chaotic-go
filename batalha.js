@@ -823,100 +823,87 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
 
 
 
-// 🔥 FUNÇÃO NOVA E TURBINADA: Amplia a carta com HUD de Batalha!
-
+// 🔥 FUNÇÃO NOVA E TURBINADA: Amplia a carta com HUD de Batalha e Modo Detetive!
 window.ampliarCartaClicada = function(imgUrl, fullId) {
-
     let overlayHTML = "";
-
     let corBorda = "rgba(76, 175, 80, 0.8)"; // Verde base
 
-
-
-    // Se o jogo souber quem é a criatura (veio do tabuleiro), cria o HUD!
-
+    // 1. Tenta achar a criatura VIVA na mesa usando o Slot
+    let criatura = null;
     if (fullId) {
-
-        let criatura = obterCriaturaNoSlot(fullId);
-
-        if (criatura) {
-
-            corBorda = criatura.dono === 'jogador' ? "#4CAF50" : "#e53935"; // Verde ou Vermelho
-
-            let hpMax = criatura.hpMax || criatura.statsMax?.energia || 0;
-
-            let hpAtual = criatura.hpAtual !== undefined ? criatura.hpAtual : hpMax;
-
-            let pct = Math.max(0, Math.min(100, (hpAtual / hpMax) * 100));
-
-            let corHp = pct > 50 ? 'lime' : pct > 20 ? 'orange' : 'red';
-
-            
-
-            let c = criatura.coragem || criatura.statsMax?.coragem || 0;
-
-            let p = criatura.poder || criatura.statsMax?.poder || 0;
-
-            let s = criatura.sabedoria || criatura.statsMax?.sabedoria || 0;
-
-            let v = criatura.velocidade || criatura.statsMax?.velocidade || 0;
-
-
-
-            overlayHTML = `
-
-                <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 350px; background: rgba(0,0,0,0.9); border: 2px solid ${corBorda}; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 0 25px black;">
-
-                    <div style="width: 100%; background: #222; height: 18px; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #555;">
-
-                        <div style="width: ${pct}%; background: ${corHp}; height: 100%; transition: width 0.3s;"></div>
-
-                        <span style="position: absolute; top:0; left:0; width:100%; text-align:center; font-size: 13px; font-weight: bold; color: white; line-height: 18px; text-shadow: 0 0 4px black, 0 0 4px black;">HP: ${hpAtual} / ${hpMax}</span>
-
-                    </div>
-
-                    <div style="display: flex; justify-content: space-around; font-size: 18px; color: white; font-family: monospace; font-weight: bold; text-shadow: 0 0 5px black;">
-
-                        <span>❤️ ${c}</span>
-
-                        <span>⚡ ${p}</span>
-
-                        <span>👁️ ${s}</span>
-
-                        <span>💨 ${v}</span>
-
-                    </div>
-
-                </div>
-
-            `;
-
-        }
-
+        criatura = obterCriaturaNoSlot(fullId);
     }
 
+    // 2. 🕵️‍♂️ MODO DETETIVE: Se não achou na mesa (Lixo, Mão, etc), procura no Banco de Dados Global usando a Imagem!
+    let cartaDB = null;
+    if (!criatura) {
+        if (typeof MONSTROS !== 'undefined') cartaDB = MONSTROS.find(m => m.img === imgUrl || m.cartaBlank === imgUrl);
+        if (!cartaDB && typeof ATAQUES !== 'undefined') cartaDB = ATAQUES.find(a => a.img === imgUrl || a.cartaBlank === imgUrl);
+        if (!cartaDB && typeof MAGIAS !== 'undefined') cartaDB = MAGIAS.find(ma => ma.img === imgUrl || ma.cartaBlank === imgUrl);
+        if (!cartaDB && typeof EQUIPAMENTOS !== 'undefined') cartaDB = EQUIPAMENTOS.find(e => e.img === imgUrl || e.cartaBlank === imgUrl);
+        if (!cartaDB && typeof LOCAIS_DB !== 'undefined') cartaDB = LOCAIS_DB.find(l => l.img === imgUrl || l.cartaBlank === imgUrl);
+    }
 
+    // 3. Monta o HUD se for uma CRIATURA (Viva ou Morta)
+    if (criatura || (cartaDB && cartaDB.statsMax)) {
+        corBorda = (criatura && criatura.dono === 'oponente') ? "#e53935" : "#4CAF50"; // Verde (Você) ou Vermelho (Inimigo)
+        
+        let baseStats = criatura ? criatura.statsMax : cartaDB.statsMax;
+        
+        let hpMax = criatura ? (criatura.hpMax || baseStats?.energia || 0) : (cartaDB.energia || baseStats?.energia || 0);
+        let hpAtual = criatura ? (criatura.hpAtual !== undefined ? criatura.hpAtual : hpMax) : 0; // Se estiver no lixo, HP = 0
+        
+        let pct = Math.max(0, Math.min(100, (hpAtual / hpMax) * 100));
+        let corHp = pct > 50 ? 'lime' : pct > 20 ? 'orange' : 'red';
+        
+        let c = criatura ? (criatura.coragem || baseStats?.coragem || 0) : (cartaDB.coragem || baseStats?.coragem || 0);
+        let p = criatura ? (criatura.poder || baseStats?.poder || 0) : (cartaDB.poder || baseStats?.poder || 0);
+        let s = criatura ? (criatura.sabedoria || baseStats?.sabedoria || 0) : (cartaDB.sabedoria || baseStats?.sabedoria || 0);
+        let v = criatura ? (criatura.velocidade || baseStats?.velocidade || 0) : (cartaDB.velocidade || baseStats?.velocidade || 0);
+
+        let statusMorte = (!criatura && hpAtual === 0) ? `<span style="position:absolute; top:-25px; left:50%; transform:translateX(-50%); background:#e53935; color:#fff; font-size:10px; font-weight:bold; padding:2px 8px; border-radius:4px; border:1px solid #fff; z-index:100; text-shadow:none;">DESTRUÍDA</span>` : "";
+
+        overlayHTML = `
+            ${statusMorte}
+            <div style="position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 350px; background: rgba(0,0,0,0.9); border: 2px solid ${corBorda}; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 0 25px black;">
+                <div style="width: 100%; background: #222; height: 18px; border-radius: 8px; overflow: hidden; position: relative; border: 1px solid #555;">
+                    <div style="width: ${pct}%; background: ${corHp}; height: 100%; transition: width 0.3s;"></div>
+                    <span style="position: absolute; top:0; left:0; width:100%; text-align:center; font-size: 13px; font-weight: bold; color: white; line-height: 18px; text-shadow: 0 0 4px black, 0 0 4px black;">HP: ${hpAtual} / ${hpMax}</span>
+                </div>
+                <div style="display: flex; justify-content: space-around; font-size: 18px; color: white; font-family: monospace; font-weight: bold; text-shadow: 0 0 5px black;">
+                    <span>❤️ ${c}</span>
+                    <span>⚡ ${p}</span>
+                    <span>👁️ ${s}</span>
+                    <span>💨 ${v}</span>
+                </div>
+            </div>
+        `;
+    } 
+    // 4. Monta um mini-HUD descritivo para CARTAS NORMAIS (Ataques, Magias, Equipamentos, Locais)
+    else if (cartaDB) {
+        corBorda = "#ffd700"; // Dourado
+        let txtEfeito = cartaDB.efeito || cartaDB.textoCarta || "Sem descrição.";
+        let subtitulo = cartaDB.custo !== undefined ? `Custo: ${cartaDB.custo} | Dano: ${cartaDB.danoBase || 0}` : "Especial";
+        
+        overlayHTML = `
+            <div style="position: absolute; bottom: -45px; left: 50%; transform: translateX(-50%); width: 95%; max-width: 350px; background: rgba(0,0,0,0.95); border: 2px solid ${corBorda}; border-radius: 10px; padding: 12px; display: flex; flex-direction: column; gap: 5px; box-shadow: 0 0 25px black; text-align: center;">
+                <span style="color: ${corBorda}; font-weight: bold; font-size: 16px; font-family: 'Arial Black', sans-serif;">${cartaDB.nome}</span>
+                <span style="color: #ff5555; font-weight: bold; font-size: 11px;">${subtitulo}</span>
+                <span style="color: #ccc; font-size: 10px; font-style: italic; max-height: 50px; overflow-y: auto; padding: 0 5px;">"${txtEfeito}"</span>
+            </div>
+        `;
+    }
 
     const modalAmpliadoHTML = `
-
         <div class="modal-overlay" id="overlay-carta-ampliada" style="z-index: 1000000; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; flex-direction: column;" onclick="this.remove()">
-
-            <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: 20px;">
-
+            <div style="position: relative; display: flex; justify-content: center; align-items: center; margin-bottom: ${cartaDB && !cartaDB.statsMax ? '50px' : '20px'};">
                 <img src="${imgUrl}" style="max-width: 95vw; max-height: 75vh; border-radius: 15px; box-shadow: 0 0 30px ${corBorda};">
-
                 ${overlayHTML}
-
             </div>
-
-            <p style="color: #aaa; font-size: 12px; font-family: monospace; margin-top: 15px;">Toque em qualquer lugar para fechar</p>
-
+            <p style="color: #aaa; font-size: 12px; font-family: monospace; margin-top: 15px; text-shadow: 0 0 5px black;">Toque em qualquer lugar para fechar</p>
         </div>
-
     `;
-
     document.body.insertAdjacentHTML('beforeend', modalAmpliadoHTML);
-
 };
 
 
