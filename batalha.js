@@ -1323,19 +1323,18 @@ window.lidarComCliqueTabuleiro = function(fullId) {
             window.adicionarAoBurst(acao);
 
         } else if (ctx.tipo === 'mugic') {
-
             if (!window.cemiterio) window.cemiterio = [];
-
-            window.cemiterio.push(ctx.mugicObj.id); 
-
+            window.cemiterio.push(ctx.mugicObj.nome); // 🔥 Salvamos o NOME para o detetive achar fácil
             window.jogadorMugics[ctx.mugicIndex] = null;
-
             atualizarMugicsDaTela(); atualizarDecksEMaoCards();
+            
+            // 🔥 NUVEM: Avisa o oponente para jogar o NOME dessa magia no cemitério dele!
+            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: ctx.mugicObj.nome, categoria: 'mugic' });
+            }
 
             let acao = { dono: 'jogador', nomeAcao: `Mugic: ${ctx.mugicObj.nome} ➔ ${alvo.nome}`, tipo: 'mugic', executar: function() { window.mostrarMensagemScanner(`✨ Mugic explodiu em ${alvo.nome}!`); if(window.tocarSFX) window.tocarSFX('notificacao'); } };
-
             window.adicionarAoBurst(acao);
-
         }
 
         return;
@@ -3741,181 +3740,59 @@ window.executarPassagemDeTurnoLocal = function() {
 };
 
 // ==========================================
-
 // 🔥 MOTOR DE DESCARTE E LIXO DA MÃO 🔥
-
 // ==========================================
-
 window.abrirModalDescarte = function() {
-
     let excesso = window.maoAtaques.length - 5;
-
     let htmlCartas = "";
 
-
-
     window.maoAtaques.forEach((idAtaque, index) => {
-
         let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
-
         if (cartaOriginal) {
-
             htmlCartas += `
-
                 <div onclick="window.descartarCartaAtaque(${index}, '${idAtaque}')" style="width: 70px; height: 100px; background-image: url('${cartaOriginal.img}'); background-size: cover; background-position: center; border: 2px solid #ff5555; border-radius: 5px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-
                 </div>
-
             `;
-
         }
-
     });
 
-
-
     const modalHTML = `
-
         <div class="modal-overlay" id="overlay-descarte" style="z-index: 1000000; background: rgba(0,0,0,0.95); flex-direction: column;">
-
             <h2 style="color: #ff5555; text-shadow: 0 0 10px #ff5555; margin-bottom: 10px;">LIMITE DE MÃO EXCEDIDO!</h2>
-
             <p style="color: #fff; margin-bottom: 20px; font-size: 14px;">Selecione e descarte <b style="color:#ffd700; font-size: 18px;">${excesso}</b> carta(s) para passar o turno.</p>
-
             <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 90%;">
-
                 ${htmlCartas}
-
             </div>
-
         </div>
-
     `;
-
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-
 };
-
-
 
 window.descartarCartaAtaque = function(index, idAtaque) {
     document.getElementById('overlay-descarte').remove();
     
-    // Tira da mão e joga pro Lixo!
+    // Tira da mão e joga pro Lixo Local
     window.maoAtaques.splice(index, 1);
     if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
     window.lixoAtaques.push(idAtaque);
 
-    // 🔥 AVISA A NUVEM: "Acabei de descartar este ataque da minha mão!"
+    // 🔥 CORREÇÃO NUVEM: Acha o NOME da carta para mandar pela rede (o inimigo não tem seu ID numérico)
+    let carta = window.inventario.find(c => c.id == idAtaque);
+    let nomeAtaque = carta ? carta.nome : idAtaque;
+
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: idAtaque, categoria: 'ataque' });
+        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: nomeAtaque, categoria: 'ataque' });
     }
     
-    atualizarDecksEMaoCards(); // Atualiza a contagem visual na mesa
-
-    // Verifica se ainda precisa descartar mais alguma
-    if (window.maoAtaques.length > 5) {
-        window.abrirModalDescarte();
-    } else {
-        window.mostrarMensagemScanner("Descarte concluído! Passando o turno...");
-        window.passarTurno(true); // O "true" autoriza a passar de fase
-    }
-};
-
-// ==========================================
-
-// 🔥 MOTOR DE DESCARTE E LIXO DA MÃO 🔥
-
-// ==========================================
-
-window.abrirModalDescarte = function() {
-
-    let excesso = window.maoAtaques.length - 5;
-
-    let htmlCartas = "";
-
-
-
-    window.maoAtaques.forEach((idAtaque, index) => {
-
-        let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
-
-        if (cartaOriginal) {
-
-            htmlCartas += `
-
-                <div onclick="window.descartarCartaAtaque(${index}, '${idAtaque}')" style="width: 70px; height: 100px; background-image: url('${cartaOriginal.img}'); background-size: cover; background-position: center; border: 2px solid #ff5555; border-radius: 5px; cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-
-                </div>
-
-            `;
-
-        }
-
-    });
-
-
-
-    const modalHTML = `
-
-        <div class="modal-overlay" id="overlay-descarte" style="z-index: 1000000; background: rgba(0,0,0,0.95); flex-direction: column;">
-
-            <h2 style="color: #ff5555; text-shadow: 0 0 10px #ff5555; margin-bottom: 10px;">LIMITE DE MÃO EXCEDIDO!</h2>
-
-            <p style="color: #fff; margin-bottom: 20px; font-size: 14px;">Selecione e descarte <b style="color:#ffd700; font-size: 18px;">${excesso}</b> carta(s) para passar o turno.</p>
-
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 90%;">
-
-                ${htmlCartas}
-
-            </div>
-
-        </div>
-
-    `;
-
-    document.body.insertAdjacentHTML('beforeend', modalHTML);
-
-};
-
-
-
-window.descartarCartaAtaque = function(index, idAtaque) {
-
-    document.getElementById('overlay-descarte').remove();
-
-    
-
-    // Tira da mão e joga pro Lixo!
-
-    window.maoAtaques.splice(index, 1);
-
-    if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
-
-    window.lixoAtaques.push(idAtaque);
-
-    
-
     atualizarDecksEMaoCards(); 
 
-
-
-    // Verifica se ainda precisa descartar mais alguma
-
     if (window.maoAtaques.length > 5) {
-
         window.abrirModalDescarte();
-
     } else {
-
         window.mostrarMensagemScanner("Descarte concluído! Passando o turno...");
-
-        window.passarTurno(true); // O "true" autoriza a passar de fase
-
+        window.passarTurno(true);
     }
-
 };
-
 
 
 window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
@@ -4026,11 +3903,11 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
 
     window.pontosAtaque['jogador'] -= custo;
     window.maoAtaques.splice(indexMao, 1);
-    window.lixoAtaques.push(idAtaque);
+    window.lixoAtaques.push(idAtaque); // ID local para o baralho embaralhar depois
     
-    // 🔥 AVISA A NUVEM: "Acabei de usar este ataque no combate!"
+    // 🔥 CORREÇÃO NUVEM: Envia o NOME (nomeAtaque) em vez do ID, para o detetive inimigo achar a arte!
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: idAtaque, categoria: 'ataque' });
+        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: nomeAtaque, categoria: 'ataque' });
     }
 
     atualizarDecksEMaoCards();
@@ -4381,17 +4258,21 @@ window.abrirModalVerLixo = function(dono) {
     let titulo = dono === 'jogador' ? "SEU CEMITÉRIO (LIXO)" : "CEMITÉRIO DO OPONENTE";
     let cor = dono === 'jogador' ? "#4CAF50" : "#e53935";
 
-    // 🕵️‍♂️ FUNÇÃO DETETIVE: Acha a imagem da carta em TODOS os bancos de dados, não só no seu inventário!
+    // 🕵️‍♂️ FUNÇÃO DETETIVE: Turbinada para lidar com Strings, IDs Numéricos e Falbacks
     const acharImagemCarta = (idOuNome) => {
         let c = null;
-        if (window.inventario) c = window.inventario.find(x => x.id == idOuNome || x.nome == idOuNome);
-        if (!c && typeof MONSTROS !== 'undefined') c = MONSTROS.find(x => x.id == idOuNome || x.nome == idOuNome);
-        if (!c && typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => x.id == idOuNome || x.nome == idOuNome);
-        if (!c && typeof MAGIAS !== 'undefined') c = MAGIAS.find(x => x.id == idOuNome || x.nome == idOuNome);
-        if (!c && typeof EQUIPAMENTOS !== 'undefined') c = EQUIPAMENTOS.find(x => x.id == idOuNome || x.nome == idOuNome);
-        return c ? (c.img || c.cartaBlank) : URL_FUNDO_CARTA;
+        // 1. Procura no seu inventário (comparando ID como String para evitar erros)
+        if (window.inventario) c = window.inventario.find(x => String(x.id) === String(idOuNome) || x.nome === idOuNome);
+        
+        // 2. Se não achou (ex: carta do oponente), vasculha os Bancos Globais pelo NOME
+        if (!c && typeof MONSTROS !== 'undefined') c = MONSTROS.find(x => x.nome === idOuNome);
+        if (!c && typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => x.nome === idOuNome);
+        if (!c && typeof MAGIAS !== 'undefined') c = MAGIAS.find(x => x.nome === idOuNome);
+        if (!c && typeof EQUIPAMENTOS !== 'undefined') c = EQUIPAMENTOS.find(x => x.nome === idOuNome);
+        
+        // 3. Retorna a imagem, a arte em branco, ou o verso da carta (blindagem extra)
+        return c ? (c.img || c.cartaBlank || URL_FUNDO_CARTA) : URL_FUNDO_CARTA;
     };
-
     let lixoArray = [];
     if (dono === 'jogador') {
         // 🔥 JUNTA SEUS ATAQUES + MONSTROS + EQUIPAMENTOS + MAGIAS
