@@ -1004,29 +1004,6 @@ window.verMugicModal = function(index) {
 
 
 
-// 🔥 FUNÇÃO NOVA QUE JOGA A MAGIA NO LIXO
-
-// 🔥 FUNÇÃO NOVA QUE JOGA A MAGIA NO LIXO
-window.descartarMugic = function(index) {
-    let mugic = window.jogadorMugics[index];
-    if (mugic) {
-        if (!window.cemiterio) window.cemiterio = [];
-        window.cemiterio.push(mugic.id); // Manda pro lixo permanente
-        window.jogadorMugics[index] = null; // Tira do slot heptagonal da tela
-        
-        // 🔥 AVISA A NUVEM: "Acabei de gastar esta Magia!"
-        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-            window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: mugic.id, categoria: 'mugic' });
-        }
-        
-        document.getElementById('overlay-ver-mugic').remove();
-        window.mostrarMensagemScanner(`✨ Mugic ${mugic.nome} ativado e enviado para o Lixo!`);
-        if(window.tocarSFX) window.tocarSFX('notificacao');
-        
-        atualizarMugicsDaTela();
-        atualizarDecksEMaoCards(); // Sobe o número do lixo
-    }
-};
 
 
 
@@ -3799,16 +3776,20 @@ window.abrirModalDescarte = function() {
 
 
 window.descartarCartaAtaque = function(index, idAtaque) {
-    document.getElementById('overlay-descarte').remove();
+    let modalDesc = document.getElementById('overlay-descarte');
+    if(modalDesc) modalDesc.remove();
     
     // Tira da mão e joga pro Lixo!
     window.maoAtaques.splice(index, 1);
     if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
     window.lixoAtaques.push(idAtaque);
 
-    // 🔥 AVISA A NUVEM: "Acabei de descartar este ataque da minha mão!"
+    // 🔥 NUVEM: Envia o NOME da carta para o oponente achar no Banco de Dados
+    let cartaObj = window.inventario ? window.inventario.find(c => c.id == idAtaque) : null;
+    let nomePraRede = cartaObj ? cartaObj.nome : idAtaque;
+
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: idAtaque, categoria: 'ataque' });
+        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: nomePraRede, categoria: 'ataque' });
     }
     
     atualizarDecksEMaoCards(); // Atualiza a contagem visual na mesa
@@ -4028,15 +4009,15 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
     window.maoAtaques.splice(indexMao, 1);
     window.lixoAtaques.push(idAtaque);
     
-    // 🔥 AVISA A NUVEM: "Acabei de usar este ataque no combate!"
+    // 🔥 NUVEM: Envia o NOME do ataque usado para a lixeira do oponente!
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: idAtaque, categoria: 'ataque' });
+        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: nomeAtaque, categoria: 'ataque' });
     }
 
     atualizarDecksEMaoCards();
  
-    
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+
 
     // 🔥 LÓGICA DO DANO (ELEMENTAL + CHECAGEM DE ATRIBUTOS) 🔥
     let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === nomeAtaque) : null;
@@ -4381,23 +4362,23 @@ window.abrirModalVerLixo = function(dono) {
     let titulo = dono === 'jogador' ? "SEU CEMITÉRIO (LIXO)" : "CEMITÉRIO DO OPONENTE";
     let cor = dono === 'jogador' ? "#4CAF50" : "#e53935";
 
-    // 🕵️‍♂️ FUNÇÃO DETETIVE: Acha a imagem da carta em TODOS os bancos de dados, não só no seu inventário!
-    const acharImagemCarta = (idOuNome) => {
+    // 🕵️‍♂️ FUNÇÃO DETETIVE: Acha a carta completa nos bancos de dados! (Aceita Nome ou ID numérico)
+    const acharCartaDB = (idOuNome) => {
         let c = null;
-        if (window.inventario) c = window.inventario.find(x => x.id == idOuNome || x.nome == idOuNome);
-        if (!c && typeof MONSTROS !== 'undefined') c = MONSTROS.find(x => x.id == idOuNome || x.nome == idOuNome);
-        if (!c && typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => x.id == idOuNome || x.nome == idOuNome);
-        if (!c && typeof MAGIAS !== 'undefined') c = MAGIAS.find(x => x.id == idOuNome || x.nome == idOuNome);
-        if (!c && typeof EQUIPAMENTOS !== 'undefined') c = EQUIPAMENTOS.find(x => x.id == idOuNome || x.nome == idOuNome);
-        return c ? (c.img || c.cartaBlank) : URL_FUNDO_CARTA;
+        if (window.inventario) c = window.inventario.find(x => String(x.id) === String(idOuNome) || x.nome === idOuNome);
+        if (!c && typeof MONSTROS !== 'undefined') c = MONSTROS.find(x => String(x.id) === String(idOuNome) || x.nome === idOuNome);
+        if (!c && typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => String(x.id) === String(idOuNome) || x.nome === idOuNome);
+        if (!c && typeof MAGIAS !== 'undefined') c = MAGIAS.find(x => String(x.id) === String(idOuNome) || x.nome === idOuNome);
+        if (!c && typeof EQUIPAMENTOS !== 'undefined') c = EQUIPAMENTOS.find(x => String(x.id) === String(idOuNome) || x.nome === idOuNome);
+        return c; // Retorna o objeto inteiro da carta
     };
 
     let lixoArray = [];
     if (dono === 'jogador') {
-        // 🔥 JUNTA SEUS ATAQUES + MONSTROS + EQUIPAMENTOS + MAGIAS
+        // Puxa as suas cartas locais
         lixoArray = [...(window.lixoAtaques || []), ...(window.cemiterio || [])];
     } else {
-        // 🔥 AGORA PUXA AS CARTAS REAIS DO OPONENTE (Ataques enviados pela rede + Monstros/Equips destruídos)
+        // Puxa as cartas informadas pela rede
         let ataquesOp = Array.isArray(window.lixoAtaquesOponente) ? window.lixoAtaquesOponente : [];
         lixoArray = [...ataquesOp, ...(window.cemiterioOponente || [])];
     }
@@ -4405,17 +4386,20 @@ window.abrirModalVerLixo = function(dono) {
     if (lixoArray.length === 0 && (dono === 'jogador' || Array.isArray(window.lixoAtaquesOponente))) {
         cartasHTML = `<p style="color:#aaa; font-size:12px; margin-top: 20px;">O lixo está vazio.</p>`;
     } else {
-        // Mapeia as cartas usando o Detetive
+        // Mapeia todas as cartas (Suas e do Inimigo) e acha as imagens!
         lixoArray.forEach(idOuNome => {
-            let imgEncontrada = acharImagemCarta(idOuNome);
-            cartasHTML += `
-                <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${imgEncontrada}')" style="width: 80px; height: 115px; background-image: url('${imgEncontrada}'); background-size: cover; background-position: center; border: 2px solid ${cor}; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8); cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>
-            `;
+            let cartaEncontrada = acharCartaDB(idOuNome);
+            if (cartaEncontrada) {
+                let imgC = cartaEncontrada.img || cartaEncontrada.cartaBlank || URL_FUNDO_CARTA;
+                cartasHTML += `
+                    <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${imgC}')" style="width: 80px; height: 115px; background-image: url('${imgC}'); background-size: cover; background-position: center; border: 2px solid ${cor}; border-radius: 5px; box-shadow: 0 0 10px rgba(0,0,0,0.8); cursor: pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'"></div>
+                `;
+            }
         });
 
         // 🤖 MODO BOT OFFLINE: Simula cartas de ataque se estiver jogando contra a máquina
         if (dono === 'oponente' && !Array.isArray(window.lixoAtaquesOponente) && window.lixoAtaquesOponente > 0) {
-            let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
+            let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : (window.inventario ? window.inventario.filter(c => c.tipoCarta === 'Ataque') : []);
             for (let i = 0; i < window.lixoAtaquesOponente; i++) {
                 let cartaSimulada = todosAtaques[Math.floor(Math.random() * todosAtaques.length)];
                 let imgBot = cartaSimulada ? cartaSimulada.img : URL_FUNDO_CARTA;
@@ -4437,7 +4421,6 @@ window.abrirModalVerLixo = function(dono) {
     `;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 };
-
 
 
 
@@ -4789,65 +4772,31 @@ window.prepararMugic = function(fullId) {
 
 
 
-// 4. USAR MUGIC (CHECA A TRIBO E ABRE A MIRA)
 
+
+// 🔥 FUNÇÃO NOVA QUE JOGA A MAGIA NO LIXO
 window.descartarMugic = function(index) {
-
     let mugic = window.jogadorMugics[index];
-
-    if (!mugic) return;
-
-
-
-    let conjuradorId = window.conjuradorMugicAtual;
-
-    if (!conjuradorId) {
-
-        window.mostrarMensagemScanner("❌ Erro: Selecione primeiro uma criatura (Usar Mugic) antes de escolher a carta!");
-
-        return;
-
+    if (mugic) {
+        if (!window.cemiterio) window.cemiterio = [];
+        window.cemiterio.push(mugic.id); // Manda pro lixo local
+        window.jogadorMugics[index] = null; // Tira do slot da tela
+        
+        // 🔥 NUVEM: Envia o NOME da Magia!
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: mugic.nome, categoria: 'mugic' });
+        }
+        
+        let modalVer = document.getElementById('overlay-ver-mugic');
+        if (modalVer) modalVer.remove();
+        
+        window.mostrarMensagemScanner(`✨ Mugic ${mugic.nome} ativado e enviado para o Lixo!`);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        
+        atualizarMugicsDaTela();
+        atualizarDecksEMaoCards(); // Sobe o número do lixo
     }
-
-
-
-    let criatura = obterCriaturaNoSlot(conjuradorId);
-
-    if (!criatura || criatura.fichasHabilidade <= 0) return;
-
-
-
-    // 🔥 REGRA DA COR (RESTRIÇÃO DE TRIBO) 🔥
-
-    if (mugic.triboRestricao && mugic.triboRestricao.toLowerCase() !== criatura.tribo.toLowerCase()) {
-
-        window.mostrarMensagemScanner(`❌ Falha! O Mugic é da tribo ${mugic.triboRestricao}. ${criatura.nome} (${criatura.tribo}) não pode conjurá-lo!`);
-
-        return;
-
-    }
-
-
-
-    document.getElementById('overlay-ver-mugic').remove();
-
-
-
-    // Ativa o Modo Alvo para o Mugic!
-
-    window.modoAlvo = {
-
-        tipo: 'mugic',
-
-        origem: conjuradorId,
-
-        mugicIndex: index,
-
-        mugicObj: mugic
-
-    };
-
-
+};
 
     window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para o ${mugic.nome}... (Ou num vazio para cancelar)`);
 
@@ -5071,8 +5020,8 @@ window.processarAcaoInimiga = function(acao) {
             window.mostrarMensagemScanner("Local revelado! Aguarde a jogada do oponente.");
         }, acao.img); // A variável acao.img entra como o 'localForcado' na função!
     }
+    // 🔥 NOVO: RECEPTOR DE LIXO DA NUVEM 🔥
     else if (acao.tipo === 'descarte_lixo') {
-        // 🔥 NUVEM AVISOU: O inimigo descartou uma carta e mandou a identidade dela!
         if (acao.categoria === 'ataque') {
             if (!Array.isArray(window.lixoAtaquesOponente)) window.lixoAtaquesOponente = [];
             window.lixoAtaquesOponente.push(acao.idCarta);
@@ -5083,4 +5032,3 @@ window.processarAcaoInimiga = function(acao) {
         atualizarDecksEMaoCards();
     }
 };
-
