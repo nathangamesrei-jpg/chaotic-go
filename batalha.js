@@ -3806,9 +3806,12 @@ window.descartarCartaAtaque = function(index, idAtaque) {
     if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
     window.lixoAtaques.push(idAtaque);
 
-    // 🔥 AVISA A NUVEM: "Acabei de descartar este ataque da minha mão!"
+    // 🔥 O GRANDE TRUQUE: O Inimigo não tem o ID da nossa carta. Mandamos o NOME dela pela rede!
+    let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
+    let nomeDaCarta = cartaOriginal ? cartaOriginal.nome : idAtaque;
+
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: idAtaque, categoria: 'ataque' });
+        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: nomeDaCarta, categoria: 'ataque' });
     }
     
     atualizarDecksEMaoCards(); // Atualiza a contagem visual na mesa
@@ -4028,9 +4031,9 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
     window.maoAtaques.splice(indexMao, 1);
     window.lixoAtaques.push(idAtaque);
     
-    // 🔥 AVISA A NUVEM: "Acabei de usar este ataque no combate!"
+    // 🔥 AVISA A NUVEM: Mandando o NOME do ataque (nomeAtaque) ao invés do ID local!
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: idAtaque, categoria: 'ataque' });
+        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: nomeAtaque, categoria: 'ataque' });
     }
 
     atualizarDecksEMaoCards();
@@ -4791,62 +4794,27 @@ window.prepararMugic = function(fullId) {
 
 // 4. USAR MUGIC (CHECA A TRIBO E ABRE A MIRA)
 
+// 🔥 FUNÇÃO NOVA QUE JOGA A MAGIA NO LIXO
 window.descartarMugic = function(index) {
-
     let mugic = window.jogadorMugics[index];
-
-    if (!mugic) return;
-
-
-
-    let conjuradorId = window.conjuradorMugicAtual;
-
-    if (!conjuradorId) {
-
-        window.mostrarMensagemScanner("❌ Erro: Selecione primeiro uma criatura (Usar Mugic) antes de escolher a carta!");
-
-        return;
-
+    if (mugic) {
+        if (!window.cemiterio) window.cemiterio = [];
+        window.cemiterio.push(mugic.id); // Manda pro lixo permanente
+        window.jogadorMugics[index] = null; // Tira do slot heptagonal da tela
+        
+        // 🔥 AVISA A NUVEM: Mandando o NOME do Mugic para o oponente achar a foto!
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: mugic.nome, categoria: 'mugic' });
+        }
+        
+        document.getElementById('overlay-ver-mugic').remove();
+        window.mostrarMensagemScanner(`✨ Mugic ${mugic.nome} ativado e enviado para o Lixo!`);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        
+        atualizarMugicsDaTela();
+        atualizarDecksEMaoCards(); // Sobe o número do lixo
     }
-
-
-
-    let criatura = obterCriaturaNoSlot(conjuradorId);
-
-    if (!criatura || criatura.fichasHabilidade <= 0) return;
-
-
-
-    // 🔥 REGRA DA COR (RESTRIÇÃO DE TRIBO) 🔥
-
-    if (mugic.triboRestricao && mugic.triboRestricao.toLowerCase() !== criatura.tribo.toLowerCase()) {
-
-        window.mostrarMensagemScanner(`❌ Falha! O Mugic é da tribo ${mugic.triboRestricao}. ${criatura.nome} (${criatura.tribo}) não pode conjurá-lo!`);
-
-        return;
-
-    }
-
-
-
-    document.getElementById('overlay-ver-mugic').remove();
-
-
-
-    // Ativa o Modo Alvo para o Mugic!
-
-    window.modoAlvo = {
-
-        tipo: 'mugic',
-
-        origem: conjuradorId,
-
-        mugicIndex: index,
-
-        mugicObj: mugic
-
-    };
-
+};
 
 
     window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para o ${mugic.nome}... (Ou num vazio para cancelar)`);
