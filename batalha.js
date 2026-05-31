@@ -4054,11 +4054,12 @@ if (btnSairDrome) {
                         <div style="display: flex; gap: 15px; justify-content: center;">
 
                             <button class="btn-acao-modal" style="background: #220000; color: #e53935; border: 1px solid #e53935; width: 130px;" onclick="
-
                                 document.getElementById('overlay-fuga').remove();
-
-                                window.declararVitoria('oponente', 'O jogador fugiu covardemente do Drome (Desistência).');
-
+                                // 🔥 AVISA A NUVEM QUE VOCÊ CORREU DA BATALHA!
+                                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                                    window.enviarAcaoRede({ tipo: 'desistencia' });
+                                }
+                                window.declararVitoria('oponente', 'Você fugiu covardemente do Drome (Desistência).');
                             ">FUGIR</button>
 
                             <button class="btn-acao-modal" style="background: #112211; color: #4CAF50; border: 1px solid #4CAF50; width: 160px;" onclick="document.getElementById('overlay-fuga').remove()">VOLTAR À LUTA</button>
@@ -4505,23 +4506,19 @@ window.declararVitoria = function(vencedor, motivo) {
 
 
 window.sairDaBatalhaAposFim = function() {
-
     let modal = document.getElementById('overlay-vitoria');
-
     if(modal) modal.remove();
-
     
-
     // Volta pro Menu Principal
-
     document.getElementById("tela-batalha").style.display = "none";
-
     document.getElementById("tela-menu").style.display = "flex";
-
     window.modoMenu = true;
-
     
-
+    // 🔥 CORTA O SINAL DA NUVEM: Fundamental para não receber fantasmas na próxima partida!
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+        window.salaBatalhaAtual = null; 
+    }
+    
     // FAXINA GERAL: Limpa a memória para uma próxima batalha limpa
 
     window.estadoCombate = { ativo: false, atacante: null, defensor: null };
@@ -4954,7 +4951,7 @@ window.processarAcaoInimiga = function(acao) {
     }
     else if (acao.tipo === 'descarte_lixo') {
         // 🔥 NUVEM AVISOU: O inimigo descartou uma carta e mandou a identidade dela!
-        if (acao.categoria === 'ataque') {
+      if (acao.categoria === 'ataque') {
             if (!Array.isArray(window.lixoAtaquesOponente)) window.lixoAtaquesOponente = [];
             window.lixoAtaquesOponente.push(acao.idCarta);
         } else if (acao.categoria === 'mugic') {
@@ -4962,5 +4959,10 @@ window.processarAcaoInimiga = function(acao) {
             window.cemiterioOponente.push(acao.idCarta);
         }
         atualizarDecksEMaoCards();
+    }
+    else if (acao.tipo === 'desistencia') {
+        // 🔥 NUVEM AVISOU: O Inimigo apertou o botão de fugir da partida!
+        window.mostrarMensagemScanner("O oponente fugiu da batalha!");
+        window.declararVitoria('jogador', 'O oponente fugiu covardemente do Drome!');
     }
 };
