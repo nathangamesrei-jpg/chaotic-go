@@ -400,22 +400,33 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
             if (typeof window.iniciarEscutaAcoesOnline === 'function') {
                 window.iniciarEscutaAcoesOnline(); 
             }
+            // 🔥 LIGA O RADAR ANTI-AFK AQUI (DO JEITO CERTO)!
+            if (typeof window.iniciarSistemaAntiAFK === 'function') {
+                window.iniciarSistemaAntiAFK(); 
+            }
         }
         
         setTimeout(() => { window.abrirJokenpo(); }, 800); 
     };
 
-   if (salaId && salaId !== "sala_simulada") {
-            window.salaBatalhaAtual = salaId;
-            window.souP1Batalha = souP1;
-            window.iniciarEscutaDeTurnoOnline(); 
-            if (typeof window.iniciarEscutaAcoesOnline === 'function') {
-                window.iniciarEscutaAcoesOnline(); 
-            }
-            if (typeof window.iniciarSistemaAntiAFK === 'function') {
-                window.iniciarSistemaAntiAFK(); // 🔥 LIGA O RADAR ANTI-AFK NO INÍCIO DA LUTA!
-            }
-        }
+    if (salaId && salaId !== "sala_simulada") {
+        window.mostrarMensagemScanner("📡 Conectando ao oponente...");
+        
+        window._dbGet('salas_drome/' + salaId).then(snap => {
+            let sala = snap.val();
+            let deckInimigo = souP1 ? sala.p2.deck : sala.p1.deck;
+            
+            if (!deckInimigo) {
+                window.mostrarMensagemScanner("Aguardando sincronização do oponente...");
+                window._dbOn('salas_drome/' + salaId, snapEspera => {
+                    let s = snapEspera.val();
+                    if (s && s.status === "pronta") {
+                        let deckAtualizado = souP1 ? s.p2.deck : s.p1.deck;
+                        if (deckAtualizado) {
+                            window.mostrarMensagemScanner("⚡ Sinal interceptado! Carregando monstros...");
+                            window.montarDeckOponente(deckAtualizado);
+                        }
+                    }
                 });
             } else {
                 window.mostrarMensagemScanner("⚡ Sinal interceptado! Carregando monstros...");
