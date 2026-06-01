@@ -405,24 +405,17 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
         setTimeout(() => { window.abrirJokenpo(); }, 800); 
     };
 
-    if (salaId && salaId !== "sala_simulada") {
-        window.mostrarMensagemScanner("📡 Conectando ao oponente...");
-        
-        window._dbGet('salas_drome/' + salaId).then(snap => {
-            let sala = snap.val();
-            let deckInimigo = souP1 ? sala.p2.deck : sala.p1.deck;
-            
-            if (!deckInimigo) {
-                window.mostrarMensagemScanner("Aguardando sincronização do oponente...");
-                window._dbOn('salas_drome/' + salaId, snapEspera => {
-                    let s = snapEspera.val();
-                    if (s && s.status === "pronta") {
-                        let deckAtualizado = souP1 ? s.p2.deck : s.p1.deck;
-                        if (deckAtualizado) {
-                            window.mostrarMensagemScanner("⚡ Sinal interceptado! Carregando monstros...");
-                            window.montarDeckOponente(deckAtualizado);
-                        }
-                    }
+   if (salaId && salaId !== "sala_simulada") {
+            window.salaBatalhaAtual = salaId;
+            window.souP1Batalha = souP1;
+            window.iniciarEscutaDeTurnoOnline(); 
+            if (typeof window.iniciarEscutaAcoesOnline === 'function') {
+                window.iniciarEscutaAcoesOnline(); 
+            }
+            if (typeof window.iniciarSistemaAntiAFK === 'function') {
+                window.iniciarSistemaAntiAFK(); // 🔥 LIGA O RADAR ANTI-AFK NO INÍCIO DA LUTA!
+            }
+        }
                 });
             } else {
                 window.mostrarMensagemScanner("⚡ Sinal interceptado! Carregando monstros...");
@@ -4514,7 +4507,9 @@ window.sairDaBatalhaAposFim = function() {
     document.getElementById("tela-menu").style.display = "flex";
     window.modoMenu = true;
     
-    // 🔥 CORTA O SINAL DA NUVEM: Fundamental para não receber fantasmas na próxima partida!
+    // 🔥 DESLIGA O RADAR ANTI-AFK E O SINAL DA NUVEM PARA A PRÓXIMA PARTIDA!
+    if (typeof window.desligarSistemaAntiAFK === 'function') window.desligarSistemaAntiAFK();
+    
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
         window.salaBatalhaAtual = null; 
     }
@@ -4965,4 +4960,81 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O oponente fugiu da batalha!");
         window.declararVitoria('jogador', 'O oponente fugiu covardemente do Drome!');
     }
+    else if (acao.tipo === 'derrota_wo') {
+        // 🔥 NUVEM AVISOU: O tempo do inimigo estourou e o juiz declarou WO!
+        window.mostrarMensagemScanner("Conexão perdida ou inatividade prolongada!");
+        window.declararVitoria('oponente', 'Você foi desconectado ou ficou inativo por tempo demais (W.O.).');
+    }
+};
+
+// ==========================================
+// ⏳ SISTEMA DE RECONEXÃO E ANTI-AFK (W.O.) ⏳
+// ==========================================
+window.loopPingAFK = null;
+window.loopMonitorAFK = null;
+window.ultimaMemoriaPingInimigo = null;
+
+window.iniciarSistemaAntiAFK = function() {
+    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
+
+    let meuSlot = window.souP1Batalha ? 'p1' : 'p2';
+    let opSlot = window.souP1Batalha ? 'p2' : 'p1';
+    
+    // Usamos o cronômetro do seu próprio celular para evitar bugs de fuso-horário!
+    window.ultimoPingRecebidoLocal = Date.now(); 
+    
+    // 1. O CORAÇÃO (Ping): Muda um valor na nuvem a cada 5 segundos
+    window.loopPingAFK = setInterval(() => {
+        window._dbUpdate('salas_drome/' + window.salaBatalhaAtual + '/pings', {
+            [meuSlot]: Date.now() 
+        });
+    }, 5000);
+
+    // 2. O RADAR (Pong): Escuta as batidas de coração do inimigo na nuvem
+    window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/pings', (snap) => {
+        if (!snap.exists()) return;
+        let pings = snap.val();
+        
+        // Se o valor dele mudou, significa que a internet dele está viva!
+        if (pings[opSlot] && pings[opSlot] !== window.ultimaMemoriaPingInimigo) {
+            window.ultimaMemoriaPingInimigo = pings[opSlot];
+            window.ultimoPingRecebidoLocal = Date.now(); // Zera o seu cronômetro de tolerância!
+        }
+    });
+
+    // 3. O JUIZ: O cronômetro impiedoso que gera o W.O.
+    let tempoLimite = 45000; // 45 segundos fora do jogo = W.O.
+    let tempoAviso = 15000;  // 15 segundos de lag/fora da aba = Mostra a tela de aviso
+
+    window.loopMonitorAFK = setInterval(() => {
+        let tempoInativo = Date.now() - window.ultimoPingRecebidoLocal;
+        let bannerAfk = document.getElementById('aviso-afk-tela');
+
+        if (tempoInativo > tempoLimite) {
+            window.desligarSistemaAntiAFK();
+            window.declararVitoria('jogador', 'O oponente caiu ou fugiu desconectando (Vitória por W.O.).');
+            window.enviarAcaoRede({ tipo: 'derrota_wo' }); 
+        } 
+        else if (tempoInativo > tempoAviso) {
+            let seg = Math.ceil((tempoLimite - tempoInativo) / 1000);
+            if (!bannerAfk) {
+                bannerAfk = document.createElement('div');
+                bannerAfk.id = 'aviso-afk-tela';
+                bannerAfk.style.cssText = "position:fixed; top:15%; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.95); color:white; padding:20px; border-radius:10px; border:2px solid #ff5555; z-index:9999999; font-family:monospace; text-align:center; box-shadow:0 0 30px rgba(255,0,0,0.8); pointer-events:none;";
+                document.body.appendChild(bannerAfk);
+            }
+            bannerAfk.innerHTML = `<span style="color:#ff5555; font-weight:bold; font-size:16px;">⚠️ CONEXÃO DO OPONENTE INSTÁVEL ⚠️</span><br><br>Aguardando reconexão...<br><span style="font-size:35px; color:#ffd700; font-weight:bold;">${seg}s</span>`;
+        } 
+        else {
+            // O inimigo voltou a tempo! O Juiz apaga o aviso e a batalha segue normal.
+            if (bannerAfk) bannerAfk.remove();
+        }
+    }, 1000);
+};
+
+window.desligarSistemaAntiAFK = function() {
+    if (window.loopPingAFK) clearInterval(window.loopPingAFK);
+    if (window.loopMonitorAFK) clearInterval(window.loopMonitorAFK);
+    let banner = document.getElementById('aviso-afk-tela');
+    if (banner) banner.remove();
 };
