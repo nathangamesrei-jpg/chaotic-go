@@ -396,13 +396,16 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
         if (salaId && salaId !== "sala_simulada") {
             window.salaBatalhaAtual = salaId;
             window.souP1Batalha = souP1;
+            
+            // 🔥 O TICKET DE RECONEXÃO: Salva no celular que você está numa batalha!
+            localStorage.setItem('drome_ticket_batalha', JSON.stringify({ salaId: salaId, souP1: souP1 }));
+            
             window.iniciarEscutaDeTurnoOnline(); 
             if (typeof window.iniciarEscutaAcoesOnline === 'function') {
                 window.iniciarEscutaAcoesOnline(); 
             }
-            // 🔥 LIGA O RADAR ANTI-AFK AQUI (DO JEITO CERTO)!
             if (typeof window.iniciarSistemaAntiAFK === 'function') {
-                window.iniciarSistemaAntiAFK(); 
+                window.iniciarSistemaAntiAFK(); // 🔥 LIGA O RADAR ANTI-AFK NO INÍCIO DA LUTA!
             }
         }
         
@@ -4518,12 +4521,13 @@ window.sairDaBatalhaAposFim = function() {
     document.getElementById("tela-menu").style.display = "flex";
     window.modoMenu = true;
     
-    // 🔥 DESLIGA O RADAR ANTI-AFK E O SINAL DA NUVEM PARA A PRÓXIMA PARTIDA!
+    // 🔥 DESLIGA O RADAR E RASGA O TICKET DE RECONEXÃO!
     if (typeof window.desligarSistemaAntiAFK === 'function') window.desligarSistemaAntiAFK();
     
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
         window.salaBatalhaAtual = null; 
     }
+    localStorage.removeItem('drome_ticket_batalha'); // A batalha acabou, lixo no ticket!
     
     // FAXINA GERAL: Limpa a memória para uma próxima batalha limpa
 
@@ -5049,3 +5053,59 @@ window.desligarSistemaAntiAFK = function() {
     let banner = document.getElementById('aviso-afk-tela');
     if (banner) banner.remove();
 };
+
+// ==========================================
+// 🔄 SISTEMA DE RECUPERAÇÃO DE ESTADO (RECONEXÃO) 🔄
+// ==========================================
+window.checarReconexaoAtiva = function() {
+    let ticket = localStorage.getItem('drome_ticket_batalha');
+    if (ticket) {
+        let dados = JSON.parse(ticket);
+        
+        // Verifica na nuvem se a sala ainda existe
+        window._dbGet('salas_drome/' + dados.salaId).then(snap => {
+            let sala = snap.val();
+            // Se a sala sumiu, rasga o ticket silenciosamente
+            if (!sala) {
+                localStorage.removeItem('drome_ticket_batalha');
+                return;
+            }
+
+            // Monta a tela épica de retorno!
+            const modalReconexao = `
+                <div class="modal-overlay" id="overlay-reconexao" style="z-index: 9999999; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                    <div class="modal-content-fichas" style="text-align: center; border: 3px solid #00bcd4; box-shadow: 0 0 30px rgba(0, 188, 212, 0.5); background: #111; padding: 30px; border-radius: 10px; max-width: 400px;">
+                        <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 10px #00bcd4; margin-bottom: 20px; font-size: 24px;">RECONEXÃO!</h2>
+                        <p style="color: #fff; font-size: 14px; font-family: monospace; margin-bottom: 30px; line-height: 1.5;">
+                            Detectamos que você caiu ou fechou o jogo no meio de uma batalha!<br><br>Deseja retornar à arena antes que o juiz declare W.O.?
+                        </p>
+                        <div style="display: flex; gap: 15px; justify-content: center;">
+                            <button class="btn-acao-modal" style="background: #112211; color: #4CAF50; border: 1px solid #4CAF50; width: 160px;" onclick="
+                                document.getElementById('overlay-reconexao').remove();
+                                document.getElementById('tela-menu').style.display = 'none';
+                                document.getElementById('tela-batalha').style.display = 'block';
+                                window.carregarDeckParaBatalha('${dados.salaId}', ${dados.souP1});
+                                window.mostrarMensagemScanner('Reconectando à batalha...');
+                            ">VOLTAR À LUTA</button>
+                            
+                            <button class="btn-acao-modal" style="background: #220000; color: #e53935; border: 1px solid #e53935; width: 130px;" onclick="
+                                document.getElementById('overlay-reconexao').remove();
+                                localStorage.removeItem('drome_ticket_batalha');
+                                // Força o envio direto pra sala fantasma
+                                window._dbUpdate('salas_drome/${dados.salaId}', { ultima_acao: { tipo: 'desistencia', remetente: '${dados.souP1 ? 'p1' : 'p2'}', timestamp: Date.now() } });
+                            ">DESISTIR</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalReconexao);
+        });
+    }
+};
+
+// Executa a checagem automaticamente 2 segundos depois de abrir o jogo
+setTimeout(() => {
+    if (typeof window.checarReconexaoAtiva === 'function') {
+        window.checarReconexaoAtiva();
+    }
+}, 2000);
