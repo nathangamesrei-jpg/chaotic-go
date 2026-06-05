@@ -410,8 +410,9 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
         }
         
         setTimeout(() => { window.abrirJokenpo(); }, 800); 
-    };
+    }; // <-- Fecha apenas a função montarDeckOponente!
 
+    // 👇 A CONEXÃO COM O FIREBASE AGORA ESTÁ DENTRO DA FUNÇÃO PRINCIPAL NOVAMENTE!
     if (salaId && salaId !== "sala_simulada") {
         window.mostrarMensagemScanner("📡 Conectando ao oponente...");
         
@@ -440,8 +441,7 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
         window.mostrarMensagemScanner("Simulando batalha...");
         window.montarDeckOponente(window.estadoDrome.deckSelecionado);
     }
-};
-
+}; // ✅ AGORA SIM! A função principal carregarDeckParaBatalha fecha AQUI no lugar certo!
 
 
 function atualizarTelaBatalha() {
