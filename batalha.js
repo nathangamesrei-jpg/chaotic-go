@@ -470,12 +470,29 @@ function atualizarTelaBatalha() {
 
 
 
-    atualizarContadorFichasHabilidade();
-
+   atualizarContadorFichasHabilidade();
     atualizarDecksEMaoCards(); 
-
     atualizarMugicsDaTela(); 
-
+    
+    // 🔥 AUTO-SAVE (CHECKPOINT): Salva o estado atual da mesa no celular!
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        let saveState = {
+            campoJogador: campoJogador,
+            campoOponente: window.campoOponente,
+            cemiterio: window.cemiterio,
+            cemiterioOponente: window.cemiterioOponente,
+            lixoAtaques: window.lixoAtaques,
+            lixoAtaquesOponente: window.lixoAtaquesOponente,
+            pontosAtaque: window.pontosAtaque,
+            maoAtaques: window.maoAtaques,
+            baralhoAtaques: window.baralhoAtaques,
+            jogadorMugics: window.jogadorMugics,
+            qtdBaralhoOponente: window.qtdBaralhoOponente,
+            qtdMaoOponente: window.qtdMaoOponente,
+            estadoTurno: window.estadoTurno
+        };
+        localStorage.setItem('drome_save_state', JSON.stringify(saveState));
+    }
 }
 
 
@@ -4522,12 +4539,11 @@ window.sairDaBatalhaAposFim = function() {
     window.modoMenu = true;
     
     // 🔥 DESLIGA O RADAR E RASGA O TICKET DE RECONEXÃO!
-    if (typeof window.desligarSistemaAntiAFK === 'function') window.desligarSistemaAntiAFK();
-    
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
         window.salaBatalhaAtual = null; 
     }
     localStorage.removeItem('drome_ticket_batalha'); // A batalha acabou, lixo no ticket!
+    localStorage.removeItem('drome_save_state'); // 🔥 LIMPA O SAVE DA MESA TAMBÉM!
     
     // FAXINA GERAL: Limpa a memória para uma próxima batalha limpa
 
@@ -5084,14 +5100,21 @@ window.checarReconexaoAtiva = function() {
                                 document.getElementById('overlay-reconexao').remove();
                                 document.getElementById('tela-menu').style.display = 'none';
                                 document.getElementById('tela-batalha').style.display = 'block';
-                                window.carregarDeckParaBatalha('${dados.salaId}', ${dados.souP1});
-                                window.mostrarMensagemScanner('Reconectando à batalha...');
+                                
+                                // 🔥 CHOQUE CARDIOLÓGICO: Bate o coração na nuvem IMEDIATAMENTE pra parar o W.O.!
+                                window._dbUpdate('salas_drome/' + '${dados.salaId}' + '/pings', {
+                                    '${dados.souP1 ? 'p1' : 'p2'}': Date.now() 
+                                });
+
+                                // 🔥 PUXA O CHECKPOINT EM VEZ DE COMEÇAR DO ZERO
+                                window.recuperarBatalhaSalva('${dados.salaId}', ${dados.souP1});
+                                window.mostrarMensagemScanner('Mesa restaurada com sucesso!');
                             ">VOLTAR À LUTA</button>
                             
                             <button class="btn-acao-modal" style="background: #220000; color: #e53935; border: 1px solid #e53935; width: 130px;" onclick="
                                 document.getElementById('overlay-reconexao').remove();
                                 localStorage.removeItem('drome_ticket_batalha');
-                                // Força o envio direto pra sala fantasma
+                                localStorage.removeItem('drome_save_state');
                                 window._dbUpdate('salas_drome/${dados.salaId}', { ultima_acao: { tipo: 'desistencia', remetente: '${dados.souP1 ? 'p1' : 'p2'}', timestamp: Date.now() } });
                             ">DESISTIR</button>
                         </div>
@@ -5101,6 +5124,42 @@ window.checarReconexaoAtiva = function() {
             document.body.insertAdjacentHTML('beforeend', modalReconexao);
         });
     }
+};
+
+// 🔥 A FUNÇÃO DE RESTAURAÇÃO: Lê o Auto-Save e devolve todas as cartas pros seus lugares!
+window.recuperarBatalhaSalva = function(salaId, souP1) {
+    let saved = localStorage.getItem('drome_save_state');
+    if (saved) {
+        let s = JSON.parse(saved);
+        campoJogador = s.campoJogador || {};
+        window.campoOponente = s.campoOponente || {};
+        window.cemiterio = s.cemiterio || [];
+        window.cemiterioOponente = s.cemiterioOponente || [];
+        window.lixoAtaques = s.lixoAtaques || [];
+        window.lixoAtaquesOponente = s.lixoAtaquesOponente || 0;
+        window.pontosAtaque = s.pontosAtaque || { jogador: 3, oponente: 3 };
+        window.maoAtaques = s.maoAtaques || [];
+        window.baralhoAtaques = s.baralhoAtaques || [];
+        window.jogadorMugics = s.jogadorMugics || [];
+        window.qtdBaralhoOponente = s.qtdBaralhoOponente || 17;
+        window.qtdMaoOponente = s.qtdMaoOponente || 3;
+        window.estadoTurno = s.estadoTurno || { jogadorAtual: null, turnoNumero: 0, fase: 'pre-jogo' };
+    } else {
+        // Se não achar o save (segurança extrema), carrega do zero
+        window.carregarDeckParaBatalha(salaId, souP1);
+        return;
+    }
+
+    window.salaBatalhaAtual = salaId;
+    window.souP1Batalha = souP1;
+    
+    atualizarTelaBatalha(); // Redesenha tudo que estava no Checkpoint
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+    
+    // Religa a Nuvem e os Radares!
+    window.iniciarEscutaDeTurnoOnline(); 
+    if (typeof window.iniciarEscutaAcoesOnline === 'function') window.iniciarEscutaAcoesOnline(); 
+    if (typeof window.iniciarSistemaAntiAFK === 'function') window.iniciarSistemaAntiAFK();
 };
 
 // Executa a checagem automaticamente 2 segundos depois de abrir o jogo
