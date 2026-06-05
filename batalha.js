@@ -5002,13 +5002,66 @@ window.iniciarSistemaAntiAFK = function() {
 
     let meuSlot = window.souP1Batalha ? 'p1' : 'p2';
     let opSlot = window.souP1Batalha ? 'p2' : 'p1';
+    
+    // Usamos o cronômetro do seu próprio celular para evitar bugs de fuso-horário!
+    window.ultimoPingRecebidoLocal = Date.now(); 
+    
+    // 1. O CORAÇÃO (Ping): Muda um valor na nuvem a cada 5 segundos
+    window.loopPingAFK = setInterval(() => {
+        window._dbUpdate('salas_drome/' + window.salaBatalhaAtual + '/pings', {
+            [meuSlot]: Date.now() 
+        });
+    }, 5000);
 
-    window.desligarSistemaAntiAFK = function() {
+    // 2. O RADAR (Pong): Escuta as batidas de coração do inimigo na nuvem
+    window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/pings', (snap) => {
+        if (!snap.exists()) return;
+        let pings = snap.val();
+        
+        // Se o valor dele mudou, significa que a internet dele está viva!
+        if (pings[opSlot] && pings[opSlot] !== window.ultimaMemoriaPingInimigo) {
+            window.ultimaMemoriaPingInimigo = pings[opSlot];
+            window.ultimoPingRecebidoLocal = Date.now(); // Zera o seu cronômetro de tolerância!
+        }
+    });
+
+    // 3. O JUIZ: O cronômetro impiedoso que gera o W.O.
+    let tempoLimite = 45000; // 45 segundos fora do jogo = W.O.
+    let tempoAviso = 15000;  // 15 segundos de lag/fora da aba = Mostra a tela de aviso
+
+    window.loopMonitorAFK = setInterval(() => {
+        let tempoInativo = Date.now() - window.ultimoPingRecebidoLocal;
+        let bannerAfk = document.getElementById('aviso-afk-tela');
+
+        if (tempoInativo > tempoLimite) {
+            window.desligarSistemaAntiAFK();
+            window.declararVitoria('jogador', 'O oponente caiu ou fugiu desconectando (Vitória por W.O.).');
+            window.enviarAcaoRede({ tipo: 'derrota_wo' }); 
+        } 
+        else if (tempoInativo > tempoAviso) {
+            let seg = Math.ceil((tempoLimite - tempoInativo) / 1000);
+            if (!bannerAfk) {
+                bannerAfk = document.createElement('div');
+                bannerAfk.id = 'aviso-afk-tela';
+                bannerAfk.style.cssText = "position:fixed; top:15%; left:50%; transform:translateX(-50%); background:rgba(0,0,0,0.95); color:white; padding:20px; border-radius:10px; border:2px solid #ff5555; z-index:9999999; font-family:monospace; text-align:center; box-shadow:0 0 30px rgba(255,0,0,0.8); pointer-events:none;";
+                document.body.appendChild(bannerAfk);
+            }
+            bannerAfk.innerHTML = `<span style="color:#ff5555; font-weight:bold; font-size:16px;">⚠️ CONEXÃO DO OPONENTE INSTÁVEL ⚠️</span><br><br>Aguardando reconexão...<br><span style="font-size:35px; color:#ffd700; font-weight:bold;">${seg}s</span>`;
+        } 
+        else {
+            // O inimigo voltou a tempo! O Juiz apaga o aviso e a batalha segue normal.
+            if (bannerAfk) bannerAfk.remove();
+        }
+    }, 1000);
+};
+
+window.desligarSistemaAntiAFK = function() {
     if (window.loopPingAFK) { clearInterval(window.loopPingAFK); window.loopPingAFK = null; }
     if (window.loopMonitorAFK) { clearInterval(window.loopMonitorAFK); window.loopMonitorAFK = null; }
     let banner = document.getElementById('aviso-afk-tela');
     if (banner) banner.remove();
 };
+
 // ==========================================
 // 🔄 SISTEMA DE RECUPERAÇÃO DE ESTADO (RECONEXÃO) 🔄
 // ==========================================
