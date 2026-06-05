@@ -1516,17 +1516,17 @@ setTimeout(() => {
         style.id = "css-movimento";
 
         style.innerHTML = `
-
             .zona-central {
-
                 justify-content: flex-start !important; 
-
                 gap: 5px !important;
-
+                position: relative !important;
+                z-index: 1000 !important; /* 🔥 Joga toda a arena de criaturas pra FRENTE! */
             }
-
-            .linha-formacao-batalha { margin: 0 !important; }
-
+            .zona-lateral {
+                position: relative !important;
+                z-index: 10 !important; /* 🔥 Mantém os Locais ATRÁS da arena! */
+            }
+            .linha-formacao-batalha { margin: 0 !important; position: relative; z-index: 500; }
 
 
             [id^="jog-"], [id^="op-"] {
@@ -5178,7 +5178,8 @@ window.recuperarBatalhaSalva = function(salaId, souP1) {
         let style = document.createElement('style');
         style.id = "css-movimento";
         style.innerHTML = `
-            .zona-central { justify-content: flex-start !important; gap: 5px !important; }
+            .zona-central { justify-content: flex-start !important; gap: 5px !important; position: relative !important; z-index: 1000 !important; }
+            .zona-lateral { position: relative !important; z-index: 10 !important; }
             .linha-formacao-batalha { margin: 0 !important; }
             [id^="jog-"], [id^="op-"] { touch-action: none !important; }
             .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
