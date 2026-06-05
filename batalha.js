@@ -1400,12 +1400,10 @@ window.lidarComCliqueTabuleiro = function(fullId) {
 
             if (criaturaAlvo.dono === 'jogador') { window.abrirModalAcoesCriatura(fullId, criaturaAlvo); } 
 
-            else if (criaturaAlvo.dono === 'oponente') {
-
-                if (criaturaAlvo.equipamento && criaturaAlvo.equipamentoRevelado) window.verEquipamentoModal(fullId);
-
-                else if (typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada(criaturaAlvo.cartaBlank, fullId);
-
+           else if (criaturaAlvo.dono === 'oponente') {
+                // 🔥 CORREÇÃO: Clicou no oponente? Abre a visão do monstro! 
+                // O equipamento pode ser lido tocando no ícone do equipamento na mini-carta.
+                if (typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada(criaturaAlvo.cartaBlank, fullId);
             }
 
         }
@@ -4465,9 +4463,12 @@ window.animarExplosaoCodigo = function(idElemento, callback) {
 // ==========================================
 
 window.checarFimDeJogo = function() {
-    // 🔥 FILTRO BLINDADO: Só conta como viva se for um objeto válido e tiver mais que 0 de HP
-    let vivasJogador = Object.values(campoJogador).filter(c => c && c.hpAtual > 0).length;
-    let vivasOponente = window.campoOponente ? Object.values(window.campoOponente).filter(c => c && c.hpAtual > 0).length : 0;
+    // 🔥 JUNTA A MESA INTEIRA PRIMEIRO (Para não confundir de quem é a cadeira)
+    let todasNaMesa = [...Object.values(campoJogador), ...(window.campoOponente ? Object.values(window.campoOponente) : [])];
+    
+    // 🔥 FILTRO DE DONO: Conta os vivos pela tag "dono", não importa onde estejam pisando!
+    let vivasJogador = todasNaMesa.filter(c => c && c.hpAtual > 0 && c.dono === 'jogador').length;
+    let vivasOponente = todasNaMesa.filter(c => c && c.hpAtual > 0 && c.dono === 'oponente').length;
 
     if (vivasJogador === 0 && vivasOponente > 0) {
         window.declararVitoria('oponente', 'Todo o seu exército foi aniquilado.');
