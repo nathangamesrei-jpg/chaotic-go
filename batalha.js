@@ -4465,25 +4465,22 @@ window.animarExplosaoCodigo = function(idElemento, callback) {
 // ==========================================
 
 window.checarFimDeJogo = function() {
+    // 🔥 FILTRO BLINDADO: Só conta como viva se for um objeto válido e tiver mais que 0 de HP
+    let vivasJogador = Object.values(campoJogador).filter(c => c && c.hpAtual > 0).length;
+    let vivasOponente = window.campoOponente ? Object.values(window.campoOponente).filter(c => c && c.hpAtual > 0).length : 0;
 
-    let vivasJogador = Object.values(campoJogador).filter(c => c !== null).length;
-
-    let vivasOponente = window.campoOponente ? Object.values(window.campoOponente).filter(c => c !== null).length : 0;
-
-
-
-    if (vivasJogador === 0) {
-
+    if (vivasJogador === 0 && vivasOponente > 0) {
         window.declararVitoria('oponente', 'Todo o seu exército foi aniquilado.');
-
-    } else if (vivasOponente === 0) {
-
+        // 🔥 AVISO DE REDUNDÂNCIA: Garante que o inimigo saiba que você perdeu (Entrega a taça pela rede)!
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+            window.enviarAcaoRede({ tipo: 'declarar_vitoria_oponente' });
+        }
+    } else if (vivasOponente === 0 && vivasJogador > 0) {
         window.declararVitoria('jogador', 'Você destruiu todas as criaturas inimigas e dominou o Drome!');
-
+    } else if (vivasJogador === 0 && vivasOponente === 0) {
+        window.declararVitoria('empate', 'Ambos os exércitos foram destruídos simultaneamente!');
     }
-
 };
-
 
 
 window.declararVitoria = function(vencedor, motivo) {
@@ -4574,48 +4571,34 @@ window.sairDaBatalhaAposFim = function() {
 
 
 
-// 1. REVELAR EQUIPAMENTO
-
 // 1. REVELAR EQUIPAMENTO (AGORA NO BURST)
-
 window.revelarEquipamento = function(fullId) {
-
     let criatura = obterCriaturaNoSlot(fullId);
-
     if (criatura && criatura.equipamento && !criatura.equipamentoRevelado) {
-
         window.fecharModalAcoes();
-
         
-
         let acaoRevelar = {
-
             dono: criatura.dono,
-
             nomeAcao: `Revelar Equipamento (${criatura.equipamento.nome})`,
-
             tipo: 'equipamento',
-
             executar: function() {
-
                 criatura.equipamentoRevelado = true; // Vira a carta pra cima só na resolução!
-
                 window.mostrarMensagemScanner(`✨ EQUIPAMENTO REVELADO: ${criatura.nome} revelou ${criatura.equipamento.nome}!`);
-
                 if(window.tocarSFX) window.tocarSFX('notificacao');
-
+                
+                // 🔥 O TRANSMISSOR FALTANTE: Avisa a Nuvem para virar a carta na tela do inimigo também!
+                if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                    window.enviarAcaoRede({ tipo: 'revelar_equipamento_direto', alvo: fullId });
+                }
+                
                 atualizarTelaBatalha(); 
-
             }
-
         };
-
         window.adicionarAoBurst(acaoRevelar);
-
     }
-
 };
 
+    
 
 
 // 2. USAR HABILIDADE (AGORA COM MIRA)
@@ -4990,6 +4973,19 @@ window.processarAcaoInimiga = function(acao) {
         // 🔥 NUVEM AVISOU: O tempo do inimigo estourou e o juiz declarou WO!
         window.mostrarMensagemScanner("Conexão perdida ou inatividade prolongada!");
         window.declararVitoria('oponente', 'Você foi desconectado ou ficou inativo por tempo demais (W.O.).');
+    }
+    else if (acao.tipo === 'revelar_equipamento_direto') {
+        // 🔥 NUVEM AVISOU: O Oponente revelou um equipamento no lado dele!
+        let alvoReal = inverterId(acao.alvo);
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura.equipamentoRevelado = true;
+            atualizarTelaBatalha(); // Redesenha a mesa instantaneamente
+        }
+    }
+    else if (acao.tipo === 'declarar_vitoria_oponente') {
+        // 🔥 REDUNDÂNCIA DE FIM DE JOGO: O oponente reconheceu a própria derrota e te enviou a taça!
+        window.declararVitoria('jogador', 'Todo o exército inimigo foi aniquilado!');
     }
 };
 
