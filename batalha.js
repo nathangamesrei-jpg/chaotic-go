@@ -4295,19 +4295,21 @@ window.abrirModalVerLixo = function(dono) {
     let titulo = dono === 'jogador' ? "SEU CEMITÉRIO (LIXO)" : "CEMITÉRIO DO OPONENTE";
     let cor = dono === 'jogador' ? "#4CAF50" : "#e53935";
 
-    // 🕵️‍♂️ FUNÇÃO DETETIVE: Turbinada para lidar com Strings, IDs Numéricos e Falbacks
+    // 🕵️‍♂️ FUNÇÃO DETETIVE: Nível Mestre! Procura por ID ou Nome em TODOS os lugares!
     const acharImagemCarta = (idOuNome) => {
         let c = null;
-        // 1. Procura no seu inventário (comparando ID como String para evitar erros)
-        if (window.inventario) c = window.inventario.find(x => String(x.id) === String(idOuNome) || x.nome === idOuNome);
+        let busca = String(idOuNome); // Padroniza tudo para texto para não ter erro de tipo
         
-        // 2. Se não achou (ex: carta do oponente), vasculha os Bancos Globais pelo NOME
-        if (!c && typeof MONSTROS !== 'undefined') c = MONSTROS.find(x => x.nome === idOuNome);
-        if (!c && typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => x.nome === idOuNome);
-        if (!c && typeof MAGIAS !== 'undefined') c = MAGIAS.find(x => x.nome === idOuNome);
-        if (!c && typeof EQUIPAMENTOS !== 'undefined') c = EQUIPAMENTOS.find(x => x.nome === idOuNome);
+        // 1. Procura no seu inventário
+        if (window.inventario) c = window.inventario.find(x => String(x.id) === busca || x.nome === idOuNome);
         
-        // 3. Retorna a imagem, a arte em branco, ou o verso da carta (blindagem extra)
+        // 2. Vasculha os Bancos Globais (Agora cruza NOME e ID para os dois lixos funcionarem!)
+        if (!c && typeof MONSTROS !== 'undefined') c = MONSTROS.find(x => String(x.id) === busca || x.nome === idOuNome);
+        if (!c && typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => String(x.id) === busca || x.nome === idOuNome);
+        if (!c && typeof MAGIAS !== 'undefined') c = MAGIAS.find(x => String(x.id) === busca || x.nome === idOuNome);
+        if (!c && typeof EQUIPAMENTOS !== 'undefined') c = EQUIPAMENTOS.find(x => String(x.id) === busca || x.nome === idOuNome);
+        
+        // 3. Retorna a imagem ou o verso protetor
         return c ? (c.img || c.cartaBlank || URL_FUNDO_CARTA) : URL_FUNDO_CARTA;
     };
     let lixoArray = [];
