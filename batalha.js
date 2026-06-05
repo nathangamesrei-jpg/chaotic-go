@@ -491,8 +491,17 @@ function atualizarTelaBatalha() {
             qtdBaralhoOponente: window.qtdBaralhoOponente,
             qtdMaoOponente: window.qtdMaoOponente,
             estadoTurno: window.estadoTurno,
+            estadoTurno: window.estadoTurno,
             ultimaAcaoProcessada: window.ultimaAcaoProcessada, // Memória para não tomar dano 2x!
-            modo: modoAtual // Salva o CSS do tabuleiro (1x1, 3x3, etc)
+            modo: modoAtual, // Salva o CSS do tabuleiro (1x1, 3x3, etc)
+            // 🔥 AS MEMÓRIAS QUE FALTAVAM: O jogo agora lembra do Combate, Local e Miras!
+            localAtivoAtual: window.localAtivoAtual,
+            estadoCombate: window.estadoCombate,
+            combateFinalizadoNesteTurno: window.combateFinalizadoNesteTurno,
+            combateIniciadoNesteTurno: window.combateIniciadoNesteTurno,
+            modoAlvo: window.modoAlvo,
+            conjuradorMugicAtual: window.conjuradorMugicAtual,
+            slotSelecionadoMovimento: window.slotSelecionadoMovimento
         };
         localStorage.setItem('drome_save_state', JSON.stringify(saveState));
     }
@@ -5149,6 +5158,15 @@ window.recuperarBatalhaSalva = function(salaId, souP1) {
         window.estadoTurno = s.estadoTurno || { jogadorAtual: null, turnoNumero: 0, fase: 'pre-jogo' };
         window.ultimaAcaoProcessada = s.ultimaAcaoProcessada || 0; // Impede o dano duplo do Firebase!
         
+        // 🔥 RECUPERANDO AS REGRAS E O COMBATE
+        window.localAtivoAtual = s.localAtivoAtual || null;
+        window.estadoCombate = s.estadoCombate || { ativo: false, atacante: null, defensor: null };
+        window.combateFinalizadoNesteTurno = s.combateFinalizadoNesteTurno || false;
+        window.combateIniciadoNesteTurno = s.combateIniciadoNesteTurno || false;
+        window.modoAlvo = s.modoAlvo || null;
+        window.conjuradorMugicAtual = s.conjuradorMugicAtual || null;
+        window.slotSelecionadoMovimento = s.slotSelecionadoMovimento || null;
+
         if (!window.estadoDrome) window.estadoDrome = {};
         window.estadoDrome.modo = s.modo || "6x6"; // Recupera o formato do tabuleiro!
     } else {
@@ -5164,7 +5182,13 @@ window.recuperarBatalhaSalva = function(salaId, souP1) {
     atualizarTelaBatalha(); // Redesenha os HPs como estavam
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
     
-    // Religa os ouvidos da Nuvem
+    // 🔥 REDESENHA O LOCAL E AS MARCAÇÕES VISUAIS DA MESA
+    if (typeof atualizarLocaisAtivosNaMesa === 'function') atualizarLocaisAtivosNaMesa();
+    if (window.slotSelecionadoMovimento && typeof destacarAdjacentes === 'function') {
+        destacarAdjacentes(window.slotSelecionadoMovimento);
+    }
+    
+    // Religa a Nuvem e os Radares!
     window.iniciarEscutaDeTurnoOnline(); 
     if (typeof window.iniciarEscutaAcoesOnline === 'function') window.iniciarEscutaAcoesOnline(); 
     if (typeof window.iniciarSistemaAntiAFK === 'function') window.iniciarSistemaAntiAFK();
