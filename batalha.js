@@ -1553,11 +1553,16 @@ setTimeout(() => {
             .mini-equip-icon:hover { z-index: 9999999; } /* 🔥 ÍCONE VEM MAIS PRA FRENTE AINDA */
 
             
+            /* 🔥 O PULO DO GATO: A carta inteira salta pra frente pra não ser esmagada! */
+            [id^="jog-"], [id^="op-"] { position: relative; z-index: 10; }
+            [id^="jog-"]:hover, [id^="op-"]:hover { z-index: 999999 !important; }
+
              .mini-equip-icon.revelado { background-size: cover; background-position: center; }
 
             .mini-equip-icon.oculto { background: #222; color: #fff; font-weight: bold; font-size: 14px; border-color: #aaa; }
 
-            .equip-tooltip { display: none; position: absolute; bottom: 120%; left: 50%; transform: translateX(-50%); width: 130px; background: rgba(0,10,0,0.95); border: 1px solid #4CAF50; color: white; text-align: center; font-size: 9px; padding: 6px; border-radius: 5px; pointer-events: none; z-index: 200; line-height: 1.3; }
+            /* 🔥 BALÃO TURBINADO: Imune às cartas da linha de baixo! */
+            .equip-tooltip { display: none; position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%); width: 140px; background: rgba(0,10,0,0.95); border: 1px solid #4CAF50; color: white; text-align: center; font-size: 10px; padding: 8px; border-radius: 5px; pointer-events: none; z-index: 99999999 !important; line-height: 1.4; box-shadow: 0 0 15px #000; }
 
             .mini-equip-icon:hover .equip-tooltip { display: block; }
 
@@ -4528,8 +4533,14 @@ window.sairDaBatalhaAposFim = function() {
     document.getElementById("tela-menu").style.display = "flex";
     window.modoMenu = true;
     
-    // 🔥 DESLIGA O RADAR E RASGA O TICKET DE RECONEXÃO!
+    // 🔥 DESLIGA O RADAR E EXORCIZA OS FANTASMAS DA NUVEM!
+    if (typeof window.desligarSistemaAntiAFK === 'function') window.desligarSistemaAntiAFK();
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+        if (typeof window._dbOff === 'function') {
+            window._dbOff('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao');
+            window._dbOff('salas_drome/' + window.salaBatalhaAtual + '/turno_ativo');
+            window._dbOff('salas_drome/' + window.salaBatalhaAtual + '/pings');
+        }
         window.salaBatalhaAtual = null; 
     }
     localStorage.removeItem('drome_ticket_batalha'); // A batalha acabou, lixo no ticket!
@@ -4996,6 +5007,10 @@ window.ultimaMemoriaPingInimigo = null;
 
 window.iniciarSistemaAntiAFK = function() {
     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
+    
+    // 🔥 PREVENÇÃO ZUMBI: Se a tela de batalha está escondida, é impossível iniciar o cronômetro!
+    let telaBatalha = document.getElementById("tela-batalha");
+    if (telaBatalha && telaBatalha.style.display === "none") return;
 
     // 🔥 PREVENÇÃO DE CLONES: Mata qualquer cronômetro antigo antes de iniciar um novo!
     window.desligarSistemaAntiAFK();
