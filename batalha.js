@@ -3654,22 +3654,23 @@ window.executarPassagemDeTurnoLocal = function() {
     if (typeof window.lixoAtaquesOponente === 'undefined') window.lixoAtaquesOponente = 0;
     if (typeof window.lixoAtaques === 'undefined') window.lixoAtaques = [];
 
-    // 🔥 NOVA TRAVA GERAL: O turno rodou, então ninguém iniciou combate neste novo turno ainda.
     window.combateIniciadoNesteTurno = false;
 
     if (window.estadoTurno.jogadorAtual === 'jogador') {
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
         
-        // 🔥 FAXINA DO TURNO: Limpa o cansaço dos dois exércitos!
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         if(campoJogador) Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
         if (emCombate) {
             window.pontosAtaque['oponente'] += 1;
-            if (window.qtdBaralhoOponente <= 0 && window.lixoAtaquesOponente > 0) {
-                window.qtdBaralhoOponente = window.lixoAtaquesOponente;
-                window.lixoAtaquesOponente = 0;
+            
+            // 🔥 CORREÇÃO: Conta o lixo corretamente, seja número ou lista online!
+            let qtdLixoOp = Array.isArray(window.lixoAtaquesOponente) ? window.lixoAtaquesOponente.length : window.lixoAtaquesOponente;
+            if (window.qtdBaralhoOponente <= 0 && qtdLixoOp > 0) {
+                window.qtdBaralhoOponente = qtdLixoOp;
+                window.lixoAtaquesOponente = Array.isArray(window.lixoAtaquesOponente) ? [] : 0;
             }
             if (window.qtdBaralhoOponente > 0) {
                 window.qtdMaoOponente++; 
@@ -3678,36 +3679,24 @@ window.executarPassagemDeTurnoLocal = function() {
         }
 
         let btn = document.getElementById('btn-passar-turno');
-        if(btn) { 
-            btn.style.display = 'block'; 
-            btn.disabled = true; 
-            btn.innerHTML = "TURNO<br>OPONENTE"; 
-        }
+        if(btn) { btn.style.display = 'block'; btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
         
         window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
             if (emCombate) {
                 window.mostrarMensagemScanner("Turno do oponente no combate...");
-                if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
-                    setTimeout(() => { window.passarTurno(); }, 4000);
-                }
+                if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") setTimeout(() => { window.passarTurno(); }, 4000);
             } else {
-                // 🔥 TRAVA DO LOCAL (LADO DO INIMIGO): Só sorteia se teve combate antes!
                 if (window.combateFinalizadoNesteTurno) {
-                    window.combateFinalizadoNesteTurno = false; // Consome o bilhete
+                    window.combateFinalizadoNesteTurno = false; 
                     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
                         window.sortearLocalAnimado('oponente', () => {
                             window.mostrarMensagemScanner("Turno de movimento do oponente...");
                             setTimeout(() => { window.passarTurno(); }, 4000);
                         });
-                    } else {
-                        window.mostrarMensagemScanner("Aguardando oponente sortear o Local...");
-                    }
+                    } else { window.mostrarMensagemScanner("Aguardando oponente sortear o Local..."); }
                 } else {
-                    // Turno calmo, ninguém morreu antes, então NÃO sorteia nada!
                     window.mostrarMensagemScanner("Turno de movimento do oponente...");
-                    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
-                        setTimeout(() => { window.passarTurno(); }, 4000);
-                    }
+                    if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") setTimeout(() => { window.passarTurno(); }, 4000);
                 }
             }
         });
@@ -3715,64 +3704,55 @@ window.executarPassagemDeTurnoLocal = function() {
         if (emCombate && window.qtdMaoOponente > 5) {
             let excesso = window.qtdMaoOponente - 5;
             window.qtdMaoOponente = 5;
-            window.lixoAtaquesOponente += excesso;
+            // 🔥 CORREÇÃO: Adiciona genéricos na lista, em vez de bugar somando texto com número!
+            if (Array.isArray(window.lixoAtaquesOponente)) {
+                for(let i=0; i<excesso; i++) window.lixoAtaquesOponente.push("Carta Descartada");
+            } else {
+                window.lixoAtaquesOponente += excesso;
+            }
         }
 
         window.estadoTurno.jogadorAtual = 'jogador';
         window.estadoTurno.turnoNumero++;
-
         window.combateIniciadoNesteTurno = false;
         
-        // 🔥 FAXINA DO TURNO (O seu lado):
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         if(campoJogador) Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
         if (emCombate) {
             window.pontosAtaque['jogador'] += 1;
-            
             if ((!window.baralhoAtaques || window.baralhoAtaques.length === 0) && window.lixoAtaques && window.lixoAtaques.length > 0) {
                 window.mostrarMensagemScanner("Baralho vazio! Reembaralhando o Lixo...");
                 window.baralhoAtaques = embaralharArray(window.lixoAtaques);
                 window.lixoAtaques = []; 
             }
-
-            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
-                window.maoAtaques.push(window.baralhoAtaques.shift());
-            }
+            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) window.maoAtaques.push(window.baralhoAtaques.shift());
         }
 
         let btn = document.getElementById('btn-passar-turno');
-        if(btn) { 
-            btn.style.display = 'block'; 
-            btn.disabled = false; 
-            btn.innerHTML = "PASSAR<br>TURNO"; 
-        }
+        if(btn) { btn.style.display = 'block'; btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
         
         window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
             if (emCombate) {
                 window.mostrarMensagemScanner("Sua vez de atacar! +1 Ponto e +1 Carta.");
             } else {
-                // 🔥 TRAVA DO LOCAL (SEU LADO): Só sorteia se teve combate antes!
                 if (window.combateFinalizadoNesteTurno) {
-                    window.combateFinalizadoNesteTurno = false; // Consome o bilhete
-                    window.sortearLocalAnimado('jogador', () => {
-                        window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
-                    });
+                    window.combateFinalizadoNesteTurno = false;
+                    window.sortearLocalAnimado('jogador', () => { window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas."); });
                 } else {
-                    // Turno calmo, ninguém morreu antes, então NÃO sorteia nada!
                     window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
                 }
             }
         });
     }
 
-   atualizarTelaBatalha(); 
-   if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+    atualizarTelaBatalha(); 
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
-   setTimeout(() => {
-       window.processandoTurno = false;
-       window.processarFilaDeTurnos();
-   }, 1500); 
+    setTimeout(() => {
+        window.processandoTurno = false;
+        window.processarFilaDeTurnos();
+    }, 1500); 
 };
 
 // ==========================================
@@ -5158,9 +5138,8 @@ window.recuperarBatalhaSalva = function(salaId, souP1) {
         window.qtdBaralhoOponente = s.qtdBaralhoOponente !== undefined ? s.qtdBaralhoOponente : 17;
         window.qtdMaoOponente = s.qtdMaoOponente !== undefined ? s.qtdMaoOponente : 3;
         window.estadoTurno = s.estadoTurno || { jogadorAtual: null, turnoNumero: 0, fase: 'pre-jogo' };
-        window.ultimaAcaoProcessada = s.ultimaAcaoProcessada || 0; // Impede o dano duplo do Firebase!
+        window.ultimaAcaoProcessada = s.ultimaAcaoProcessada || 0; 
         
-        // 🔥 RECUPERANDO AS REGRAS E O COMBATE
         window.localAtivoAtual = s.localAtivoAtual || null;
         window.estadoCombate = s.estadoCombate || { ativo: false, atacante: null, defensor: null };
         window.combateFinalizadoNesteTurno = s.combateFinalizadoNesteTurno || false;
@@ -5170,9 +5149,8 @@ window.recuperarBatalhaSalva = function(salaId, souP1) {
         window.slotSelecionadoMovimento = s.slotSelecionadoMovimento || null;
 
         if (!window.estadoDrome) window.estadoDrome = {};
-        window.estadoDrome.modo = s.modo || "6x6"; // Recupera o formato do tabuleiro!
+        window.estadoDrome.modo = s.modo || "6x6"; 
     } else {
-        // Se a foto sumiu por algum motivo, recarrega do zero (segurança)
         window.carregarDeckParaBatalha(salaId, souP1);
         return;
     }
@@ -5180,17 +5158,34 @@ window.recuperarBatalhaSalva = function(salaId, souP1) {
     window.salaBatalhaAtual = salaId;
     window.souP1Batalha = souP1;
     
-    window.ajustarTabuleiroBatalha(window.estadoDrome.modo); // Conserta o CSS das posições
-    atualizarTelaBatalha(); // Redesenha os HPs como estavam
-    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
-    
-    // 🔥 REDESENHA O LOCAL E AS MARCAÇÕES VISUAIS DA MESA
-    if (typeof atualizarLocaisAtivosNaMesa === 'function') atualizarLocaisAtivosNaMesa();
-    if (window.slotSelecionadoMovimento && typeof destacarAdjacentes === 'function') {
-        destacarAdjacentes(window.slotSelecionadoMovimento);
+    // 🔥 FORÇA O CSS A EXISTIR IMEDIATAMENTE (Cura a bagunça do tabuleiro)
+    if (!document.getElementById("css-movimento")) {
+        let style = document.createElement('style');
+        style.id = "css-movimento";
+        style.innerHTML = `
+            .zona-central { justify-content: flex-start !important; gap: 5px !important; }
+            .linha-formacao-batalha { margin: 0 !important; }
+            [id^="jog-"], [id^="op-"] { touch-action: none !important; }
+            .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
+            .slot-alvo-combate { box-shadow: inset 0 0 25px rgba(255,0,0,0.8), 0 0 15px rgba(255,0,0,0.5) !important; border-color: #ff0000 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
+        `;
+        document.head.appendChild(style);
     }
     
-    // Religa a Nuvem e os Radares!
+    window.ajustarTabuleiroBatalha(window.estadoDrome.modo); 
+    atualizarTelaBatalha(); 
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+    
+    if (typeof atualizarLocaisAtivosNaMesa === 'function') atualizarLocaisAtivosNaMesa();
+    
+    // 🔥 CURA A AMNÉSIA DE COMBATE: Pinta a mesa de vermelho e verde se estivessem lutando!
+    if (window.estadoCombate && window.estadoCombate.ativo) {
+        let elAtaque = document.getElementById(window.estadoCombate.atacante);
+        let elDefesa = document.getElementById(window.estadoCombate.defensor);
+        if (elAtaque) elAtaque.classList.add('slot-selecionado');
+        if (elDefesa) elDefesa.classList.add('slot-alvo-combate');
+    }
+    
     window.iniciarEscutaDeTurnoOnline(); 
     if (typeof window.iniciarEscutaAcoesOnline === 'function') window.iniciarEscutaAcoesOnline(); 
     if (typeof window.iniciarSistemaAntiAFK === 'function') window.iniciarSistemaAntiAFK();
