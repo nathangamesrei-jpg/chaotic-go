@@ -158,21 +158,24 @@ function carregarDecksParaEscolha(modo) {
 function verificarIrregularidadeDeck(deck, modo) {
     let p = [];
     
-    // 1. Checa Ataques e Locais com segurança (mesmo se o Firebase transformar em Objeto)
-    let qtdAtaques = deck.ataques ? Object.values(deck.ataques).length : 0;
-    let qtdLocais = deck.locais ? Object.values(deck.locais).length : 0;
+    // 1. O Filtro Base: Exige 20 Ataques e 10 Locais para TODOS os modos
+    let qtdAtaques = deck.ataques ? (Array.isArray(deck.ataques) ? deck.ataques.length : Object.values(deck.ataques).length) : 0;
+    let qtdLocais = deck.locais ? (Array.isArray(deck.locais) ? deck.locais.length : Object.values(deck.locais).length) : 0;
     
     if (qtdAtaques !== 20) p.push(`Ataques: ${qtdAtaques}/20`);
     if (qtdLocais !== 10) p.push(`Locais: ${qtdLocais}/10`);
     
-    // 2. Checa as Criaturas ignorando os "nulls"
-    let min = modo === '6x6' ? 6 : modo === '3x3' ? 3 : 1;
-    let crias = 0;
+    // 2. O Filtro Flexível de Criaturas
+    // O JavaScript pode preencher os espaços em branco com "null" ou com texto vazio "". Vamos filtrar os dois!
+    let minCriaturasReais = modo === '6x6' ? 6 : (modo === '3x3' ? 3 : 1);
+    let criaturasVivas = 0;
+    
     if (deck.criaturas) {
-        crias = Object.values(deck.criaturas).filter(c => c !== null).length;
+        let listaCrias = Array.isArray(deck.criaturas) ? deck.criaturas : Object.values(deck.criaturas);
+        criaturasVivas = listaCrias.filter(c => c !== null && c !== undefined && String(c).trim() !== "").length;
     }
     
-    if (crias < min) p.push(`Criaturas: ${crias}/${min}`);
+    if (criaturasVivas < minCriaturasReais) p.push(`Criaturas: ${criaturasVivas}/${minCriaturasReais}`);
     
     return p.length > 0 ? p.join(' · ') : null;
 }
