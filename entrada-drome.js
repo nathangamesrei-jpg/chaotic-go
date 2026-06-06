@@ -236,19 +236,23 @@ window.ajustarTabuleiroBatalha = function(modo) {
 
 window.expandirDeckParaOnline = function(deckIds) {
     let deckExpandido = { nome: deckIds.nome, modo: deckIds.modo };
+    
+    // 🔥 TRADUTOR FLEXÍVEL: Ele não descarta o array se encontrar um null, ele mantém a posição!
     let expandirArray = (arr) => {
         if (!arr) return [];
-        let listaLimpa = Array.isArray(arr) ? arr : Object.values(arr);
-        return listaLimpa.map(id => id ? window.inventario.find(c => String(c.id) === String(id)) || null : null).filter(c => c !== null);
+        // Converte o objeto/array do Firebase em um array real mantendo os índices
+        let lista = Array.isArray(arr) ? arr : Object.values(arr);
+        return lista.map(id => id ? window.inventario.find(c => String(c.id) === String(id)) || null : null);
     };
+    
     deckExpandido.criaturas_objs = expandirArray(deckIds.criaturas);
     deckExpandido.equipamentos_objs = expandirArray(deckIds.equipamentos);
     deckExpandido.ataques_objs = expandirArray(deckIds.ataques);
     deckExpandido.locais_objs = expandirArray(deckIds.locais);
     deckExpandido.mugics_objs = expandirArray(deckIds.mugics);
+    
     return deckExpandido;
 };
-
 function iniciarPartidaDrome(salaId, souP1) {
     clearInterval(window._timerFila);
     window.estadoDrome.naFila = false;
