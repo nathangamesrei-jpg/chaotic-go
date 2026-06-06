@@ -158,7 +158,7 @@ function carregarDecksParaEscolha(modo) {
 function verificarIrregularidadeDeck(deck, modo) {
     let p = [];
     
-    // 1. O Filtro Base: Exige 20 Ataques e 10 Locais para TODOS os modos
+    // 1. O Filtro Base: Exige 20 Ataques e 10 Locais para TODOS os modos (Regra de Ouro)
     let qtdAtaques = deck.ataques ? (Array.isArray(deck.ataques) ? deck.ataques.length : Object.values(deck.ataques).length) : 0;
     let qtdLocais = deck.locais ? (Array.isArray(deck.locais) ? deck.locais.length : Object.values(deck.locais).length) : 0;
     
@@ -166,8 +166,7 @@ function verificarIrregularidadeDeck(deck, modo) {
     if (qtdLocais !== 10) p.push(`Locais: ${qtdLocais}/10`);
     
     // 2. O Filtro Flexível de Criaturas
-    // O JavaScript pode preencher os espaços em branco com "null" ou com texto vazio "". Vamos filtrar os dois!
-    let minCriaturasReais = modo === '6x6' ? 6 : (modo === '3x3' ? 3 : 1);
+    // O jogador pode ir com espaços vazios ("criaturas faltando"). Só precisa de pelo menos 1 para jogar!
     let criaturasVivas = 0;
     
     if (deck.criaturas) {
@@ -175,7 +174,7 @@ function verificarIrregularidadeDeck(deck, modo) {
         criaturasVivas = listaCrias.filter(c => c !== null && c !== undefined && String(c).trim() !== "").length;
     }
     
-    if (criaturasVivas < minCriaturasReais) p.push(`Criaturas: ${criaturasVivas}/${minCriaturasReais}`);
+    if (criaturasVivas < 1) p.push(`Criaturas: O deck precisa de pelo menos 1 criatura!`);
     
     return p.length > 0 ? p.join(' · ') : null;
 }
