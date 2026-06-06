@@ -1,214 +1,75 @@
 // ==========================================
-
-// CONFIGURAÇÕES DE DESIGN (COLOQUE SUA IMAGEM DO VERSO AQUI)
-
+// CONFIGURAÇÕES DE DESIGN
 // ==========================================
-
 const URL_FUNDO_CARTA = 'cartas/verso.jpg'; 
 
-
-
 // ==========================================
-
-// MOTOR DA MINI-CARTA (DROME PRO 2.1 - ELEMENTOS ESCONDIDOS E EQUIPAMENTOS)
-
+// MOTOR DA MINI-CARTA
 // ==========================================
-
-// 🔥 DIAGNÓSTICO: Se a carta não aparece, ele vai avisar aqui no Console do F12
-    if (!criaturaObj) {
-        console.log("MiniCarta vazia recebida");
-        return `<div class="mini-card-wrapper" style="opacity:0.3;">🛡️</div>`; 
-    }
-    
-    let img = "";
-
-    let hpAtual = 0;
-
-    let c = 0, p = 0, s = 0, v = 0;
-
-    let pct = 0;
-
-    let corHp = '#444';
-
-    let triboClass = ""; 
-
-    let htmlEquipamento = ""; 
-
-    
-
-    // Preparando as luzes dos elementos
-
+function desenharMiniCarta(criaturaObj) {
+    let img = "", hpAtual = 0, c = 0, p = 0, s = 0, v = 0, pct = 0;
+    let corHp = '#444', triboClass = "", htmlEquipamento = ""; 
     let temFogo = false, temAgua = false, temTerra = false, temAr = false;
 
-
-
-    if (criaturaObj) {
-
-        img = criaturaObj.cartaBlank; 
-
-        
-
-        let hpMax = criaturaObj.hpMax || criaturaObj.statsMax?.energia || 0;
-
-        hpAtual = criaturaObj.hpAtual !== undefined ? criaturaObj.hpAtual : hpMax;
-
-        
-
-        c = criaturaObj.coragem || criaturaObj.statsMax?.coragem || 0;
-
-        p = criaturaObj.poder || criaturaObj.statsMax?.poder || 0;
-
-        s = criaturaObj.sabedoria || criaturaObj.statsMax?.sabedoria || 0;
-
-        v = criaturaObj.velocidade || criaturaObj.statsMax?.velocidade || 0;
-
-        
-
-        // 🔥 O LEITOR UNIVERSAL DE ELEMENTOS (À prova de falhas)
-
-        let elemsBrutos = criaturaObj.elementos;
-
-        
-
-        // Se o inventário antigo do cara não salvou os elementos, busca direto na fonte (cartas.js)
-
-        if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
-
-            let dbCarta = MONSTROS.find(m => m.nome === criaturaObj.nome);
-
-            if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
-
-        }
-
-
-
-        // O Truque: Transforma QUALQUER coisa num texto minúsculo sem acento
-
-        let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-
-        
-
-        // Agora ele acha fácil, seja "Fogo", "fogo", ["Fogo"], etc.
-
-        temFogo = textoElementos.includes('fogo');
-
-        temAgua = textoElementos.includes('agua');
-
-        temTerra = textoElementos.includes('terra');
-
-        temAr = textoElementos.includes('ar');
-
-        
-
-        const triboMap = {'Azul': 'tribo-azul', 'Vermelho': 'tribo-vermelho', 'Amarelo': 'tribo-amarelo', 'Verde': 'tribo-verde', 'Ciano': 'tribo-ciano', 'Cinza': 'tribo-cinza'};
-
-        triboClass = triboMap[criaturaObj.tribo] || 'tribo-cinza';
-
-
-
-        pct = Math.max(0, Math.min(100, (hpAtual / hpMax) * 100));
-
-        corHp = 'lime';
-
-        if (pct <= 50) corHp = 'orange';
-
-        if (pct <= 20) corHp = 'red';
-
-
-
-        if (criaturaObj.equipamento) {
-            if (criaturaObj.equipamentoRevelado) {
-                // 🔥 NOVA LÓGICA: Clicar abre a foto gigante do equipamento com descrição em Dourado!
-                htmlEquipamento = `
-                    <div class="mini-equip-icon revelado" style="background-image: url('${criaturaObj.equipamento.img}')" 
-                         onpointerdown="event.stopPropagation()" 
-                         ontouchstart="event.stopPropagation()" 
-                         onclick="event.stopPropagation(); window.ampliarCartaClicada('${criaturaObj.equipamento.img}')">
-                    </div>
-                `;
-            } else {
-                // 🔥 Se estiver oculto, apenas mostra uma mensagem rápida no scanner.
-                let msgOculto = criaturaObj.dono === 'jogador' ? 'Seu equipamento secreto.' : 'Equipamento inimigo oculto.';
-                htmlEquipamento = `
-                    <div class="mini-equip-icon oculto" 
-                         onpointerdown="event.stopPropagation()" 
-                         ontouchstart="event.stopPropagation()" 
-                         onclick="event.stopPropagation(); window.mostrarMensagemScanner('${msgOculto}')">
-                        ?
-                    </div>
-                `;
-            }
-        }
-
+    if (!criaturaObj) {
+        return `<div class="mini-card-wrapper" style="opacity:0.3; display:flex; justify-content:center; align-items:center;">🛡️</div>`; 
     }
 
+    img = criaturaObj.cartaBlank; 
+    let hpMax = criaturaObj.hpMax || criaturaObj.statsMax?.energia || 0;
+    hpAtual = criaturaObj.hpAtual !== undefined ? criaturaObj.hpAtual : hpMax;
+    c = criaturaObj.coragem || criaturaObj.statsMax?.coragem || 0;
+    p = criaturaObj.poder || criaturaObj.statsMax?.poder || 0;
+    s = criaturaObj.sabedoria || criaturaObj.statsMax?.sabedoria || 0;
+    v = criaturaObj.velocidade || criaturaObj.statsMax?.velocidade || 0;
+    
+    let elemsBrutos = criaturaObj.elementos;
+    if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
+        let dbCarta = MONSTROS.find(m => m.nome === criaturaObj.nome);
+        if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
+    }
 
+    let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+    temFogo = textoElementos.includes('fogo');
+    temAgua = textoElementos.includes('agua');
+    temTerra = textoElementos.includes('terra');
+    temAr = textoElementos.includes('ar');
+    
+    const triboMap = {'Azul': 'tribo-azul', 'Vermelho': 'tribo-vermelho', 'Amarelo': 'tribo-amarelo', 'Verde': 'tribo-verde', 'Ciano': 'tribo-ciano', 'Cinza': 'tribo-cinza'};
+    triboClass = triboMap[criaturaObj.tribo] || 'tribo-cinza';
+    pct = Math.max(0, Math.min(100, (hpAtual / hpMax) * 100));
+    corHp = pct <= 20 ? 'red' : (pct <= 50 ? 'orange' : 'lime');
+
+    if (criaturaObj.equipamento) {
+        if (criaturaObj.equipamentoRevelado) {
+            htmlEquipamento = `<div class="mini-equip-icon revelado" style="background-image: url('${criaturaObj.equipamento.img}')" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.ampliarCartaClicada('${criaturaObj.equipamento.img}')"></div>`;
+        } else {
+            let msgOculto = criaturaObj.dono === 'jogador' ? 'Seu equipamento secreto.' : 'Equipamento inimigo oculto.';
+            htmlEquipamento = `<div class="mini-equip-icon oculto" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.mostrarMensagemScanner('${msgOculto}')">?</div>`;
+        }
+    }
 
     return `
-
-        <div class="mini-card-wrapper">
-
+        <div class="mini-card-wrapper ${criaturaObj.moveuNesteTurno ? 'esgotado' : ''}">
             ${htmlEquipamento}
-
             <div class="mini-card-body ${triboClass}">
-
-                <div class="mini-top-row">
-
-                    <div class="mini-art" style="${img ? `background-image: url('${img}');` : ''}">${!img ? '🛡️' : ''}</div>
-
-                </div>
-
-                
-
-                <div class="mini-hp-row">
-
-                    <div class="mini-hp-fill" style="width: ${pct}%; background-color: ${corHp};"></div>
-
-                    <span class="mini-hp-text">${hpAtual > 0 ? hpAtual : ''}</span>
-
-                </div>
-
-
-
+                <div class="mini-top-row"><div class="mini-art" style="${img ? `background-image: url('${img}');` : ''}">${!img ? '🛡️' : ''}</div></div>
+                <div class="mini-hp-row"><div class="mini-hp-fill" style="width: ${pct}%; background-color: ${corHp};"></div><span class="mini-hp-text">${hpAtual > 0 ? hpAtual : ''}</span></div>
                 <div class="mini-stats-container">
-
                     <div class="mini-stats-band">
-
-                        <div class="mini-stat-item"><span>❤️</span><b>${criaturaObj ? c : ''}</b></div>
-
-                        <div class="mini-stat-item"><span>⚡</span><b>${criaturaObj ? p : ''}</b></div>
-
-                        <div class="mini-stat-item"><span>👁️</span><b>${criaturaObj ? s : ''}</b></div>
-
-                        <div class="mini-stat-item"><span>💨</span><b>${criaturaObj ? v : ''}</b></div>
-
+                        <div class="mini-stat-item"><span>❤️</span><b>${c}</b></div><div class="mini-stat-item"><span>⚡</span><b>${p}</b></div>
+                        <div class="mini-stat-item"><span>👁️</span><b>${s}</b></div><div class="mini-stat-item"><span>💨</span><b>${v}</b></div>
                     </div>
-
-
-
                     <div class="mini-elements-band">
-
-                        <div class="mini-el fogo ${temFogo ? 'ativo' : ''}">🔥</div>
-
-                        <div class="mini-el ar ${temAr ? 'ativo' : ''}">☁️</div>
-
-                        <div class="mini-el terra ${temTerra ? 'ativo' : ''}">⛰️</div>
-
-                        <div class="mini-el agua ${temAgua ? 'ativo' : ''}">🌊</div>
-
+                        <div class="mini-el fogo ${temFogo ? 'ativo' : ''}">🔥</div><div class="mini-el ar ${temAr ? 'ativo' : ''}">☁️</div>
+                        <div class="mini-el terra ${temTerra ? 'ativo' : ''}">⛰️</div><div class="mini-el agua ${temAgua ? 'ativo' : ''}">🌊</div>
                     </div>
-
                 </div>
-
-
-
             </div>
-
         </div>
-
     `;
-
 }
+
 
 
 
