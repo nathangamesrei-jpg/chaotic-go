@@ -14,8 +14,12 @@ const URL_FUNDO_CARTA = 'cartas/verso.jpg';
 
 // ==========================================
 
-function desenharMiniCarta(criaturaObj) {
-
+// 🔥 DIAGNÓSTICO: Se a carta não aparece, ele vai avisar aqui no Console do F12
+    if (!criaturaObj) {
+        console.log("MiniCarta vazia recebida");
+        return `<div class="mini-card-wrapper" style="opacity:0.3;">🛡️</div>`; 
+    }
+    
     let img = "";
 
     let hpAtual = 0;
