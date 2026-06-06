@@ -112,7 +112,6 @@ function carregarDecksParaEscolha(modo) {
         lista.innerHTML = "";
         let encontrouAlgum = false;
         
-        // Aqui está o segredo: forçar o nome exato que usamos para salvar
         [1, 2, 3].forEach(numSlot => {
             let idFogo = modo + "_" + numSlot; 
             
@@ -150,7 +149,7 @@ function carregarDecksParaEscolha(modo) {
             lista.innerHTML = `<p style="color:#aaa;font-size:10px;text-align:center;line-height:1.6;">Nenhum deck ${modo} encontrado.<br><span style="color:#4CAF50;">Crie um deck na Oficina primeiro!</span></p>`;
         }
    }).catch((err) => {
-        console.error("Erro na leitura da Nuvem:", err); // Agora o console vai fofocar o erro!
+        console.error("Erro na leitura da Nuvem:", err); 
         lista.innerHTML = "<p style='color:#ff5555;font-size:10px;text-align:center;'>Falha ao carregar decks!</p>";
     });
 }
@@ -158,15 +157,12 @@ function carregarDecksParaEscolha(modo) {
 function verificarIrregularidadeDeck(deck, modo) {
     let p = [];
     
-    // 1. O Filtro Base: Exige 20 Ataques e 10 Locais para TODOS os modos (Regra de Ouro)
     let qtdAtaques = deck.ataques ? (Array.isArray(deck.ataques) ? deck.ataques.length : Object.values(deck.ataques).length) : 0;
     let qtdLocais = deck.locais ? (Array.isArray(deck.locais) ? deck.locais.length : Object.values(deck.locais).length) : 0;
     
     if (qtdAtaques !== 20) p.push(`Ataques: ${qtdAtaques}/20`);
     if (qtdLocais !== 10) p.push(`Locais: ${qtdLocais}/10`);
     
-    // 2. O Filtro Flexível de Criaturas
-    // O jogador pode ir com espaços vazios ("criaturas faltando"). Só precisa de pelo menos 1 para jogar!
     let criaturasVivas = 0;
     
     if (deck.criaturas) {
@@ -199,7 +195,6 @@ window.confirmarEntradaDrome = function() {
     if (!window.estadoDrome.deckSelecionado) return;
     
     if (window.estadoDrome.tipoJogo === 'online') {
-        // 🔥 MODO ONLINE REATIVADO! (Chama a função da fila do servidor)
         window.mostrarMensagemScanner("Conectando aos servidores do Drome...");
         renderizarFilaOnline(); 
     } 
@@ -209,7 +204,7 @@ window.confirmarEntradaDrome = function() {
 };
 
 // ==========================================
-// AJUSTE DINÂMICO DA ARENA DE BATALHA (CALIBRAÇÃO FINAL 1x1)
+// AJUSTE DINÂMICO DA ARENA DE BATALHA
 // ==========================================
 window.ajustarTabuleiroBatalha = function(modo) {
     let opZona = document.querySelector('.lado-oponente .zona-central');
@@ -226,20 +221,16 @@ window.ajustarTabuleiroBatalha = function(modo) {
     let opMugics = document.querySelectorAll('.lado-oponente .hex-mugic');
     let jogMugics = document.querySelectorAll('.lado-jogador .hex-mugic');
 
-    // 🔥 Reset base e aplicação de Flex-Start (Cola as cartas na linha divisória)
     [opZona, jogZona].forEach(zona => {
         if(zona) {
             zona.style.display = "flex";
             zona.style.flexDirection = "column";
-            zona.style.height = "100%"; // Obriga a zona a encostar na linha divisória
-            
-            // Gruda as cartas no topo da zona (que visualmente é o centro do tabuleiro)
+            zona.style.height = "100%"; 
             zona.style.justifyContent = modo === "6x6" ? "space-evenly" : "flex-start"; 
             zona.style.padding = "0"; 
         }
     });
 
-    // Zera todas as margens antigas
     [opLinha1, opLinha2, opLinha3, jogLinha1, jogLinha2, jogLinha3].forEach(linha => {
         if(linha) { linha.style.marginTop = "0"; linha.style.marginBottom = "0"; }
     });
@@ -247,7 +238,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
     if (modo === "6x6") {
         opLinha3.style.display = "flex"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "flex"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
-        
         opMugics.forEach(m => m.style.display = "block");
         jogMugics.forEach(m => m.style.display = "block");
     } 
@@ -255,7 +245,6 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
         
-        // Mantém o vão que já estava bom no 3x3
         if(jogLinha2) jogLinha2.style.marginTop = "10px";
         if(opLinha2) opLinha2.style.marginTop = "10px";
 
@@ -266,15 +255,14 @@ window.ajustarTabuleiroBatalha = function(modo) {
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
         
-        // 🔥 CALIBRAÇÃO FINAL DO 1x1: Trocamos margem negativa por POSITIVA
-        // Isso vai empurrá-los levemente para longe da linha, criando o vão perfeito.
-        if(jogLinha1) jogLinha1.style.marginTop = "2px"; // Empurra o jogador 10px pra baixo
-        if(opLinha1) opLinha1.style.marginTop = "2px";   // Empurra o oponente 10px (visualmente) pra cima
+        if(jogLinha1) jogLinha1.style.marginTop = "2px"; 
+        if(opLinha1) opLinha1.style.marginTop = "2px";   
 
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
     }
 }
+
 // ==========================================
 // 🌐 TRADUTOR DE DECK PARA O MODO ONLINE
 // ==========================================
@@ -292,7 +280,7 @@ window.expandirDeckParaOnline = function(deckIds) {
 };
 
 // ==========================================
-// INICIAR PARTIDA (AGORA COM SUPORTE ONLINE)
+// INICIAR PARTIDA
 // ==========================================
 function iniciarPartidaDrome(salaId, souP1) {
     clearInterval(window._timerFila);
@@ -301,7 +289,6 @@ function iniciarPartidaDrome(salaId, souP1) {
     
     window.ajustarTabuleiroBatalha(window.estadoDrome.modo);
 
-    // 🛠️ MÁGICA 2: Manda a ID da Sala pro Tabuleiro baixar os dados da nuvem!
     if (typeof window.carregarDeckParaBatalha === "function") {
         window.carregarDeckParaBatalha(salaId, souP1); 
     }
@@ -314,16 +301,14 @@ function iniciarPartidaDrome(salaId, souP1) {
 // ==========================================
 // FILA ONLINE
 // ==========================================
-
 function renderizarFilaOnline() {
     let tela = document.getElementById("tela-entrada-drome");
     window.estadoDrome.naFila = true;
     
     let modo = window.estadoDrome.modo;
     let uid = localStorage.getItem("chaoticUID");
-    let filaPath = 'fila_drome/' + modo; // ESTE É O ENDEREÇO DA FILA
+    let filaPath = 'fila_drome/' + modo; 
 
-    // 🔥 LOGS DETETIVES: Para podermos investigar os erros de "Fila Eterna"
     console.log("📡 RADAR DE FILA: Tentando entrar na fila:", filaPath);
     console.log("🆔 Meu UID é:", uid);
 
@@ -347,20 +332,17 @@ function renderizarFilaOnline() {
 
     let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
     
-    // 🎧 RECEPTOR P2: Escuta se alguém puxou você pra uma sala!
     window._dbOn('jogadores/' + uid + '/match_drome', snap => {
         if (!snap.exists() || !window.estadoDrome.naFila) return;
         let match = snap.val();
         console.log("✅ ENCONTREI UMA PARTIDA! Sala:", match.salaId);
-        window.cancelarFila(); // Para o cronômetro
-        window._dbRemove('jogadores/' + uid + '/match_drome'); // Apaga o convite da nuvem
-        iniciarPartidaDrome(match.salaId, false); // P2 ENTRA NA SALA!
+        window.cancelarFila(); 
+        window._dbRemove('jogadores/' + uid + '/match_drome'); 
+        iniciarPartidaDrome(match.salaId, false); 
     });
 
-    // 📤 TRANSMISSOR: Entra na fila
     window._dbSet(filaPath + '/' + uid, { uid, nome: window.perfilJogador.nome, deck: deckPronto, timestamp: Date.now() });
     
-    // 📡 TRANSMISSOR P1: O mais velho na fila cria a sala e chama o P2
     window._dbOn(filaPath, snapshot => {
         if (!snapshot.exists() || !window.estadoDrome.naFila) return;
         
@@ -385,11 +367,10 @@ function renderizarFilaOnline() {
                     modo: modo, status: "iniciando" 
                 });
                 
-                // 🔥 A MÁGICA: Manda o ID da sala direto pro perfil do P2!
                 window._dbSet('jogadores/' + p2[0] + '/match_drome', { salaId: salaId });
                 
                 window.cancelarFila();
-                iniciarPartidaDrome(salaId, true); // P1 ENTRA NA SALA!
+                iniciarPartidaDrome(salaId, true); 
             }
         }
     });
@@ -419,4 +400,121 @@ function renderizarPassoEscolhaAmigo() {
     `;
     let lista = document.getElementById("lista-amigos-drome");
     amigos.forEach((amigo, i) => {
-        let av = (amigo.avatar.startsWith("http
+        let av = (amigo.avatar.startsWith("http") || amigo.avatar.startsWith("data:"))
+            ? `<div style="width:35px;height:35px;background-image:url('${amigo.avatar}');background-size:cover;border-radius:50%;border:2px solid #4CAF50;flex-shrink:0;"></div>`
+            : `<div style="width:35px;height:35px;background:#000;border-radius:50%;border:2px solid #4CAF50;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${amigo.avatar}</div>`;
+        let div = document.createElement("div");
+        div.style = "background:#112211;border:1px solid #4CAF50;border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;";
+        div.innerHTML = `<div style="display:flex;align-items:center;gap:10px;">${av}<div style="text-align:left;"><div style="color:#fff;font-size:11px;font-weight:bold;">${amigo.nome}</div><div style="color:#4CAF50;font-size:9px;">🟢 Online</div></div></div><button style="background:#e53935;color:white;border:none;padding:8px 12px;border-radius:5px;font-weight:bold;cursor:pointer;font-size:10px;" onclick="window.desafiarAmigoDrome(${i})">DESAFIAR</button>`;
+        lista.appendChild(div);
+    });
+}
+
+window.desafiarAmigoDrome = function(index) {
+    let amigo = window.amigos[index];
+    let uid = localStorage.getItem("chaoticUID");
+    let salaId = "drome_" + uid + "_" + amigo.uid;
+    
+    let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
+
+    _dbSet('salas_drome/' + salaId, { p1:{uid,nome:window.perfilJogador.nome,deck:deckPronto}, p2:{uid:amigo.uid,nome:amigo.nome,deck:null}, modo:window.estadoDrome.modo, status:"aguardando" });
+    _dbSet('jogadores/' + amigo.uid + '/desafio_drome', { de:uid, nome:window.perfilJogador.nome, salaId, modo:window.estadoDrome.modo });
+    renderizarAguardandoAmigo(salaId, amigo.nome);
+};
+
+function renderizarAguardandoAmigo(salaId, nomeAmigo) {
+    let tela = document.getElementById("tela-entrada-drome");
+    tela.innerHTML = `
+        <p class="titulo-tela" style="margin-top:30px;font-size:14px;letter-spacing:2px;">⚔️ AGUARDANDO ⚔️</p>
+        <p style="color:#4CAF50;font-size:10px;margin-bottom:40px;font-family:monospace;">DESAFIO ENVIADO PARA ${nomeAmigo.toUpperCase()}</p>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:20px;"><div style="font-size:50px;">⚔️</div><p class="texto-carregando" style="font-size:12px;">Aguardando resposta...</p></div>
+        <button class="btn-voltar-pequeno" style="margin-top:50px;border-color:#e53935;color:#e53935;" onclick="window.cancelarDesafioDrome('${salaId}')">Cancelar Desafio</button>
+    `;
+    _dbOn('salas_drome/' + salaId, snapshot => {
+        if (!snapshot.exists()) return;
+        let sala = snapshot.val();
+        if (sala.status === "pronta") iniciarPartidaDrome(salaId, true);
+        else if (sala.status === "recusado") { window.mostrarMensagemScanner(nomeAmigo.toUpperCase() + " RECUSOU!"); window.renderizarPassoEscolhaDeck(); }
+    });
+}
+
+window.cancelarDesafioDrome = function(salaId) {
+    _dbUpdate('salas_drome/' + salaId, { status:"cancelado" });
+    setTimeout(() => _dbRemove('salas_drome/' + salaId), 2000);
+    window.renderizarPassoEscolhaDeck();
+};
+
+// ==========================================
+// DESAFIO RECEBIDO
+// ==========================================
+window.escutarDesafiosDrome = function() {
+    let uid = localStorage.getItem("chaoticUID");
+    _dbOn('jogadores/' + uid + '/desafio_drome', snapshot => {
+        if (!snapshot.exists()) return;
+        let desafio = snapshot.val();
+        _dbRemove('jogadores/' + uid + '/desafio_drome');
+        mostrarModalDesafioDrome(desafio);
+    });
+};
+
+function mostrarModalDesafioDrome(desafio) {
+    if (!document.getElementById("modal-desafio-drome")) {
+        let m = document.createElement("div");
+        m.id = "modal-desafio-drome";
+        m.style.cssText = "display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,15,0,0.97);z-index:500;justify-content:center;align-items:center;flex-direction:column;padding:20px;box-sizing:border-box;border:2px solid #e53935;";
+        document.getElementById("tela-jogo").appendChild(m);
+    }
+    let m = document.getElementById("modal-desafio-drome");
+    m.innerHTML = `
+        <p style="color:#e53935;font-weight:bold;font-size:16px;margin-bottom:5px;text-align:center;">⚔️ DESAFIO RECEBIDO!</p>
+        <p style="color:#fff;font-size:12px;margin-bottom:5px;text-align:center;">${desafio.nome.toUpperCase()} te desafiou!</p>
+        <p style="color:#4CAF50;font-size:10px;margin-bottom:25px;text-align:center;">Modo: ${desafio.modo.toUpperCase()}</p>
+        <div style="display:flex;gap:10px;">
+            <button onclick="window.responderDesafioDrome('recusar','${desafio.salaId}')" style="background:#e53935;color:white;font-weight:bold;padding:10px 15px;border-radius:5px;cursor:pointer;border:none;font-size:11px;">RECUSAR</button>
+            <button onclick="window.responderDesafioDrome('aceitar','${desafio.salaId}','${desafio.modo}')" style="background:#4CAF50;color:black;font-weight:bold;padding:10px 15px;border-radius:5px;cursor:pointer;border:none;font-size:11px;">ACEITAR</button>
+        </div>
+    `;
+    m.style.display = "flex";
+    if (navigator.vibrate) navigator.vibrate([100,50,100]);
+}
+
+window.responderDesafioDrome = function(resposta, salaId, modo) {
+    document.getElementById("modal-desafio-drome").style.display = "none";
+    if (resposta === 'recusar') {
+        _dbUpdate('salas_drome/' + salaId, { status:"recusado" });
+    } else {
+        window.estadoDrome.tipoJogo = 'amigo';
+        window.estadoDrome.modo = modo;
+        document.getElementById("tela-menu").style.display = "none";
+        document.getElementById("tela-entrada-drome").style.display = "flex";
+        window.modoMenu = false;
+        window.renderizarPassoEscolhaDeck();
+        
+        setTimeout(() => {
+            let btn = document.getElementById("btn-jogar-drome");
+            if (btn) btn.onclick = () => { 
+                let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
+                _dbUpdate('salas_drome/' + salaId, { status: "pronta", "p2/deck": deckPronto }); 
+                iniciarPartidaDrome(salaId, false); 
+            };
+        }, 1500);
+    }
+};
+
+window.voltarMenuDrome = function() {
+    document.getElementById("tela-entrada-drome").style.display = "none";
+    document.getElementById("tela-menu").style.display = "flex";
+    window.modoMenu = true;
+    window.estadoDrome = { tipoJogo:null, modo:null, deckSelecionado:null, amigoDesafiado:null, naFila:false };
+};
+
+window.selecionarTipoJogo = function(tipo) { 
+    window.estadoDrome.tipoJogo = tipo; 
+    renderizarPassoModo(); 
+};
+
+window.selecionarModo = function(modo) { window.estadoDrome.modo = modo; window.renderizarPassoEscolhaDeck(); };
+
+setTimeout(function() {
+    if (window._dbOn && window.escutarDesafiosDrome) window.escutarDesafiosDrome();
+}, 1500);
