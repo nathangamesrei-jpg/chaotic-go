@@ -1906,19 +1906,25 @@ setTimeout(() => {
 
     }
 
-    ['jog', 'op'].forEach(lado => {
+   ['jog', 'op'].forEach(lado => {
         ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'].forEach(slot => {
             let el = document.getElementById(`${lado}-${slot}`);
             if (el) {
                 if (el.parentElement) el.parentElement.style.pointerEvents = "none";
                 el.style.pointerEvents = "auto";
                 
-                // 🔥 FIM DA PARALISIA: Todos os slots recebem os mesmos poderes!
-                // O código interno da 'iniciarInteracaoSlot' já é inteligente o suficiente
-                // para saber se a carta ali dentro é sua ou do inimigo.
-                el.onclick = null; // Limpa clicks velhos
-                el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
-                el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+                el.onclick = null; 
+                el.onpointerdown = null;
+                el.ontouchstart = null;
+
+                if (lado === 'jog') {
+                    // 🔥 SUAS CARTAS: Precisam suportar o recurso de "Arrastar"
+                    el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `jog-${slot}`);
+                    el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `jog-${slot}`);
+                } else {
+                    // 🔥 CARTAS INIMIGAS: Leitura super rápida com um toque simples!
+                    el.onclick = () => window.lidarComCliqueTabuleiro(`op-${slot}`);
+                }
             }
         });
     });
