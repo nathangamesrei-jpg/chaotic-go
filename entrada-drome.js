@@ -7,7 +7,7 @@ window.estadoDrome = {
     deckSelecionado: null, amigoDesafiado: null, naFila: false
 };
 
-// Helpers Firebase (usa as funções já carregadas pelo script.js via window)
+// Helpers Firebase
 function _dbGet(path) { return window._dbGet(path); }
 function _dbSet(path, val) { return window._dbSet(path, val); }
 function _dbUpdate(path, val) { return window._dbUpdate(path, val); }
@@ -156,22 +156,16 @@ function carregarDecksParaEscolha(modo) {
 
 function verificarIrregularidadeDeck(deck, modo) {
     let p = [];
-    
     let qtdAtaques = deck.ataques ? (Array.isArray(deck.ataques) ? deck.ataques.length : Object.values(deck.ataques).length) : 0;
     let qtdLocais = deck.locais ? (Array.isArray(deck.locais) ? deck.locais.length : Object.values(deck.locais).length) : 0;
-    
     if (qtdAtaques !== 20) p.push(`Ataques: ${qtdAtaques}/20`);
     if (qtdLocais !== 10) p.push(`Locais: ${qtdLocais}/10`);
-    
     let criaturasVivas = 0;
-    
     if (deck.criaturas) {
         let listaCrias = Array.isArray(deck.criaturas) ? deck.criaturas : Object.values(deck.criaturas);
         criaturasVivas = listaCrias.filter(c => c !== null && c !== undefined && String(c).trim() !== "").length;
     }
-    
     if (criaturasVivas < 1) p.push(`Criaturas: O deck precisa de pelo menos 1 criatura!`);
-    
     return p.length > 0 ? p.join(' · ') : null;
 }
 
@@ -193,126 +187,87 @@ function selecionarDeckDrome(deckData, numSlot, irreg, divEl) {
 
 window.confirmarEntradaDrome = function() {
     if (!window.estadoDrome.deckSelecionado) return;
-    
     if (window.estadoDrome.tipoJogo === 'online') {
         window.mostrarMensagemScanner("Conectando aos servidores do Drome...");
         renderizarFilaOnline(); 
-    } 
-    else {
+    } else {
         renderizarPassoEscolhaAmigo();
     }
 };
 
-// ==========================================
-// AJUSTE DINÂMICO DA ARENA DE BATALHA
-// ==========================================
 window.ajustarTabuleiroBatalha = function(modo) {
     let opZona = document.querySelector('.lado-oponente .zona-central');
     let jogZona = document.querySelector('.lado-jogador .zona-central');
-
     let opLinha3 = document.getElementById('op-c1').parentElement; 
     let opLinha2 = document.getElementById('op-c4').parentElement; 
     let opLinha1 = document.getElementById('op-c6').parentElement; 
-    
     let jogLinha3 = document.getElementById('jog-c1').parentElement; 
     let jogLinha2 = document.getElementById('jog-c4').parentElement; 
     let jogLinha1 = document.getElementById('jog-c6').parentElement; 
-    
     let opMugics = document.querySelectorAll('.lado-oponente .hex-mugic');
     let jogMugics = document.querySelectorAll('.lado-jogador .hex-mugic');
-
     [opZona, jogZona].forEach(zona => {
         if(zona) {
-            zona.style.display = "flex";
-            zona.style.flexDirection = "column";
-            zona.style.height = "100%"; 
-            zona.style.justifyContent = modo === "6x6" ? "space-evenly" : "flex-start"; 
-            zona.style.padding = "0"; 
+            zona.style.display = "flex"; zona.style.flexDirection = "column"; zona.style.height = "100%"; 
+            zona.style.justifyContent = modo === "6x6" ? "space-evenly" : "flex-start"; zona.style.padding = "0"; 
         }
     });
-
     [opLinha1, opLinha2, opLinha3, jogLinha1, jogLinha2, jogLinha3].forEach(linha => {
         if(linha) { linha.style.marginTop = "0"; linha.style.marginBottom = "0"; }
     });
-
     if (modo === "6x6") {
         opLinha3.style.display = "flex"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "flex"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
-        opMugics.forEach(m => m.style.display = "block");
-        jogMugics.forEach(m => m.style.display = "block");
-    } 
-    else if (modo === "3x3") {
+        opMugics.forEach(m => m.style.display = "block"); jogMugics.forEach(m => m.style.display = "block");
+    } else if (modo === "3x3") {
         opLinha3.style.display = "none"; opLinha2.style.display = "flex"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "flex"; jogLinha1.style.display = "flex";
-        
-        if(jogLinha2) jogLinha2.style.marginTop = "10px";
-        if(opLinha2) opLinha2.style.marginTop = "10px";
-
+        if(jogLinha2) jogLinha2.style.marginTop = "10px"; if(opLinha2) opLinha2.style.marginTop = "10px";
         opMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 3 ? "none" : "block");
-    } 
-    else if (modo.includes("1x1")) {
+    } else if (modo.includes("1x1")) {
         opLinha3.style.display = "none"; opLinha2.style.display = "none"; opLinha1.style.display = "flex";
         jogLinha3.style.display = "none"; jogLinha2.style.display = "none"; jogLinha1.style.display = "flex";
-        
-        if(jogLinha1) jogLinha1.style.marginTop = "2px"; 
-        if(opLinha1) opLinha1.style.marginTop = "2px";   
-
+        if(jogLinha1) jogLinha1.style.marginTop = "2px"; if(opLinha1) opLinha1.style.marginTop = "2px";
         opMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
         jogMugics.forEach((m, i) => m.style.display = i >= 1 ? "none" : "block");
     }
 }
 
-// ==========================================
-// 🌐 TRADUTOR DE DECK PARA O MODO ONLINE
-// ==========================================
 window.expandirDeckParaOnline = function(deckIds) {
     let deckExpandido = { nome: deckIds.nome, modo: deckIds.modo };
-    
-    // 🔥 O TRADUTOR BLINDADO V2: Preserva os índices e os buracos perfeitamente!
     let expandirArray = (arr) => {
         if (!arr) return [];
-        let finalArr = [];
-        for (let k in arr) {
-            let id = arr[k];
-            finalArr[parseInt(k)] = id ? window.inventario.find(c => String(c.id) === String(id)) || null : null;
-        }
-        return finalArr;
+        let listaLimpa = Array.isArray(arr) ? arr : Object.values(arr);
+        return listaLimpa.map(id => id ? window.inventario.find(c => String(c.id) === String(id)) || null : null);
     };
+    deckExpandido.criaturas_objs = expandirArray(deckIds.criaturas);
+    deckExpandido.equipamentos_objs = expandirArray(deckIds.equipamentos);
+    deckExpandido.ataques_objs = expandirArray(deckIds.ataques);
+    deckExpandido.locais_objs = expandirArray(deckIds.locais);
+    deckExpandido.mugics_objs = expandirArray(deckIds.mugics);
+    return deckExpandido;
+};
 
-// ==========================================
-// INICIAR PARTIDA
-// ==========================================
 function iniciarPartidaDrome(salaId, souP1) {
     clearInterval(window._timerFila);
     window.estadoDrome.naFila = false;
     document.getElementById("tela-entrada-drome").style.display = "none";
-    
     window.ajustarTabuleiroBatalha(window.estadoDrome.modo);
-
     if (typeof window.carregarDeckParaBatalha === "function") {
         window.carregarDeckParaBatalha(salaId, souP1); 
     }
-    
     document.getElementById("tela-batalha").style.display = "flex";
     window.modoMenu = false;
     window.mostrarMensagemScanner("⚔️ ARENA PRONTA!");
 }
 
-// ==========================================
-// FILA ONLINE
-// ==========================================
 function renderizarFilaOnline() {
     let tela = document.getElementById("tela-entrada-drome");
     window.estadoDrome.naFila = true;
-    
     let modo = window.estadoDrome.modo;
     let uid = localStorage.getItem("chaoticUID");
     let filaPath = 'fila_drome/' + modo; 
-
-    console.log("📡 RADAR DE FILA: Tentando entrar na fila:", filaPath);
-    console.log("🆔 Meu UID é:", uid);
-
     tela.innerHTML = `
         <p class="titulo-tela" style="margin-top:30px;font-size:14px;letter-spacing:2px;">⚔️ DROME ONLINE ⚔️</p>
         <p style="color:#4CAF50;font-size:10px;margin-bottom:40px;font-family:monospace;">MODO ${modo.toUpperCase()} · ${window.estadoDrome.deckSelecionado.nome}</p>
@@ -330,48 +285,26 @@ function renderizarFilaOnline() {
         let el = document.getElementById("tempo-fila");
         if (el) el.innerText = String(Math.floor(s/60)).padStart(2,'0') + ":" + String(s%60).padStart(2,'0');
     }, 1000);
-
     let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
-    
     window._dbOn('jogadores/' + uid + '/match_drome', snap => {
         if (!snap.exists() || !window.estadoDrome.naFila) return;
         let match = snap.val();
-        console.log("✅ ENCONTREI UMA PARTIDA! Sala:", match.salaId);
         window.cancelarFila(); 
         window._dbRemove('jogadores/' + uid + '/match_drome'); 
         iniciarPartidaDrome(match.salaId, false); 
     });
-
     window._dbSet(filaPath + '/' + uid, { uid, nome: window.perfilJogador.nome, deck: deckPronto, timestamp: Date.now() });
-    
     window._dbOn(filaPath, snapshot => {
         if (!snapshot.exists() || !window.estadoDrome.naFila) return;
-        
-        let dadosFila = snapshot.val();
-        let lista = Object.entries(dadosFila).sort((a,b) => a[1].timestamp - b[1].timestamp);
-        
-        console.log("👥 JOGADORES NA FILA ATUALMENTE:", lista.length, lista);
-        
+        let lista = Object.entries(snapshot.val()).sort((a,b) => a[1].timestamp - b[1].timestamp);
         if (lista.length >= 2) {
             let p1 = lista[0], p2 = lista[1];
-            console.log("⚔️ TENTANDO CRIAR SALA ENTRE:", p1[0], "e", p2[0]);
-            
             if (p1[0] === uid) {
-                console.log("👑 SOU O P1, VOU CRIAR A SALA!");
                 let salaId = "online_" + p1[0] + "_" + p2[0];
-                window._dbRemove(filaPath + '/' + p1[0]);
-                window._dbRemove(filaPath + '/' + p2[0]);
-                
-                window._dbSet('salas_drome/' + salaId, { 
-                    p1: {uid:p1[0],nome:p1[1].nome,deck:p1[1].deck}, 
-                    p2: {uid:p2[0],nome:p2[1].nome,deck:p2[1].deck}, 
-                    modo: modo, status: "iniciando" 
-                });
-                
+                window._dbRemove(filaPath + '/' + p1[0]); window._dbRemove(filaPath + '/' + p2[0]);
+                window._dbSet('salas_drome/' + salaId, { p1: {uid:p1[0],nome:p1[1].nome,deck:p1[1].deck}, p2: {uid:p2[0],nome:p2[1].nome,deck:p2[1].deck}, modo: modo, status: "iniciando" });
                 window._dbSet('jogadores/' + p2[0] + '/match_drome', { salaId: salaId });
-                
-                window.cancelarFila();
-                iniciarPartidaDrome(salaId, true); 
+                window.cancelarFila(); iniciarPartidaDrome(salaId, true); 
             }
         }
     });
@@ -385,9 +318,6 @@ window.cancelarFila = function() {
     window.renderizarPassoEscolhaDeck();
 };
 
-// ==========================================
-// ESCOLHER AMIGO
-// ==========================================
 function renderizarPassoEscolhaAmigo() {
     let tela = document.getElementById("tela-entrada-drome");
     let amigos = window.amigos || [];
@@ -415,9 +345,7 @@ window.desafiarAmigoDrome = function(index) {
     let amigo = window.amigos[index];
     let uid = localStorage.getItem("chaoticUID");
     let salaId = "drome_" + uid + "_" + amigo.uid;
-    
     let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
-
     _dbSet('salas_drome/' + salaId, { p1:{uid,nome:window.perfilJogador.nome,deck:deckPronto}, p2:{uid:amigo.uid,nome:amigo.nome,deck:null}, modo:window.estadoDrome.modo, status:"aguardando" });
     _dbSet('jogadores/' + amigo.uid + '/desafio_drome', { de:uid, nome:window.perfilJogador.nome, salaId, modo:window.estadoDrome.modo });
     renderizarAguardandoAmigo(salaId, amigo.nome);
@@ -445,9 +373,6 @@ window.cancelarDesafioDrome = function(salaId) {
     window.renderizarPassoEscolhaDeck();
 };
 
-// ==========================================
-// DESAFIO RECEBIDO
-// ==========================================
 window.escutarDesafiosDrome = function() {
     let uid = localStorage.getItem("chaoticUID");
     _dbOn('jogadores/' + uid + '/desafio_drome', snapshot => {
@@ -490,7 +415,6 @@ window.responderDesafioDrome = function(resposta, salaId, modo) {
         document.getElementById("tela-entrada-drome").style.display = "flex";
         window.modoMenu = false;
         window.renderizarPassoEscolhaDeck();
-        
         setTimeout(() => {
             let btn = document.getElementById("btn-jogar-drome");
             if (btn) btn.onclick = () => { 
