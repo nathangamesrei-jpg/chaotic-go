@@ -268,7 +268,14 @@ window.ajustarTabuleiroBatalha = function(modo) {
 // ==========================================
 window.expandirDeckParaOnline = function(deckIds) {
     let deckExpandido = { nome: deckIds.nome, modo: deckIds.modo };
-    let expandirArray = (arr) => (arr || []).map(id => id ? window.inventario.find(c => c.id == id) || null : null);
+    
+    // 🔥 O TRADUTOR BLINDADO: Não importa se o Firebase transformou em Lista ou Dicionário, ele lê!
+    let expandirArray = (arr) => {
+        if (!arr) return [];
+        // Converte qualquer bagunça do Firebase em uma Lista de verdade
+        let listaLimpa = Array.isArray(arr) ? arr : Object.values(arr);
+        return listaLimpa.map(id => id ? window.inventario.find(c => String(c.id) === String(id)) || null : null);
+    };
     
     deckExpandido.criaturas_objs = expandirArray(deckIds.criaturas);
     deckExpandido.equipamentos_objs = expandirArray(deckIds.equipamentos);
