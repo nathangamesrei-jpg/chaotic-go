@@ -239,7 +239,7 @@ window.expandirDeckParaOnline = function(deckIds) {
     let expandirArray = (arr) => {
         if (!arr) return [];
         let listaLimpa = Array.isArray(arr) ? arr : Object.values(arr);
-        return listaLimpa.map(id => id ? window.inventario.find(c => String(c.id) === String(id)) || null : null);
+        return listaLimpa.map(id => id ? window.inventario.find(c => String(c.id) === String(id)) || null : null).filter(c => c !== null);
     };
     deckExpandido.criaturas_objs = expandirArray(deckIds.criaturas);
     deckExpandido.equipamentos_objs = expandirArray(deckIds.equipamentos);
