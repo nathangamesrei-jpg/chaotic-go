@@ -279,10 +279,23 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
     }
 
     let chaves = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
+
+    // 🔥 ALINHAMENTO INTELIGENTE: Puxa todos os equipamentos reais ignorando buracos
+    let equipsLocaisFlat = [];
+    if (deck.equipamentos) {
+        for (let k in deck.equipamentos) if (deck.equipamentos[k]) equipsLocaisFlat.push(deck.equipamentos[k]);
+    }
+    let eqIndex = 0;
     
     chaves.forEach((chave, index) => {
         let idCarta = deck.criaturas[index]; 
         let idEquip = deck.equipamentos ? deck.equipamentos[index] : null; 
+        
+        // Se o deck builder salvou fora de ordem (ex: monstros no 3,4,5 e equips no 0,1,2)
+        if (idCarta && !idEquip && eqIndex < equipsLocaisFlat.length) {
+            idEquip = equipsLocaisFlat[eqIndex];
+        }
+        if (idCarta) eqIndex++; 
         
         if (idCarta) {
             let cartaOriginal = window.inventario.find(c => c.id == idCarta);
@@ -336,9 +349,20 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
             deckOp = window.expandirDeckParaOnline(deckOp);
         }
 
+        let equipsOpFlat = [];
+        if (deckOp.equipamentos_objs) {
+            for (let k in deckOp.equipamentos_objs) if (deckOp.equipamentos_objs[k]) equipsOpFlat.push(deckOp.equipamentos_objs[k]);
+        }
+        let eqOpIndex = 0;
+
         chaves.forEach((chave, index) => {
             let cartaOp = deckOp.criaturas_objs[index];
             let equipOp = deckOp.equipamentos_objs ? deckOp.equipamentos_objs[index] : null;
+            
+            if (cartaOp && !equipOp && eqOpIndex < equipsOpFlat.length) {
+                equipOp = equipsOpFlat[eqOpIndex];
+            }
+            if (cartaOp) eqOpIndex++;
             
             if (cartaOp) {
                 let fichasReais = 0;
