@@ -113,37 +113,27 @@ function desenharMiniCarta(criaturaObj) {
 
 
         if (criaturaObj.equipamento) {
-
             if (criaturaObj.equipamentoRevelado) {
-
+                // 🔥 NOVA LÓGICA: Clicar abre a foto gigante do equipamento com descrição em Dourado!
                 htmlEquipamento = `
-
-                    <div class="mini-equip-icon revelado" style="background-image: url('${criaturaObj.equipamento.img}')">
-
-                        <div class="equip-tooltip"><b>${criaturaObj.equipamento.nome}</b><br>${criaturaObj.equipamento.efeito || 'Sem efeito'}</div>
-
+                    <div class="mini-equip-icon revelado" style="background-image: url('${criaturaObj.equipamento.img}')" 
+                         onpointerdown="event.stopPropagation()" 
+                         ontouchstart="event.stopPropagation()" 
+                         onclick="event.stopPropagation(); window.ampliarCartaClicada('${criaturaObj.equipamento.img}')">
                     </div>
-
                 `;
-
             } else {
-
-                let textoTooltip = criaturaObj.dono === 'jogador' ? 'Oponente não pode ver' : 'Você não pode ver';
-
+                // 🔥 Se estiver oculto, apenas mostra uma mensagem rápida no scanner.
+                let msgOculto = criaturaObj.dono === 'jogador' ? 'Seu equipamento secreto.' : 'Equipamento inimigo oculto.';
                 htmlEquipamento = `
-
-                    <div class="mini-equip-icon oculto">
-
+                    <div class="mini-equip-icon oculto" 
+                         onpointerdown="event.stopPropagation()" 
+                         ontouchstart="event.stopPropagation()" 
+                         onclick="event.stopPropagation(); window.mostrarMensagemScanner('${msgOculto}')">
                         ?
-
-                        <div class="equip-tooltip"><b>Equipamento Oculto</b><br>${textoTooltip}</div>
-
                     </div>
-
                 `;
-
             }
-
         }
 
     }
