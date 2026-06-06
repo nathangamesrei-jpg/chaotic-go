@@ -43,8 +43,8 @@ function desenharMiniCarta(criaturaObj) {
     if (criaturaObj.equipamento) {
         if (criaturaObj.equipamentoRevelado) {
     // Adicionamos background-color: #ffd700 como garantia
-    htmlEquipamento = `<div class="mini-equip-icon revelado" style="background-image: url('${criaturaObj.equipamento.img}'); background-color: #ffd700;" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.ampliarCartaClicada('${criaturaObj.equipamento.img}')"></div>`;
-} else {
+htmlEquipamento = `<div class="mini-equip-icon revelado" style="background-image: url('${criaturaObj.equipamento.img}'); background-color: #ffd700; display: block !important; width: 26px; height: 26px;" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.ampliarCartaClicada('${criaturaObj.equipamento.img}')"></div>`;
+        } else {
             let msgOculto = criaturaObj.dono === 'jogador' ? 'Seu equipamento secreto.' : 'Equipamento inimigo oculto.';
             htmlEquipamento = `<div class="mini-equip-icon oculto" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.mostrarMensagemScanner('${msgOculto}')">?</div>`;
         }
@@ -5068,10 +5068,14 @@ window.recuperarBatalhaSalva = function(salaId, souP1) {
             .zona-lateral { position: relative !important; z-index: 10 !important; }
             .linha-formacao-batalha { margin: 0 !important; }
             [id^="jog-"], [id^="op-"] { touch-action: none !important; }
-            .mini-equip-icon.revelado { 
-    background-size: cover; 
-    background-position: center; 
-    border: 2px solid #ffd700 !important; /* Adiciona borda dourada fixa */
+           .mini-equip-icon.revelado { 
+    display: block !important;
+    width: 26px !important;
+    height: 26px !important;
+    background-size: cover !important; 
+    background-position: center !important; 
+    border: 2px solid #ffd700 !important; 
+    border-radius: 50% !important;
 }
             .slot-selecionado { box-shadow: 0 0 20px #ffd700, inset 0 0 10px #ffd700 !important; border-color: #ffd700 !important; transform: scale(1.05); transition: 0.2s; z-index: 100;}
             .slot-alvo-combate { box-shadow: inset 0 0 25px rgba(255,0,0,0.8), 0 0 15px rgba(255,0,0,0.5) !important; border-color: #ff0000 !important; cursor: pointer; transition: 0.2s; z-index: 90;}
