@@ -5212,3 +5212,25 @@ setTimeout(() => {
         window.checarReconexaoAtiva();
     }
 }, 2000);
+
+
+// ==========================================
+// 🛡️ BLINDAGEM DE CAMADAS (CSS DE EMERGÊNCIA) 🛡️
+// ==========================================
+let styleSuperFix = document.createElement('style');
+styleSuperFix.innerHTML = `
+    /* 1. As cartas base ficam baixinhas, mas ao passar o dedo, saltam pra cara do jogador! */
+    [id^="jog-"], [id^="op-"] { position: relative; z-index: 10; transition: z-index 0s; }
+    [id^="jog-"]:hover, [id^="op-"]:hover { z-index: 99999 !important; }
+
+    /* 2. O Balão do equipamento ganha super prioridade para NUNCA ficar atrás de nada na mesa */
+    .equip-tooltip { z-index: 99999999 !important; bottom: 130% !important; box-shadow: 0 0 20px black; background: rgba(0,20,0,0.95) !important; border: 2px solid #4CAF50 !important; }
+    .mini-equip-icon:hover { z-index: 99999999 !important; }
+
+    /* 3. A Tela Preta dos Modais (Ações, Vitória, etc) VENCE de qualquer carta! */
+    .modal-overlay { z-index: 999999999 !important; }
+    
+    /* 4. Centraliza perfeitamente a janela de Ações (como o seu Frador) no meio da tela */
+    #overlay-acoes { display: flex !important; align-items: center !important; justify-content: center !important; background: rgba(0,0,0,0.85) !important; }
+`;
+document.head.appendChild(styleSuperFix);
