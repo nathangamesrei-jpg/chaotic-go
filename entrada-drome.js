@@ -269,22 +269,16 @@ window.ajustarTabuleiroBatalha = function(modo) {
 window.expandirDeckParaOnline = function(deckIds) {
     let deckExpandido = { nome: deckIds.nome, modo: deckIds.modo };
     
-    // 🔥 O TRADUTOR BLINDADO: Não importa se o Firebase transformou em Lista ou Dicionário, ele lê!
+    // 🔥 O TRADUTOR BLINDADO V2: Preserva os índices e os buracos perfeitamente!
     let expandirArray = (arr) => {
         if (!arr) return [];
-        // Converte qualquer bagunça do Firebase em uma Lista de verdade
-        let listaLimpa = Array.isArray(arr) ? arr : Object.values(arr);
-        return listaLimpa.map(id => id ? window.inventario.find(c => String(c.id) === String(id)) || null : null);
+        let finalArr = [];
+        for (let k in arr) {
+            let id = arr[k];
+            finalArr[parseInt(k)] = id ? window.inventario.find(c => String(c.id) === String(id)) || null : null;
+        }
+        return finalArr;
     };
-    
-    deckExpandido.criaturas_objs = expandirArray(deckIds.criaturas);
-    deckExpandido.equipamentos_objs = expandirArray(deckIds.equipamentos);
-    deckExpandido.ataques_objs = expandirArray(deckIds.ataques);
-    deckExpandido.locais_objs = expandirArray(deckIds.locais);
-    deckExpandido.mugics_objs = expandirArray(deckIds.mugics);
-    
-    return deckExpandido;
-};
 
 // ==========================================
 // INICIAR PARTIDA
