@@ -315,12 +315,21 @@ function iniciarPartidaDrome(salaId, souP1) {
 // FILA ONLINE
 // ==========================================
 
-               function renderizarFilaOnline() {
+function renderizarFilaOnline() {
     let tela = document.getElementById("tela-entrada-drome");
     window.estadoDrome.naFila = true;
+    
+    let modo = window.estadoDrome.modo;
+    let uid = localStorage.getItem("chaoticUID");
+    let filaPath = 'fila_drome/' + modo; // ESTE É O ENDEREÇO DA FILA
+
+    // 🔥 LOGS DETETIVES: Para podermos investigar os erros de "Fila Eterna"
+    console.log("📡 RADAR DE FILA: Tentando entrar na fila:", filaPath);
+    console.log("🆔 Meu UID é:", uid);
+
     tela.innerHTML = `
         <p class="titulo-tela" style="margin-top:30px;font-size:14px;letter-spacing:2px;">⚔️ DROME ONLINE ⚔️</p>
-        <p style="color:#4CAF50;font-size:10px;margin-bottom:40px;font-family:monospace;">MODO ${window.estadoDrome.modo.toUpperCase()} · ${window.estadoDrome.deckSelecionado.nome}</p>
+        <p style="color:#4CAF50;font-size:10px;margin-bottom:40px;font-family:monospace;">MODO ${modo.toUpperCase()} · ${window.estadoDrome.deckSelecionado.nome}</p>
         <div style="display:flex;flex-direction:column;align-items:center;gap:20px;">
             <div style="width:80px;height:80px;border:4px solid #4CAF50;border-top-color:transparent;border-radius:50%;animation:girar 1s linear infinite;"></div>
             <p class="texto-carregando" style="font-size:13px;">Procurando adversário...</p>
@@ -336,35 +345,39 @@ function iniciarPartidaDrome(salaId, souP1) {
         if (el) el.innerText = String(Math.floor(s/60)).padStart(2,'0') + ":" + String(s%60).padStart(2,'0');
     }, 1000);
 
-    let uid = localStorage.getItem("chaoticUID");
-    let modo = window.estadoDrome.modo;
-    
-    // 🌐 EMPACOTA O DECK ANTES DE MANDAR PRA FILA
     let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
     
     // 🎧 RECEPTOR P2: Escuta se alguém puxou você pra uma sala!
     window._dbOn('jogadores/' + uid + '/match_drome', snap => {
         if (!snap.exists() || !window.estadoDrome.naFila) return;
         let match = snap.val();
+        console.log("✅ ENCONTREI UMA PARTIDA! Sala:", match.salaId);
         window.cancelarFila(); // Para o cronômetro
         window._dbRemove('jogadores/' + uid + '/match_drome'); // Apaga o convite da nuvem
         iniciarPartidaDrome(match.salaId, false); // P2 ENTRA NA SALA!
     });
 
-    window._dbSet('fila_drome/' + modo + '/' + uid, { uid, nome: window.perfilJogador.nome, deck: deckPronto, timestamp: Date.now() });
+    // 📤 TRANSMISSOR: Entra na fila
+    window._dbSet(filaPath + '/' + uid, { uid, nome: window.perfilJogador.nome, deck: deckPronto, timestamp: Date.now() });
     
     // 📡 TRANSMISSOR P1: O mais velho na fila cria a sala e chama o P2
-    window._dbOn('fila_drome/' + modo, snapshot => {
+    window._dbOn(filaPath, snapshot => {
         if (!snapshot.exists() || !window.estadoDrome.naFila) return;
-        let lista = Object.entries(snapshot.val()).sort((a,b) => a[1].timestamp - b[1].timestamp);
+        
+        let dadosFila = snapshot.val();
+        let lista = Object.entries(dadosFila).sort((a,b) => a[1].timestamp - b[1].timestamp);
+        
+        console.log("👥 JOGADORES NA FILA ATUALMENTE:", lista.length, lista);
         
         if (lista.length >= 2) {
             let p1 = lista[0], p2 = lista[1];
+            console.log("⚔️ TENTANDO CRIAR SALA ENTRE:", p1[0], "e", p2[0]);
             
             if (p1[0] === uid) {
+                console.log("👑 SOU O P1, VOU CRIAR A SALA!");
                 let salaId = "online_" + p1[0] + "_" + p2[0];
-                window._dbRemove('fila_drome/' + modo + '/' + p1[0]);
-                window._dbRemove('fila_drome/' + modo + '/' + p2[0]);
+                window._dbRemove(filaPath + '/' + p1[0]);
+                window._dbRemove(filaPath + '/' + p2[0]);
                 
                 window._dbSet('salas_drome/' + salaId, { 
                     p1: {uid:p1[0],nome:p1[1].nome,deck:p1[1].deck}, 
@@ -381,8 +394,6 @@ function iniciarPartidaDrome(salaId, souP1) {
         }
     });
 }
-
-
 
 window.cancelarFila = function() {
     window.estadoDrome.naFila = false;
@@ -408,124 +419,4 @@ function renderizarPassoEscolhaAmigo() {
     `;
     let lista = document.getElementById("lista-amigos-drome");
     amigos.forEach((amigo, i) => {
-        let av = (amigo.avatar.startsWith("http") || amigo.avatar.startsWith("data:"))
-            ? `<div style="width:35px;height:35px;background-image:url('${amigo.avatar}');background-size:cover;border-radius:50%;border:2px solid #4CAF50;flex-shrink:0;"></div>`
-            : `<div style="width:35px;height:35px;background:#000;border-radius:50%;border:2px solid #4CAF50;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${amigo.avatar}</div>`;
-        let div = document.createElement("div");
-        div.style = "background:#112211;border:1px solid #4CAF50;border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center;";
-        div.innerHTML = `<div style="display:flex;align-items:center;gap:10px;">${av}<div style="text-align:left;"><div style="color:#fff;font-size:11px;font-weight:bold;">${amigo.nome}</div><div style="color:#4CAF50;font-size:9px;">🟢 Online</div></div></div><button style="background:#e53935;color:white;border:none;padding:8px 12px;border-radius:5px;font-weight:bold;cursor:pointer;font-size:10px;" onclick="window.desafiarAmigoDrome(${i})">DESAFIAR</button>`;
-        lista.appendChild(div);
-    });
-}
-
-window.desafiarAmigoDrome = function(index) {
-    let amigo = window.amigos[index];
-    let uid = localStorage.getItem("chaoticUID");
-    let salaId = "drome_" + uid + "_" + amigo.uid;
-    
-    // 🌐 EMPACOTA O DECK ANTES DE MANDAR O DESAFIO
-    let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
-
-    _dbSet('salas_drome/' + salaId, { p1:{uid,nome:window.perfilJogador.nome,deck:deckPronto}, p2:{uid:amigo.uid,nome:amigo.nome,deck:null}, modo:window.estadoDrome.modo, status:"aguardando" });
-    _dbSet('jogadores/' + amigo.uid + '/desafio_drome', { de:uid, nome:window.perfilJogador.nome, salaId, modo:window.estadoDrome.modo });
-    renderizarAguardandoAmigo(salaId, amigo.nome);
-};
-
-function renderizarAguardandoAmigo(salaId, nomeAmigo) {
-    let tela = document.getElementById("tela-entrada-drome");
-    tela.innerHTML = `
-        <p class="titulo-tela" style="margin-top:30px;font-size:14px;letter-spacing:2px;">⚔️ AGUARDANDO ⚔️</p>
-        <p style="color:#4CAF50;font-size:10px;margin-bottom:40px;font-family:monospace;">DESAFIO ENVIADO PARA ${nomeAmigo.toUpperCase()}</p>
-        <div style="display:flex;flex-direction:column;align-items:center;gap:20px;"><div style="font-size:50px;">⚔️</div><p class="texto-carregando" style="font-size:12px;">Aguardando resposta...</p></div>
-        <button class="btn-voltar-pequeno" style="margin-top:50px;border-color:#e53935;color:#e53935;" onclick="window.cancelarDesafioDrome('${salaId}')">Cancelar Desafio</button>
-    `;
-    _dbOn('salas_drome/' + salaId, snapshot => {
-        if (!snapshot.exists()) return;
-        let sala = snapshot.val();
-        if (sala.status === "pronta") iniciarPartidaDrome(salaId, true);
-        else if (sala.status === "recusado") { window.mostrarMensagemScanner(nomeAmigo.toUpperCase() + " RECUSOU!"); window.renderizarPassoEscolhaDeck(); }
-    });
-}
-
-window.cancelarDesafioDrome = function(salaId) {
-    _dbUpdate('salas_drome/' + salaId, { status:"cancelado" });
-    setTimeout(() => _dbRemove('salas_drome/' + salaId), 2000);
-    window.renderizarPassoEscolhaDeck();
-};
-
-// ==========================================
-// DESAFIO RECEBIDO
-// ==========================================
-window.escutarDesafiosDrome = function() {
-    let uid = localStorage.getItem("chaoticUID");
-    _dbOn('jogadores/' + uid + '/desafio_drome', snapshot => {
-        if (!snapshot.exists()) return;
-        let desafio = snapshot.val();
-        _dbRemove('jogadores/' + uid + '/desafio_drome');
-        mostrarModalDesafioDrome(desafio);
-    });
-};
-
-function mostrarModalDesafioDrome(desafio) {
-    if (!document.getElementById("modal-desafio-drome")) {
-        let m = document.createElement("div");
-        m.id = "modal-desafio-drome";
-        m.style.cssText = "display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,15,0,0.97);z-index:500;justify-content:center;align-items:center;flex-direction:column;padding:20px;box-sizing:border-box;border:2px solid #e53935;";
-        document.getElementById("tela-jogo").appendChild(m);
-    }
-    let m = document.getElementById("modal-desafio-drome");
-    m.innerHTML = `
-        <p style="color:#e53935;font-weight:bold;font-size:16px;margin-bottom:5px;text-align:center;">⚔️ DESAFIO RECEBIDO!</p>
-        <p style="color:#fff;font-size:12px;margin-bottom:5px;text-align:center;">${desafio.nome.toUpperCase()} te desafiou!</p>
-        <p style="color:#4CAF50;font-size:10px;margin-bottom:25px;text-align:center;">Modo: ${desafio.modo.toUpperCase()}</p>
-        <div style="display:flex;gap:10px;">
-            <button onclick="window.responderDesafioDrome('recusar','${desafio.salaId}')" style="background:#e53935;color:white;font-weight:bold;padding:10px 15px;border-radius:5px;cursor:pointer;border:none;font-size:11px;">RECUSAR</button>
-            <button onclick="window.responderDesafioDrome('aceitar','${desafio.salaId}','${desafio.modo}')" style="background:#4CAF50;color:black;font-weight:bold;padding:10px 15px;border-radius:5px;cursor:pointer;border:none;font-size:11px;">ACEITAR</button>
-        </div>
-    `;
-    m.style.display = "flex";
-    if (navigator.vibrate) navigator.vibrate([100,50,100]);
-}
-
-window.responderDesafioDrome = function(resposta, salaId, modo) {
-    document.getElementById("modal-desafio-drome").style.display = "none";
-    if (resposta === 'recusar') {
-        _dbUpdate('salas_drome/' + salaId, { status:"recusado" });
-    } else {
-        window.estadoDrome.tipoJogo = 'amigo';
-        window.estadoDrome.modo = modo;
-        document.getElementById("tela-menu").style.display = "none";
-        document.getElementById("tela-entrada-drome").style.display = "flex";
-        window.modoMenu = false;
-        window.renderizarPassoEscolhaDeck();
-        
-        setTimeout(() => {
-            let btn = document.getElementById("btn-jogar-drome");
-            if (btn) btn.onclick = () => { 
-                // 🌐 EMPACOTA O SEU DECK E MANDA PRA SALA CONFIRMANDO QUE TÁ PRONTO
-                let deckPronto = window.expandirDeckParaOnline(window.estadoDrome.deckSelecionado);
-                _dbUpdate('salas_drome/' + salaId, { status: "pronta", "p2/deck": deckPronto }); 
-                iniciarPartidaDrome(salaId, false); 
-            };
-        }, 1500);
-    }
-};
-
-window.voltarMenuDrome = function() {
-    document.getElementById("tela-entrada-drome").style.display = "none";
-    document.getElementById("tela-menu").style.display = "flex";
-    window.modoMenu = true;
-    window.estadoDrome = { tipoJogo:null, modo:null, deckSelecionado:null, amigoDesafiado:null, naFila:false };
-};
-
-window.selecionarTipoJogo = function(tipo) { 
-    window.estadoDrome.tipoJogo = tipo; 
-    // Vai para a escolha de Modo (1x1, 3x3, 6x6) nos dois casos!
-    renderizarPassoModo(); 
-};
-
-window.selecionarModo = function(modo) { window.estadoDrome.modo = modo; window.renderizarPassoEscolhaDeck(); };
-
-setTimeout(function() {
-    if (window._dbOn && window.escutarDesafiosDrome) window.escutarDesafiosDrome();
-}, 1500);
+        let av = (amigo.avatar.startsWith("http
