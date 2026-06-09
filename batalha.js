@@ -42,11 +42,11 @@ function desenharMiniCarta(criaturaObj) {
 
     if (criaturaObj.equipamento) {
         if (criaturaObj.equipamentoRevelado) {
-    // Adicionamos background-color: #ffd700 como garantia
-htmlEquipamento = `<div class="mini-equip-icon revelado" style="background-image: url('${criaturaObj.equipamento.img}'); background-color: #ffd700; display: block !important; width: 26px; height: 26px;" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.ampliarCartaClicada('${criaturaObj.equipamento.img}')"></div>`;
+            // CORREÇÃO: CSS embutido com !important para blindar a exibição
+            htmlEquipamento = `<div class="mini-equip-icon revelado" style="background-image: url('${criaturaObj.equipamento.img}'); background-color: #ffd700; display: block !important; width: 26px !important; height: 26px !important; border: 2px solid #ffd700 !important; border-radius: 50%; background-size: cover; background-position: center;" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.ampliarCartaClicada('${criaturaObj.equipamento.img}')"></div>`;
         } else {
             let msgOculto = criaturaObj.dono === 'jogador' ? 'Seu equipamento secreto.' : 'Equipamento inimigo oculto.';
-            htmlEquipamento = `<div class="mini-equip-icon oculto" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.mostrarMensagemScanner('${msgOculto}')">?</div>`;
+            htmlEquipamento = `<div class="mini-equip-icon oculto" style="display: flex !important; justify-content: center !important; align-items: center !important;" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.mostrarMensagemScanner('${msgOculto}')">?</div>`;
         }
     }
 
@@ -205,12 +205,12 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
         }
     });
 
-    // 2. PUXA O DECK DO OPONENTE DA NUVEM (O Handshake)
+  // 2. PUXA O DECK DO OPONENTE DA NUVEM (O Handshake)
     window.montarDeckOponente = function(deckOp) {
-        // 🔥 TRAVA ATIVA: Se a mesa já montou, ele ignora os barulhos da Nuvem e protege o jogo!
         if (!deckOp || window.deckInimigoMontado) return; 
         window.deckInimigoMontado = true; 
         
+        // Se a expansão ainda não foi feita (ex: simulador offline)
         if (!deckOp.criaturas_objs && typeof window.expandirDeckParaOnline === "function") {
             deckOp = window.expandirDeckParaOnline(deckOp);
         }
@@ -221,8 +221,12 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
         }
         let eqOpIndex = 0;
 
+        // 🔥 CORREÇÃO DO 1x1: Oponente precisa usar o Object.keys real do banco, não apenas forçar nos primeiros slots
+        let temCriaturaArray = Array.isArray(deckOp.criaturas_objs);
+        
         chaves.forEach((chave, index) => {
-            let cartaOp = deckOp.criaturas_objs[index];
+            // Se o Firebase retornou um objeto quebrado {5: {nome...}}, ele busca pelo index real
+            let cartaOp = temCriaturaArray ? deckOp.criaturas_objs[index] : (deckOp.criaturas_objs[index] || null);
             let equipOp = deckOp.equipamentos_objs ? deckOp.equipamentos_objs[index] : null;
             
             if (cartaOp && !equipOp && eqOpIndex < equipsOpFlat.length) {
@@ -249,7 +253,7 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
                     nome: cartaOp.nome,
                     tribo: cartaOp.tribo || "Azul",
                     elementos: cartaOp.elementos || [],
-                    cartaBlank: cartaOp.img,
+                    cartaBlank: cartaOp.img || cartaOp.cartaBlank,
                     statsMax: { 
                         coragem: cartaOp.stats?.c || 0, 
                         poder: cartaOp.stats?.p || 0, 
@@ -277,16 +281,11 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
             window.salaBatalhaAtual = salaId;
             window.souP1Batalha = souP1;
             
-            // 🔥 O TICKET DE RECONEXÃO: Salva no celular que você está numa batalha!
             localStorage.setItem('drome_ticket_batalha', JSON.stringify({ salaId: salaId, souP1: souP1 }));
             
             window.iniciarEscutaDeTurnoOnline(); 
-            if (typeof window.iniciarEscutaAcoesOnline === 'function') {
-                window.iniciarEscutaAcoesOnline(); 
-            }
-            if (typeof window.iniciarSistemaAntiAFK === 'function') {
-                window.iniciarSistemaAntiAFK(); // 🔥 LIGA O RADAR ANTI-AFK NO INÍCIO DA LUTA!
-            }
+            if (typeof window.iniciarEscutaAcoesOnline === 'function') window.iniciarEscutaAcoesOnline(); 
+            if (typeof window.iniciarSistemaAntiAFK === 'function') window.iniciarSistemaAntiAFK(); 
         }
         
         setTimeout(() => { window.abrirJokenpo(); }, 800); 
