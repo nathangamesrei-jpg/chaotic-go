@@ -4986,11 +4986,25 @@ window.checarReconexaoAtiva = function() {
         // Verifica na nuvem se a sala ainda existe
         window._dbGet('salas_drome/' + dados.salaId).then(snap => {
             let sala = snap.val();
-            // Se a sala sumiu, rasga o ticket silenciosamente
-            if (!sala) {
-                localStorage.removeItem('drome_ticket_batalha');
-                return;
+            
+            // 🕵️‍♂️ MODO DETETIVE: O jogo já tinha acabado enquanto eu estava fora?
+            let jogoAcabou = false;
+            if (sala && sala.ultima_acao) {
+                let tipoUltimaAcao = sala.ultima_acao.tipo;
+                // Se a última coisa registrada foi alguém fugir, tomar WO ou a vitória ser declarada
+                if (tipoUltimaAcao === 'desistencia' || tipoUltimaAcao === 'derrota_wo' || tipoUltimaAcao === 'declarar_vitoria_oponente') {
+                    jogoAcabou = true;
+                }
             }
+
+            // 🔥 A FAXINA SILENCIOSA: Se a sala sumiu OU se a partida já acabou, rasga o ticket e não faz nada!
+            if (!sala || jogoAcabou) {
+                localStorage.removeItem('drome_ticket_batalha');
+                localStorage.removeItem('drome_save_state');
+                return; // Sai da função sem mostrar a tela de reconexão
+            }
+
+            // Monta a tela épica de retorno!
 
             // Monta a tela épica de retorno!
             const modalReconexao = `
