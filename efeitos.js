@@ -5,27 +5,27 @@
 window.MotorDeEfeitos = {
     
     // Efeito do Vidal: Cura 15 pontos de HP
-    "cura_15": function(idDoAlvo) {
+    "cura_15": function(alvo, conjurador, atualizarTela) {
         
-        // 1. Acha quem é a criatura que vai receber a cura
-        let alvo = obterCriaturaNoSlot(idDoAlvo);
         if (!alvo) return; // Se não tiver alvo, cancela
         
-        // 2. Calcula a cura sem deixar passar da vida máxima!
-        let vidaMaxima = alvo.hpMax || alvo.statsMax.energia;
-        alvo.hpAtual += 15;
+        // Descobre qual é o limite de vida dessa carta
+        let vidaMaxima = Number(alvo.hpMax || alvo.statsMax.energia);
         
+        // Soma a vida usando Number para o computador não confundir matemática com texto
+        alvo.hpAtual = Number(alvo.hpAtual) + 15;
+        
+        // Se a cura passar do máximo, trava no limite!
         if (alvo.hpAtual > vidaMaxima) {
-            alvo.hpAtual = vidaMaxima; // Trava no limite
+            alvo.hpAtual = vidaMaxima; 
         }
         
-        // 3. Avisa na tela e atualiza o tabuleiro
+        // Avisa na tela
         window.mostrarMensagemScanner(`✨ EFEITO ATIVADO: ${alvo.nome} recuperou 15 de Energia!`);
-        if(window.tocarSFX) window.tocarSFX('notificacao');
+        if (window.tocarSFX) window.tocarSFX('notificacao');
         
-        // Atualiza os desenhos na tela para a barra de HP encher
-        if(typeof atualizarTelaBatalha === 'function') atualizarTelaBatalha();
+        // Manda o tabuleiro se redesenhar com a vida cheia!
+        atualizarTela();
     }
     
-    // No futuro, os próximos efeitos (como o do Frador) entrarão aqui embaixo!
 };
