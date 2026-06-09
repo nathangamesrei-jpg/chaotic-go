@@ -223,11 +223,24 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
 
         // 🔥 CORREÇÃO DO 1x1: Oponente precisa usar o Object.keys real do banco, não apenas forçar nos primeiros slots
         let temCriaturaArray = Array.isArray(deckOp.criaturas_objs);
+        let modoBatalha = deckOp.modo || (window.estadoDrome ? window.estadoDrome.modo : "6x6"); // Descobre o modo da partida
         
         chaves.forEach((chave, index) => {
-            // Se o Firebase retornou um objeto quebrado {5: {nome...}}, ele busca pelo index real
-            let cartaOp = temCriaturaArray ? deckOp.criaturas_objs[index] : (deckOp.criaturas_objs[index] || null);
-            let equipOp = deckOp.equipamentos_objs ? deckOp.equipamentos_objs[index] : null;
+            let cartaOp = null;
+            let equipOp = null;
+
+            // Se for modo 1x1, a única carta sempre tem que ir para a gaveta c6 (index 5)
+            if (modoBatalha === "1x1" || modoBatalha.includes("1x1")) {
+                if (index === 5) { // Index 5 é a gaveta 'c6'
+                    // Pega o primeiro item da lista do Firebase (que ele espremeu para a posição 0)
+                    cartaOp = temCriaturaArray ? deckOp.criaturas_objs[0] : (deckOp.criaturas_objs[5] || deckOp.criaturas_objs[0] || null);
+                    equipOp = deckOp.equipamentos_objs ? (deckOp.equipamentos_objs[5] || deckOp.equipamentos_objs[0] || null) : null;
+                }
+            } else {
+                // Comportamento normal para batalhas 6x6 e 3x3
+                cartaOp = temCriaturaArray ? deckOp.criaturas_objs[index] : (deckOp.criaturas_objs[index] || null);
+                equipOp = deckOp.equipamentos_objs ? deckOp.equipamentos_objs[index] : null;
+            }
             
             if (cartaOp && !equipOp && eqOpIndex < equipsOpFlat.length) {
                 equipOp = equipsOpFlat[eqOpIndex];
