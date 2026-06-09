@@ -1246,11 +1246,29 @@ window.lidarComCliqueTabuleiro = function(fullId) {
 
 
         if (ctx.tipo === 'habilidade') {
-
-            let acao = { dono: conjurador.dono, nomeAcao: `Habilidade de ${conjurador.nome} ➔ ${alvo.nome}`, tipo: 'habilidade', executar: function() { window.mostrarMensagemScanner(`⚡ Efeito ativado em ${alvo.nome}!`); if(window.tocarSFX) window.tocarSFX('notificacao'); } };
-
+            let acao = { 
+                dono: conjurador.dono, 
+                nomeAcao: `Habilidade de ${conjurador.nome} ➔ ${alvo.nome}`, 
+                tipo: 'habilidade', 
+                executar: function() { 
+                    
+                    // 1. Procura a carta original no inventário para achar o nome de código do efeito
+                    let cartaOriginal = window.inventario.find(c => c.nome === conjurador.nome);
+                    
+                    // 2. Verifica se a carta tem um "efeitoId" e se a mágica existe no nosso Cérebro (efeitos.js)
+                    if (cartaOriginal && cartaOriginal.efeitoId && window.MotorDeEfeitos && window.MotorDeEfeitos[cartaOriginal.efeitoId]) {
+                        
+                        // 3. Executa a mágica! Passa o ID do alvo (ex: 'op-c6') e o ID do mago ('jog-c1')
+                        window.MotorDeEfeitos[cartaOriginal.efeitoId](fullId, ctx.origem);
+                        
+                    } else {
+                        // Se a carta não tiver efeito programado ainda, dá o aviso genérico
+                        window.mostrarMensagemScanner(`⚡ Efeito ativado em ${alvo.nome} (Efeito não programado).`); 
+                        if(window.tocarSFX) window.tocarSFX('notificacao'); 
+                    }
+                } 
+            };
             window.adicionarAoBurst(acao);
-
         } else if (ctx.tipo === 'mugic') {
             if (!window.cemiterio) window.cemiterio = [];
             window.cemiterio.push(ctx.mugicObj.nome); // 🔥 Salvamos o NOME para o detetive achar fácil
