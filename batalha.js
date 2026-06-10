@@ -1267,7 +1267,7 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     console.log("GATILHO: Efeito ID encontrado:", efeitoIdEncontrado);
 
     if (efeitoIdEncontrado && window.MotorDeEfeitos && window.MotorDeEfeitos[efeitoIdEncontrado]) {
-        window.MotorDeEfeitos[efeitoIdEncontrado](alvo, conjurador, atualizarTelaBatalha);
+        window.MotorDeEfeitos[efeitoIdEncontrado](alvo, fullId, atualizarTelaBatalha);
     } else {
         window.mostrarMensagemScanner(`⚡ Efeito ativado em ${alvo.nome} (Efeito não programado).`); 
     }
@@ -4836,6 +4836,14 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("⚔️ ALERTA: O INIMIGO INICIOU UM COMBATE!");
         if(typeof window.iniciarCombate === 'function') window.iniciarCombate(origemReal, destinoReal);
         atualizarTelaBatalha();
+    }
+        else if (acao.tipo === 'sincronizar_hp') {
+        let alvoReal = inverterId(acao.alvo); // Transforma o slot para a perspectiva dele
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura.hpAtual = acao.novoHp; // Copia o HP exato que você calculou
+            atualizarTelaBatalha(); // Redesenha o campo dele
+        }
     }
     else if (acao.tipo === 'dano') {
         let alvoReal = inverterId(acao.alvo);
