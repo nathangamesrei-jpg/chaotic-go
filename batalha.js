@@ -1251,18 +1251,31 @@ window.lidarComCliqueTabuleiro = function(fullId) {
                 nomeAcao: `Habilidade de ${conjurador.nome} ➔ ${alvo.nome}`, 
                 tipo: 'habilidade', 
                 executar: function() { 
+    // 1. Tenta achar o ID do efeito na própria carta
     let cartaOriginal = window.inventario.find(c => c.nome === conjurador.nome);
-    
-    console.log("GATILHO: Buscando efeito para ", conjurador.nome);
-    console.log("GATILHO: Efeito ID encontrado:", cartaOriginal ? cartaOriginal.efeitoId : "Nenhum");
+    let efeitoIdEncontrado = cartaOriginal ? cartaOriginal.efeitoId : null;
 
-    if (cartaOriginal && cartaOriginal.efeitoId && window.MotorDeEfeitos && window.MotorDeEfeitos[cartaOriginal.efeitoId]) {
-        window.MotorDeEfeitos[cartaOriginal.efeitoId](alvo, conjurador, atualizarTelaBatalha);
+    // 2. SE NÃO ACHOU, busca no Banco de Dados oficial (MONSTROS) pelo nome!
+    if (!efeitoIdEncontrado && typeof MONSTROS !== 'undefined') {
+        let monstroDB = MONSTROS.find(m => m.nome === conjurador.nome);
+        if (monstroDB && monstroDB.efeitoId) {
+            efeitoIdEncontrado = monstroDB.efeitoId;
+        }
+    }
+
+    console.log("GATILHO: Buscando efeito para ", conjurador.nome);
+    console.log("GATILHO: Efeito ID encontrado:", efeitoIdEncontrado);
+
+    if (efeitoIdEncontrado && window.MotorDeEfeitos && window.MotorDeEfeitos[efeitoIdEncontrado]) {
+        window.MotorDeEfeitos[efeitoIdEncontrado](alvo, conjurador, atualizarTelaBatalha);
     } else {
         window.mostrarMensagemScanner(`⚡ Efeito ativado em ${alvo.nome} (Efeito não programado).`); 
     }
 }
             };
+
+
+            
             window.adicionarAoBurst(acao);
         } else if (ctx.tipo === 'mugic') {
             if (!window.cemiterio) window.cemiterio = [];
