@@ -1251,18 +1251,17 @@ window.lidarComCliqueTabuleiro = function(fullId) {
                 nomeAcao: `Habilidade de ${conjurador.nome} ➔ ${alvo.nome}`, 
                 tipo: 'habilidade', 
                 executar: function() { 
-                    let cartaOriginal = window.inventario.find(c => c.nome === conjurador.nome);
-                    
-                    if (cartaOriginal && cartaOriginal.efeitoId && window.MotorDeEfeitos && window.MotorDeEfeitos[cartaOriginal.efeitoId]) {
-                        
-                        // 🔥 A MÁGICA NOVA: Entrega o objeto do monstro "alvo", o "conjurador" e o botão de atualizar a tela direto pro Cérebro!
-                        window.MotorDeEfeitos[cartaOriginal.efeitoId](alvo, conjurador, atualizarTelaBatalha);
-                        
-                    } else {
-                        window.mostrarMensagemScanner(`⚡ Efeito ativado em ${alvo.nome} (Efeito não programado).`); 
-                        if(window.tocarSFX) window.tocarSFX('notificacao'); 
-                    }
-                } 
+    let cartaOriginal = window.inventario.find(c => c.nome === conjurador.nome);
+    
+    console.log("GATILHO: Buscando efeito para ", conjurador.nome);
+    console.log("GATILHO: Efeito ID encontrado:", cartaOriginal ? cartaOriginal.efeitoId : "Nenhum");
+
+    if (cartaOriginal && cartaOriginal.efeitoId && window.MotorDeEfeitos && window.MotorDeEfeitos[cartaOriginal.efeitoId]) {
+        window.MotorDeEfeitos[cartaOriginal.efeitoId](alvo, conjurador, atualizarTelaBatalha);
+    } else {
+        window.mostrarMensagemScanner(`⚡ Efeito ativado em ${alvo.nome} (Efeito não programado).`); 
+    }
+}
             };
             window.adicionarAoBurst(acao);
         } else if (ctx.tipo === 'mugic') {
