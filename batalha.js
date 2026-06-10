@@ -1298,9 +1298,14 @@ window.lidarComCliqueTabuleiro = function(fullId) {
 
 
 
-    // 🔥 O CADEADO: Permite clicar no turno inimigo APENAS se estiver no Burst!
-
-    if (window.estadoTurno.jogadorAtual !== 'jogador' && !window.aguardandoResposta) return;
+   // 🔥 O CADEADO MODIFICADO: Se for turno do inimigo e não for Burst, permite APENAS olhar as cartas!
+    if (window.estadoTurno.jogadorAtual !== 'jogador' && !window.aguardandoResposta) {
+        let criaturaAlvoParaOlhar = obterCriaturaNoSlot(fullId);
+        if (criaturaAlvoParaOlhar && typeof window.ampliarCartaClicada === 'function') {
+            window.ampliarCartaClicada(criaturaAlvoParaOlhar.cartaBlank, fullId);
+        }
+        return; // Bloqueia qualquer movimentação ou menu de ação ilegal
+    }
 
 
 
