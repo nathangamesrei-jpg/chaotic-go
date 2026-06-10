@@ -1571,14 +1571,14 @@ setTimeout(() => {
 
 
 
-        // 🔥 O CADEADO DO ARRASTAR: Bloqueia se for turno do inimigo e NÃO for a hora do Burst!
-
+        // 🔥 O CADEADO DO ARRASTAR MODIFICADO: Se for turno do inimigo, permite apenas olhar a sua carta!
         if (window.estadoTurno.jogadorAtual !== 'jogador' && !window.aguardandoResposta) {
-
-            window.mostrarMensagemScanner("TURNO DO OPONENTE! Aguarde."); return;
-
+            let criaturaAlvoParaOlhar = obterCriaturaNoSlot(fullId);
+            if (criaturaAlvoParaOlhar && typeof window.ampliarCartaClicada === 'function') {
+                window.ampliarCartaClicada(criaturaAlvoParaOlhar.cartaBlank, fullId);
+            }
+            return; // Bloqueia o arraste ilegal
         }
-
 
 
         let pointer = e.touches ? e.touches[0] : e; 
