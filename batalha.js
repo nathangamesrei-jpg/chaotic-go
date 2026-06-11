@@ -5031,25 +5031,39 @@ window.processarAcaoInimiga = function(acao) {
         // 🔥 NUVEM AVISOU: O Oponente usou o Johnes em você! Mande sua mão pra ele!
         window.enviarAcaoRede({ tipo: 'hacker_receber_mao', maoVazada: window.maoAtaques });
     }
-    else if (acao.tipo === 'hacker_receber_mao') {
+   else if (acao.tipo === 'hacker_receber_mao') {
         // 🔥 NUVEM AVISOU: Os dados do Johnes chegaram! Mostre na tela.
         window.mostrarMensagemScanner("✅ Dados interceptados com sucesso!");
         
         let cartasHTML = "";
-        if (acao.maoVazada && acao.maoVazada.length > 0) {
-            acao.maoVazada.forEach(idAtaque => {
-                let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
-                if (cartaOriginal) {
+        let maoInimiga = acao.maoVazada || [];
+        
+        if (maoInimiga.length > 0) {
+            maoInimiga.forEach(item => {
+                // 🕵️‍♂️ DETETIVE: O item pode ter vindo como Objeto da nuvem ou apenas o Número do ID.
+                let idBusca = typeof item === 'object' ? (item.id || item.nome) : item;
+                let c = null;
+                let buscaStr = String(idBusca);
+                
+                // Procura a carta em todos os lugares possíveis
+                if (typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => String(x.id) === buscaStr || x.nome === idBusca);
+                if (!c && window.inventario) c = window.inventario.find(x => String(x.id) === buscaStr || x.nome === idBusca);
+                
+                if (c) {
+                    let imgCard = c.img || c.cartaBlank;
                     cartasHTML += `
                         <div style="display:flex; flex-direction:column; align-items:center;">
-                            <div style="width: 80px; height: 115px; background-image: url('${cartaOriginal.img}'); background-size: cover; background-position: center; border: 2px solid #00bcd4; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 188, 212, 0.8);"></div>
-                            <span style="color:#00bcd4; font-size:9px; font-weight:bold; margin-top:5px; text-align:center;">${cartaOriginal.nome}</span>
+                            <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${imgCard}')" style="width: 80px; height: 115px; background-image: url('${imgCard}'); background-size: cover; background-position: center; border: 2px solid #00bcd4; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 188, 212, 0.8); cursor:pointer; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"></div>
+                            <span style="color:#00bcd4; font-size:9px; font-weight:bold; margin-top:5px; text-align:center;">${c.nome}</span>
                         </div>
                     `;
                 }
             });
-        } else {
-            cartasHTML = `<p style="color:#aaa; font-size:12px;">O oponente está sem cartas na mão!</p>`;
+        }
+        
+        // Se a busca falhar ou ele realmente não tiver cartas, mostra o aviso real
+        if (cartasHTML === "") {
+            cartasHTML = `<p style="color:#aaa; font-size:12px;">A mão do oponente está vazia (ou os dados falharam).</p>`;
         }
 
         const modalVisaoHTML = `
@@ -5058,7 +5072,8 @@ window.processarAcaoInimiga = function(acao) {
                 <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 90%; max-width: 400px; padding: 15px; background: rgba(0, 188, 212, 0.05); border-radius: 10px; border: 1px dashed #00bcd4;">
                     ${cartasHTML}
                 </div>
-                <button class="btn-acao-modal" style="width: 150px; background: #222; color: #00bcd4; border: 2px solid #00bcd4; margin-top: 25px;" onclick="document.getElementById('overlay-espiando').remove()">FECHAR</button>
+                <p style="color: #aaa; font-size: 9px; margin-top: 10px;">Toque na carta para ampliá-la</p>
+                <button class="btn-acao-modal" style="width: 150px; background: #222; color: #00bcd4; border: 2px solid #00bcd4; margin-top: 15px;" onclick="document.getElementById('overlay-espiando').remove()">FECHAR</button>
             </div>
         `;
         document.body.insertAdjacentHTML('beforeend', modalVisaoHTML);
