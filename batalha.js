@@ -5027,27 +5027,32 @@ window.processarAcaoInimiga = function(acao) {
         // 🔥 REDUNDÂNCIA DE FIM DE JOGO: O oponente reconheceu a própria derrota e te enviou a taça!
         window.declararVitoria('jogador', 'Todo o exército inimigo foi aniquilado!');
     }
-    else if (acao.tipo === 'hacker_pedir_mao') {
+   else if (acao.tipo === 'hacker_pedir_mao') {
         // 🔥 NUVEM AVISOU: O Oponente usou o Johnes em você! Mande sua mão pra ele!
-        window.enviarAcaoRede({ tipo: 'hacker_receber_mao', maoVazada: window.maoAtaques });
+        // Limpa os dados antes de enviar pela internet para não bugar o Firebase
+        let maoLimpa = window.maoAtaques.map(carta => {
+            if (typeof carta === 'object') return String(carta.nome || carta.id);
+            return String(carta);
+        });
+        window.enviarAcaoRede({ tipo: 'hacker_receber_mao', maoVazada: maoLimpa });
     }
-   else if (acao.tipo === 'hacker_receber_mao') {
+    else if (acao.tipo === 'hacker_receber_mao') {
         // 🔥 NUVEM AVISOU: Os dados do Johnes chegaram! Mostre na tela.
         window.mostrarMensagemScanner("✅ Dados interceptados com sucesso!");
+        console.log("🕵️‍♂️ MÃO RECEBIDA DA REDE:", acao.maoVazada);
         
         let cartasHTML = "";
         let maoInimiga = acao.maoVazada || [];
         
         if (maoInimiga.length > 0) {
             maoInimiga.forEach(item => {
-                // 🕵️‍♂️ DETETIVE: O item pode ter vindo como Objeto da nuvem ou apenas o Número do ID.
-                let idBusca = typeof item === 'object' ? (item.id || item.nome) : item;
                 let c = null;
-                let buscaStr = String(idBusca);
+                let buscaStr = String(item); // Nome ou ID limpo
                 
-                // Procura a carta em todos os lugares possíveis
-                if (typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => String(x.id) === buscaStr || x.nome === idBusca);
-                if (!c && window.inventario) c = window.inventario.find(x => String(x.id) === buscaStr || x.nome === idBusca);
+                // Busca mega agressiva em todos os bancos
+                if (window.inventario) c = window.inventario.find(x => String(x.id) === buscaStr || String(x.nome) === buscaStr);
+                if (!c && typeof ATAQUES !== 'undefined') c = ATAQUES.find(x => String(x.id) === buscaStr || String(x.nome) === buscaStr);
+                if (!c && typeof MAGIAS !== 'undefined') c = MAGIAS.find(x => String(x.id) === buscaStr || String(x.nome) === buscaStr);
                 
                 if (c) {
                     let imgCard = c.img || c.cartaBlank;
@@ -5057,11 +5062,19 @@ window.processarAcaoInimiga = function(acao) {
                             <span style="color:#00bcd4; font-size:9px; font-weight:bold; margin-top:5px; text-align:center;">${c.nome}</span>
                         </div>
                     `;
+                } else {
+                    // Carta Misteriosa: Se a foto falhar, mostra o Nome/ID num fundo preto hacker!
+                    cartasHTML += `
+                        <div style="display:flex; flex-direction:column; align-items:center;">
+                            <div style="width: 80px; height: 115px; background-color: #111; border: 2px dashed #00bcd4; border-radius: 5px; display:flex; align-items:center; justify-content:center; padding: 5px; cursor: help;">
+                                <span style="color:#00bcd4; font-size:10px; font-weight:bold; text-align:center; word-break: break-word;">${buscaStr}</span>
+                            </div>
+                        </div>
+                    `;
                 }
             });
         }
         
-        // Se a busca falhar ou ele realmente não tiver cartas, mostra o aviso real
         if (cartasHTML === "") {
             cartasHTML = `<p style="color:#aaa; font-size:12px;">A mão do oponente está vazia (ou os dados falharam).</p>`;
         }
