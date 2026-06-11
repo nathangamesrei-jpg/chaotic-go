@@ -5027,6 +5027,42 @@ window.processarAcaoInimiga = function(acao) {
         // 🔥 REDUNDÂNCIA DE FIM DE JOGO: O oponente reconheceu a própria derrota e te enviou a taça!
         window.declararVitoria('jogador', 'Todo o exército inimigo foi aniquilado!');
     }
+    else if (acao.tipo === 'hacker_pedir_mao') {
+        // 🔥 NUVEM AVISOU: O Oponente usou o Johnes em você! Mande sua mão pra ele!
+        window.enviarAcaoRede({ tipo: 'hacker_receber_mao', maoVazada: window.maoAtaques });
+    }
+    else if (acao.tipo === 'hacker_receber_mao') {
+        // 🔥 NUVEM AVISOU: Os dados do Johnes chegaram! Mostre na tela.
+        window.mostrarMensagemScanner("✅ Dados interceptados com sucesso!");
+        
+        let cartasHTML = "";
+        if (acao.maoVazada && acao.maoVazada.length > 0) {
+            acao.maoVazada.forEach(idAtaque => {
+                let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
+                if (cartaOriginal) {
+                    cartasHTML += `
+                        <div style="display:flex; flex-direction:column; align-items:center;">
+                            <div style="width: 80px; height: 115px; background-image: url('${cartaOriginal.img}'); background-size: cover; background-position: center; border: 2px solid #00bcd4; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 188, 212, 0.8);"></div>
+                            <span style="color:#00bcd4; font-size:9px; font-weight:bold; margin-top:5px; text-align:center;">${cartaOriginal.nome}</span>
+                        </div>
+                    `;
+                }
+            });
+        } else {
+            cartasHTML = `<p style="color:#aaa; font-size:12px;">O oponente está sem cartas na mão!</p>`;
+        }
+
+        const modalVisaoHTML = `
+            <div class="modal-overlay" id="overlay-espiando" style="z-index: 10000000; background: rgba(0,0,0,0.95); flex-direction: column; align-items: center; justify-content: center; display: flex;">
+                <h2 style="color: #00bcd4; text-shadow: 0 0 10px #00bcd4; margin-bottom: 20px; font-family: 'Arial Black', sans-serif;">🕵️‍♂️ VISÃO HACKER: MÃO DO INIMIGO</h2>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; width: 90%; max-width: 400px; padding: 15px; background: rgba(0, 188, 212, 0.05); border-radius: 10px; border: 1px dashed #00bcd4;">
+                    ${cartasHTML}
+                </div>
+                <button class="btn-acao-modal" style="width: 150px; background: #222; color: #00bcd4; border: 2px solid #00bcd4; margin-top: 25px;" onclick="document.getElementById('overlay-espiando').remove()">FECHAR</button>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalVisaoHTML);
+    }
 };
 
 // ==========================================
