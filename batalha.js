@@ -3014,6 +3014,97 @@ window.atualizarSeusContadoresDeAtaque = function() {
 };
 
 
+// ==========================================
+// 🔥 MOTOR DE COBRANÇA DE TEMPO E STRIKES (ANTI-STALLING) 🔥
+// ==========================================
+window.strikesJogador = 0;
+window.strikesOponente = 0;
+window.cronometroTurnoInterval = null;
+
+window.iniciarCronometroTurno = function() {
+    clearInterval(window.cronometroTurnoInterval);
+    let tempoRestante = 45; // 45 segundos por turno
+    let jogadorAtual = window.estadoTurno.jogadorAtual;
+    let btn = document.getElementById('btn-passar-turno');
+
+    window.cronometroTurnoInterval = setInterval(() => {
+        tempoRestante--;
+
+        // Atualiza dinamicamente o texto do seu botão físico de turno
+        if (btn) {
+            if (jogadorAtual === 'jogador') {
+                btn.innerHTML = `PASSAR<br>TURNO (${tempoRestante}s)`;
+            } else {
+                btn.innerHTML = `TURNO<br>OPONENTE (${tempoRestante}s)`;
+            }
+        }
+
+        // O tempo estourou!
+        if (tempoRestante <= 0) {
+            clearInterval(window.cronometroTurnoInterval);
+            window.processarEstouroDeTempo(jogadorAtual);
+        }
+    }, 1000);
+};
+
+window.processarEstouroDeTempo = function(jogadorDefeituoso) {
+    if (jogadorDefeituoso === 'jogador') {
+        window.strikesJogador++;
+        
+        // Modal explicativo que surge na sua tela
+        const modalStrikeHTML = `
+            <div class="modal-overlay" id="overlay-strike" style="z-index: 10000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="modal-content-fichas" style="text-align: center; border: 3px solid #ff9800; box-shadow: 0 0 30px rgba(255, 152, 0, 0.5); background: #111; padding: 25px; border-radius: 10px; max-width: 330px;">
+                    <h2 style="color: #ff9800; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 10px #ff9800; margin-bottom: 15px; font-size: 20px;">⚠️ SEU TEMPO ESGOTOU!</h2>
+                    <p style="color: #ffd700; font-size: 16px; font-weight: bold; margin-bottom: 15px;">STRIKES ATUAIS: ${window.strikesJogador} / 3</p>
+                    <p style="color: #fff; font-size: 11px; font-family: monospace; text-align: left; line-height: 1.4; margin-bottom: 20px; background: #000; padding: 10px; border-radius: 5px; border: 1px solid #333;">
+                        <strong>O que é STRIKE?</strong><br>
+                        Para manter o jogo dinâmico e evitar que jogadores segurem o turno de propósito (Stalling) para vencer pelo cansaço, cada rodada tem um limite de tempo. Estourar o cronômetro passa seu turno automaticamente e te dá 1 Strike. Se atingir 3 Strikes, você perde a partida por W.O.
+                    </p>
+                    <button class="btn-acao-modal" style="background: #ff9800; color: black; border: none; width: 100%; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer;" onclick="document.getElementById('overlay-strike').remove()">ENTENDIDO</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalStrikeHTML);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+
+        if (window.strikesJogador >= 3) {
+            window.declararVitoria('oponente', 'Você foi desclassificado por atingir o limite máximo de 3 Strikes de tempo (Inatividade/Stalling).');
+            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                window.enviarAcaoRede({ tipo: 'derrota_wo' });
+            }
+        } else {
+            window.passarTurno(true); // Passa o turno automaticamente
+        }
+    } else {
+        window.strikesOponente++;
+        
+        const modalStrikeOpHTML = `
+            <div class="modal-overlay" id="overlay-strike-op" style="z-index: 10000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="modal-content-fichas" style="text-align: center; border: 3px solid #ff5555; box-shadow: 0 0 30px rgba(255, 85, 85, 0.5); background: #111; padding: 25px; border-radius: 10px; max-width: 330px;">
+                    <h2 style="color: #ff5555; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 10px #ff5555; margin-bottom: 15px; font-size: 18px;">⚠️ TEMPO DO INIMIGO ESGOTOU!</h2>
+                    <p style="color: #ff5555; font-size: 16px; font-weight: bold; margin-bottom: 15px;">STRIKES DELE: ${window.strikesOponente} / 3</p>
+                    <p style="color: #fff; font-size: 11px; font-family: monospace; line-height: 1.4; margin-bottom: 20px;">
+                        O oponente estourou o limite de tempo do turno dele. O controle da partida foi transferido para você e ele recebeu uma advertência por lentidão (Stalling).
+                    </p>
+                    <button class="btn-acao-modal" style="background: #ff5555; color: white; border: none; width: 100%; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer;" onclick="document.getElementById('overlay-strike-op').remove()">CONTINUAR LUTANDO</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalStrikeOpHTML);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+
+        if (window.strikesOponente >= 3) {
+            window.declararVitoria('jogador', 'O oponente foi desclassificado por atingir o limite máximo de 3 Strikes de tempo (Inatividade/Stalling).');
+        } else {
+            if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+                window.executarPassagemDeTurnoLocal();
+            }
+        }
+    }
+};
+
+
 
 window.iniciarTurnoReal = function(primeiroJogador) {
     let modal = document.getElementById('overlay-jokenpo');
@@ -3615,8 +3706,8 @@ window.executarPassagemDeTurnoLocal = function() {
         if(btn) { btn.style.display = 'block'; btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
         
         window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
-            window.iniciarCronometroTurno(); // 🔥 LIGA O RELÓGIO AQUI
-            if (emCombate) {
+    window.iniciarCronometroTurno(); // ⏱️ Liga o relógio na vez dele
+    if (emCombate) {
                 window.mostrarMensagemScanner("Turno do oponente no combate...");
                 if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") setTimeout(() => { window.passarTurno(); }, 4000);
             } else {
@@ -3667,8 +3758,8 @@ window.executarPassagemDeTurnoLocal = function() {
         if(btn) { btn.style.display = 'block'; btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
         
        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
-            window.iniciarCronometroTurno(); // 🔥 LIGA O RELÓGIO AQUI
-            if (emCombate) {
+    window.iniciarCronometroTurno(); // ⏱️ Liga o relógio na sua vez
+    if (emCombate) {
                 window.mostrarMensagemScanner("Sua vez de atacar! +1 Ponto e +1 Carta.");
             } else {
                 if (window.combateFinalizadoNesteTurno) {
@@ -4482,96 +4573,6 @@ window.sairDaBatalhaAposFim = function() {
     window.estadoCombate = { ativo: false, atacante: null, defensor: null };
 
     window.estadoTurno = { jogadorAtual: null, turnoNumero: 0, fase: 'pre-jogo' };
-
-    // ==========================================
-// 🔥 MOTOR DE COBRANÇA DE TEMPO E STRIKES (ANTI-STALLING) 🔥
-// ==========================================
-window.strikesJogador = 0;
-window.strikesOponente = 0;
-window.cronometroTurnoInterval = null;
-
-window.iniciarCronometroTurno = function() {
-    clearInterval(window.cronometroTurnoInterval);
-    let tempoRestante = 45; // 45 segundos por turno
-    let jogadorAtual = window.estadoTurno.jogadorAtual;
-    let btn = document.getElementById('btn-passar-turno');
-
-    window.cronometroTurnoInterval = setInterval(() => {
-        tempoRestante--;
-
-        // Atualiza dinamicamente o texto do seu botão físico de turno
-        if (btn) {
-            if (jogadorAtual === 'jogador') {
-                btn.innerHTML = `PASSAR<br>TURNO (${tempoRestante}s)`;
-            } else {
-                btn.innerHTML = `TURNO<br>OPONENTE (${tempoRestante}s)`;
-            }
-        }
-
-        // O tempo estourou!
-        if (tempoRestante <= 0) {
-            clearInterval(window.cronometroTurnoInterval);
-            window.processarEstouroDeTempo(jogadorAtual);
-        }
-    }, 1000);
-};
-
-window.processarEstouroDeTempo = function(jogadorDefeituoso) {
-    if (jogadorDefeituoso === 'jogador') {
-        window.strikesJogador++;
-        
-        // Modal explicativo que surge na sua tela
-        const modalStrikeHTML = `
-            <div class="modal-overlay" id="overlay-strike" style="z-index: 10000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="modal-content-fichas" style="text-align: center; border: 3px solid #ff9800; box-shadow: 0 0 30px rgba(255, 152, 0, 0.5); background: #111; padding: 25px; border-radius: 10px; max-width: 330px;">
-                    <h2 style="color: #ff9800; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 10px #ff9800; margin-bottom: 15px; font-size: 20px;">⚠️ SEU TEMPO ESGOTOU!</h2>
-                    <p style="color: #ffd700; font-size: 16px; font-weight: bold; margin-bottom: 15px;">STRIKES ATUAIS: ${window.strikesJogador} / 3</p>
-                    <p style="color: #fff; font-size: 11px; font-family: monospace; text-align: left; line-height: 1.4; margin-bottom: 20px; background: #000; padding: 10px; border-radius: 5px; border: 1px solid #333;">
-                        <strong>O que é STRIKE?</strong><br>
-                        Para manter o jogo dinâmico e evitar que jogadores segurem o turno de propósito (Stalling) para vencer pelo cansaço, cada rodada tem um limite de tempo. Estourar o cronômetro passa seu turno automaticamente e te dá 1 Strike. Se atingir 3 Strikes, você perde a partida por W.O.
-                    </p>
-                    <button class="btn-acao-modal" style="background: #ff9800; color: black; border: none; width: 100%; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer;" onclick="document.getElementById('overlay-strike').remove()">ENTENDIDO</button>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalStrikeHTML);
-        if(window.tocarSFX) window.tocarSFX('notificacao');
-
-        if (window.strikesJogador >= 3) {
-            window.declararVitoria('oponente', 'Você foi desclassificado por atingir o limite máximo de 3 Strikes de tempo (Inatividade/Stalling).');
-            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
-                window.enviarAcaoRede({ tipo: 'derrota_wo' });
-            }
-        } else {
-            window.passarTurno(true); // Passa o turno automaticamente
-        }
-    } else {
-        window.strikesOponente++;
-        
-        const modalStrikeOpHTML = `
-            <div class="modal-overlay" id="overlay-strike-op" style="z-index: 10000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
-                <div class="modal-content-fichas" style="text-align: center; border: 3px solid #ff5555; box-shadow: 0 0 30px rgba(255, 85, 85, 0.5); background: #111; padding: 25px; border-radius: 10px; max-width: 330px;">
-                    <h2 style="color: #ff5555; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 10px #ff5555; margin-bottom: 15px; font-size: 18px;">⚠️ TEMPO DO INIMIGO ESGOTOU!</h2>
-                    <p style="color: #ff5555; font-size: 16px; font-weight: bold; margin-bottom: 15px;">STRIKES DELE: ${window.strikesOponente} / 3</p>
-                    <p style="color: #fff; font-size: 11px; font-family: monospace; line-height: 1.4; margin-bottom: 20px;">
-                        O oponente estourou o limite de tempo do turno dele. O controle da partida foi transferido para você e ele recebeu uma advertência por lentidão (Stalling).
-                    </p>
-                    <button class="btn-acao-modal" style="background: #ff5555; color: white; border: none; width: 100%; padding: 12px; border-radius: 5px; font-weight: bold; cursor: pointer;" onclick="document.getElementById('overlay-strike-op').remove()">CONTINUAR LUTANDO</button>
-                </div>
-            </div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', modalStrikeOpHTML);
-        if(window.tocarSFX) window.tocarSFX('notificacao');
-
-        if (window.strikesOponente >= 3) {
-            window.declararVitoria('jogador', 'O oponente foi desclassificado por atingir o limite máximo de 3 Strikes de tempo (Inatividade/Stalling).');
-        } else {
-            if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
-                window.executarPassagemDeTurnoLocal();
-            }
-        }
-    }
-};
 
     window.pontosAtaque = { jogador: 3, oponente: 3 };
 
