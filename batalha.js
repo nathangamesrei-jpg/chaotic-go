@@ -3068,12 +3068,13 @@ window.processarEstouroDeTempo = function(jogadorDefeituoso) {
         document.body.insertAdjacentHTML('beforeend', modalStrikeHTML);
         if(window.tocarSFX) window.tocarSFX('notificacao');
 
-        if (window.strikesJogador >= 3) {
+      if (window.strikesJogador >= 3) {
             window.declararVitoria('oponente', 'Você foi desclassificado por atingir o limite máximo de 3 Strikes de tempo (Inatividade/Stalling).');
             if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
-                window.enviarAcaoRede({ tipo: 'derrota_wo' });
+                window.enviarAcaoRede({ tipo: 'declarar_vitoria_oponente' }); // 🔥 Correção aqui!
             }
-        } else {
+        }
+        else {
             window.passarTurno(true); // Passa o turno automaticamente
         }
     } else {
