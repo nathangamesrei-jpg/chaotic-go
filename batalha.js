@@ -4656,44 +4656,57 @@ window.revelarEquipamento = function(fullId) {
     
 
 
-// 2. USAR HABILIDADE (AGORA COM MIRA)
-
+// 2. USAR HABILIDADE (AGORA INTELIGENTE: COM OU SEM MIRA)
 window.usarHabilidade = function(fullId) {
-
     let criatura = obterCriaturaNoSlot(fullId);
-
     
-
     if (criatura && criatura.fichasHabilidade > 0) {
-
         window.fecharModalAcoes();
 
-        
+        // 🕵️‍♂️ DETETIVE: Busca a carta no banco para saber se ela precisa de alvo
+        let monstroDB = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === criatura.nome) : null;
+        let efeitoIdEncontrado = monstroDB ? monstroDB.efeitoId : null;
+        // Por padrão, se não tiver a etiqueta, o jogo assume que PRECISA de alvo (ex: Vidal, Frador)
+        let precisaAlvo = monstroDB && monstroDB.precisaAlvo !== undefined ? monstroDB.precisaAlvo : true; 
 
-        // Ativa o Modo Alvo! (A ficha só será gasta se ele clicar no alvo)
+        if (precisaAlvo === false) {
+            // ==========================================
+            // 🔥 ATIVAÇÃO INSTANTÂNEA (SEM MIRA) 🔥
+            // ==========================================
+            criatura.fichasHabilidade -= 1;
+            atualizarTelaBatalha();
 
-        window.modoAlvo = {
+            let acao = {
+                dono: criatura.dono,
+                nomeAcao: `Habilidade de ${criatura.nome}`,
+                tipo: 'habilidade',
+                executar: function() {
+                    if (efeitoIdEncontrado && window.MotorDeEfeitos && window.MotorDeEfeitos[efeitoIdEncontrado]) {
+                        // Passa 'null' no lugar do alvo, pois não tem alvo!
+                        window.MotorDeEfeitos[efeitoIdEncontrado](null, fullId, atualizarTelaBatalha);
+                    } else {
+                        window.mostrarMensagemScanner(`⚡ Efeito ativado!`);
+                    }
+                }
+            };
+            window.adicionarAoBurst(acao);
 
-            tipo: 'habilidade',
-
-            origem: fullId
-
-        };
-
-        
-
-        window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para usar a habilidade de ${criatura.nome} (Ou num espaço vazio para cancelar).`);
-
-        if(window.tocarSFX) window.tocarSFX('notificacao');
-
-
+        } else {
+            // ==========================================
+            // 🎯 ATIVAÇÃO COM MIRA (PADRÃO)
+            // ==========================================
+            window.modoAlvo = {
+                tipo: 'habilidade',
+                origem: fullId
+            };
+            
+            window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para usar a habilidade de ${criatura.nome} (Ou num espaço vazio para cancelar).`);
+            if(window.tocarSFX) window.tocarSFX('notificacao');
+        }
 
     } else {
-
         window.mostrarMensagemScanner("❌ Fichas de habilidade insuficientes!");
-
     }
-
 };
 
 
