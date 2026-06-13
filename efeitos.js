@@ -78,3 +78,29 @@ window.MotorDeEfeitos = {
     }
     
 };
+
+// =====================================
+    // 🔥 NOVO: Efeito do Guru (ID 8): Doar Elemento
+    // =====================================
+    "guru_elemento": function(alvo, fullId, atualizarTela, contexto) {
+        if (!alvo || !contexto || !contexto.elementoExtra) return;
+
+        let elementoDado = contexto.elementoExtra;
+        
+        // Se a criatura ainda não tiver a lista de elementos, cria uma vazia
+        if (!alvo.elementos) alvo.elementos = [];
+
+        // Verifica se a criatura já tem esse elemento. Se não tiver, adiciona!
+        if (!alvo.elementos.includes(elementoDado)) {
+            alvo.elementos.push(elementoDado);
+        }
+
+        // 🌐 AVISA A NUVEM: "Os elementos desse monstro mudaram!"
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'sincronizar_elementos', alvo: fullId, elementos: alvo.elementos });
+        }
+
+        window.mostrarMensagemScanner(`✨ Efeito Concluído! ${alvo.nome} ganhou o elemento ${elementoDado}!`);
+        if (window.tocarSFX) window.tocarSFX('notificacao');
+        atualizarTela();
+    }
