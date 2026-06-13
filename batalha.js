@@ -2566,6 +2566,7 @@ window.localAtivoAtual = null;
 
 
 window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = null) {
+    window.pausarCronometro();
     let deck = window.estadoDrome.deckSelecionado;
     let imagensDoDeck = [];
     
@@ -2640,6 +2641,7 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
                 if (modal) modal.remove();
                 
                 if(callback) callback();
+                window.retomarCronometro();
             }, 2000); 
         }
     }
@@ -2910,6 +2912,7 @@ window.pilhaBurst = [];
 window.aguardandoResposta = false;
 
 window.adicionarAoBurst = function(acaoObj) {
+    window.pausarCronometro();
     window.pilhaBurst.push(acaoObj);
     window.mostrarMensagemScanner(`⚡ BURST ATIVADO: ${acaoObj.nomeAcao} entrou na corrente!`);
 
@@ -2964,6 +2967,7 @@ window.resolverBurst = function() {
     let btnC = document.getElementById('btn-cancelar-burst');
     if (btnC) btnC.style.display = 'none';
 
+    window.retomarCronometro();
     if (window.pilhaBurst.length === 0) {
         window.mostrarMensagemScanner("Todas as ações resolvidas.");
         atualizarTelaBatalha();
@@ -3015,32 +3019,50 @@ window.atualizarSeusContadoresDeAtaque = function() {
 
 
 // ==========================================
-// 🔥 MOTOR DE COBRANÇA DE TEMPO E STRIKES (ANTI-STALLING) 🔥
+// 🔥 MOTOR DE COBRANÇA DE TEMPO E STRIKES (SMART CLOCK) 🔥
 // ==========================================
 window.strikesJogador = 0;
 window.strikesOponente = 0;
 window.cronometroTurnoInterval = null;
+window.cronometroPausado = false;
+window.tempoRestanteTurno = 45;
+
+window.pausarCronometro = function() { window.cronometroPausado = true; };
+window.retomarCronometro = function() { window.cronometroPausado = false; };
 
 window.iniciarCronometroTurno = function() {
     clearInterval(window.cronometroTurnoInterval);
-    let tempoRestante = 45; // 45 segundos por turno
+    window.tempoRestanteTurno = 45;
+    window.cronometroPausado = false;
+    
     let jogadorAtual = window.estadoTurno.jogadorAtual;
     let btn = document.getElementById('btn-passar-turno');
 
     window.cronometroTurnoInterval = setInterval(() => {
-        tempoRestante--;
+        // 🛑 CONGELA O TEMPO: Se o jogo estiver rodando animações ou resolvendo mágicas!
+        if (window.cronometroPausado) {
+            if (btn) btn.innerHTML = jogadorAtual === 'jogador' ? `PASSAR<br>TURNO (⏳)` : `TURNO<br>OPONENTE (⏳)`;
+            return;
+        }
 
-        // Atualiza dinamicamente o texto do seu botão físico de turno
+        window.tempoRestanteTurno--;
+
+        // Atualiza o botão visualmente
         if (btn) {
             if (jogadorAtual === 'jogador') {
-                btn.innerHTML = `PASSAR<br>TURNO (${tempoRestante}s)`;
+                btn.innerHTML = `PASSAR<br>TURNO (${window.tempoRestanteTurno}s)`;
             } else {
-                btn.innerHTML = `TURNO<br>OPONENTE (${tempoRestante}s)`;
+                btn.innerHTML = `TURNO<br>OPONENTE (${window.tempoRestanteTurno}s)`;
             }
         }
 
+        // 🌐 SINCRONIZAÇÃO DE REDE: O dono do turno dita o tempo exato para o inimigo!
+        if (jogadorAtual === 'jogador' && window.tempoRestanteTurno % 5 === 0 && window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { sync_tempo: window.tempoRestanteTurno });
+        }
+
         // O tempo estourou!
-        if (tempoRestante <= 0) {
+        if (window.tempoRestanteTurno <= 0) {
             clearInterval(window.cronometroTurnoInterval);
             window.processarEstouroDeTempo(jogadorAtual);
         }
@@ -3374,6 +3396,7 @@ function atualizarDecksEMaoCards() {
 
 
 window.iniciarCombate = function(idAtacante, idDefensor) {
+    window.pausarCronometro();
 
     let atacante = obterCriaturaNoSlot(idAtacante);
 
@@ -3559,7 +3582,7 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         }
 
         
-
+window.retomarCronometro();
         atualizarTelaBatalha();
 
     }, 8000); 
@@ -4901,6 +4924,19 @@ window.iniciarEscutaAcoesOnline = function() {
 
         }
 
+    });
+    // ⏰ Rádio 3: O Sincronizador de Relógio (Fim dos travamentos de lag)
+    window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/sync_tempo', (snap) => {
+        if (!snap.exists()) return;
+        let tempoRede = snap.val();
+        
+        // Se for o turno do oponente, eu obedeço o relógio da internet dele!
+        if (window.estadoTurno.jogadorAtual === 'oponente') {
+            // Só corrige se a diferença for maior que 2 segundos (pra ignorar delay normal de ping)
+            if (Math.abs(window.tempoRestanteTurno - tempoRede) > 2) {
+                window.tempoRestanteTurno = tempoRede;
+            }
+        }
     });
 
 };
