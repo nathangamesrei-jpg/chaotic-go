@@ -4633,7 +4633,6 @@ window.usarHabilidade = function(fullId) {
         // 🕵️‍♂️ DETETIVE: Busca a carta no banco para saber se ela precisa de alvo
         let monstroDB = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === criatura.nome) : null;
         let efeitoIdEncontrado = monstroDB ? monstroDB.efeitoId : null;
-        // Por padrão, se não tiver a etiqueta, o jogo assume que PRECISA de alvo (ex: Vidal, Frador)
         let precisaAlvo = monstroDB && monstroDB.precisaAlvo !== undefined ? monstroDB.precisaAlvo : true; 
 
         if (precisaAlvo === false) {
@@ -4649,14 +4648,37 @@ window.usarHabilidade = function(fullId) {
                 tipo: 'habilidade',
                 executar: function() {
                     if (efeitoIdEncontrado && window.MotorDeEfeitos && window.MotorDeEfeitos[efeitoIdEncontrado]) {
-                        // Passa 'null' no lugar do alvo, pois não tem alvo!
                         window.MotorDeEfeitos[efeitoIdEncontrado](null, fullId, atualizarTelaBatalha);
                     } else {
                         window.mostrarMensagemScanner(`⚡ Efeito ativado!`);
                     }
                 }
             };
-            // 🔥 MOTOR VISUAL: Menu de Escolha de Elemento
+            window.adicionarAoBurst(acao);
+
+        } else {
+            // ==========================================
+            // 🎯 ATIVAÇÃO COM MIRA (PADRÃO)
+            // ==========================================
+            if (efeitoIdEncontrado === "guru_elemento") {
+                window.abrirModalEscolhaElemento(fullId, criatura);
+                return; // Pausa aqui, a janela vai ligar a mira depois!
+            }
+
+            window.modoAlvo = {
+                tipo: 'habilidade',
+                origem: fullId
+            };
+            window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para usar a habilidade de ${criatura.nome} (Ou num espaço vazio para cancelar).`);
+            if(window.tocarSFX) window.tocarSFX('notificacao');
+        }
+
+    } else {
+        window.mostrarMensagemScanner("❌ Fichas de habilidade insuficientes!");
+    }
+};
+
+// 🔥 MOTOR VISUAL: Menu de Escolha de Elemento (Totalmente isolado das outras funções!)
 window.abrirModalEscolhaElemento = function(fullId, criatura) {
     const modalHTML = `
         <div class="modal-overlay" id="overlay-elemento" style="z-index: 10000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
