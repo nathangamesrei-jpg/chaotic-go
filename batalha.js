@@ -337,18 +337,40 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
 
 
 function atualizarTelaBatalha() {
-
     const slots = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
 
+    // 🕵️‍♂️ DETETIVE DE AURAS: Procura se o Guru está vivo no seu lado da mesa ANTES de desenhar
+    let temGuruAura = false;
     slots.forEach(slotId => {
-
-        const el = document.getElementById('jog-' + slotId);
-
-        if(el) el.innerHTML = desenharMiniCarta(campoJogador[slotId]);
-
+        let carta = campoJogador[slotId];
+        if (carta && carta.nome === "Guru" && carta.hpAtual > 0) {
+            temGuruAura = true;
+        }
     });
 
+    slots.forEach(slotId => {
+        const el = document.getElementById('jog-' + slotId);
+        let carta = campoJogador[slotId];
+        
+        if (carta) {
+            // Se o Guru estiver vivo e o monstro atual NÃO FOR ele próprio, aplica a aura!
+            if (temGuruAura && carta.nome !== "Guru") {
+                if (!carta.elementos) carta.elementos = [];
+                // Se o aliado ainda não tiver 'Ar', ele "empresta" o elemento temporariamente
+                if (!carta.elementos.includes('Ar')) {
+                    carta.auraVento = true; // Marca que o 'Ar' dele veio do Guru e não é fixo
+                    carta.elementos.push('Ar');
+                }
+            } 
+            // Se o Guru morrer, o jogo limpa a Aura de quem tinha pegado emprestado!
+            else if (!temGuruAura && carta.auraVento) {
+                carta.elementos = carta.elementos.filter(el => el !== 'Ar');
+                carta.auraVento = false;
+            }
+        }
 
+        if(el) el.innerHTML = desenharMiniCarta(carta);
+    });
 
     const slotsOp = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
 
@@ -4621,8 +4643,6 @@ window.revelarEquipamento = function(fullId) {
 };
 
     
-
-
 // 2. USAR HABILIDADE (AGORA INTELIGENTE: COM OU SEM MIRA)
 window.usarHabilidade = function(fullId) {
     let criatura = obterCriaturaNoSlot(fullId);
@@ -4680,6 +4700,7 @@ window.usarHabilidade = function(fullId) {
 
 // 🔥 MOTOR VISUAL: Menu de Escolha de Elemento (Totalmente isolado das outras funções!)
 window.abrirModalEscolhaElemento = function(fullId, criatura) {
+    window.pausarCronometro(); // Pausa o tempo enquanto o jogador pensa!
     const modalHTML = `
         <div class="modal-overlay" id="overlay-elemento" style="z-index: 10000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <div class="modal-content-fichas" style="text-align: center; border: 3px solid #00bcd4; background: #111; padding: 20px; border-radius: 10px;">
@@ -4690,7 +4711,7 @@ window.abrirModalEscolhaElemento = function(fullId, criatura) {
                     <button onclick="window.confirmarElemento('${fullId}', 'Terra')" style="cursor:pointer; background:#222; border:2px solid brown; border-radius:10px; padding:10px 20px; transition: 0.2s;" onmouseover="this.style.background='brown'" onmouseout="this.style.background='#222'">⛰️</button>
                     <button onclick="window.confirmarElemento('${fullId}', 'Ar')" style="cursor:pointer; background:#222; border:2px solid gray; border-radius:10px; padding:10px 20px; transition: 0.2s;" onmouseover="this.style.background='gray'" onmouseout="this.style.background='#222'">☁️</button>
                 </div>
-                <button class="btn-acao-modal" style="margin-top: 25px; border-color: #e53935; color: #e53935;" onclick="document.getElementById('overlay-elemento').remove()">Cancelar</button>
+                <button class="btn-acao-modal" style="margin-top: 25px; border-color: #e53935; color: #e53935;" onclick="document.getElementById('overlay-elemento').remove(); window.retomarCronometro();">Cancelar</button>
             </div>
         </div>
     `;
@@ -4699,6 +4720,8 @@ window.abrirModalEscolhaElemento = function(fullId, criatura) {
 
 window.confirmarElemento = function(fullId, elementoEscolhido) {
     document.getElementById('overlay-elemento').remove();
+    window.retomarCronometro(); // Retoma o relógio
+
     // Liga a mira guardando a escolha secreta no "elementoExtra"
     window.modoAlvo = {
         tipo: 'habilidade',
@@ -4707,6 +4730,10 @@ window.confirmarElemento = function(fullId, elementoEscolhido) {
     };
     window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Você escolheu ${elementoEscolhido}. Clique no monstro que vai recebê-lo!`);
 };
+
+
+
+
             window.adicionarAoBurst(acao);
 
         } else {
