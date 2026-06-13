@@ -1267,7 +1267,7 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     console.log("GATILHO: Efeito ID encontrado:", efeitoIdEncontrado);
 
     if (efeitoIdEncontrado && window.MotorDeEfeitos && window.MotorDeEfeitos[efeitoIdEncontrado]) {
-        window.MotorDeEfeitos[efeitoIdEncontrado](alvo, fullId, atualizarTelaBatalha);
+        window.MotorDeEfeitos[efeitoIdEncontrado](alvo, fullId, atualizarTelaBatalha, ctx);
     } else {
         window.mostrarMensagemScanner(`⚡ Efeito ativado em ${alvo.nome} (Efeito não programado).`); 
     }
@@ -4656,17 +4656,50 @@ window.usarHabilidade = function(fullId) {
                     }
                 }
             };
+            // 🔥 MOTOR VISUAL: Menu de Escolha de Elemento
+window.abrirModalEscolhaElemento = function(fullId, criatura) {
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-elemento" style="z-index: 10000000; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="modal-content-fichas" style="text-align: center; border: 3px solid #00bcd4; background: #111; padding: 20px; border-radius: 10px;">
+                <h2 style="color: #00bcd4; margin-bottom: 15px;">QUAL ELEMENTO DESEJA DOAR?</h2>
+                <div style="display: flex; gap: 15px; justify-content: center; font-size: 35px;">
+                    <button onclick="window.confirmarElemento('${fullId}', 'Fogo')" style="cursor:pointer; background:#222; border:2px solid red; border-radius:10px; padding:10px 20px; transition: 0.2s;" onmouseover="this.style.background='red'" onmouseout="this.style.background='#222'">🔥</button>
+                    <button onclick="window.confirmarElemento('${fullId}', 'Água')" style="cursor:pointer; background:#222; border:2px solid blue; border-radius:10px; padding:10px 20px; transition: 0.2s;" onmouseover="this.style.background='blue'" onmouseout="this.style.background='#222'">🌊</button>
+                    <button onclick="window.confirmarElemento('${fullId}', 'Terra')" style="cursor:pointer; background:#222; border:2px solid brown; border-radius:10px; padding:10px 20px; transition: 0.2s;" onmouseover="this.style.background='brown'" onmouseout="this.style.background='#222'">⛰️</button>
+                    <button onclick="window.confirmarElemento('${fullId}', 'Ar')" style="cursor:pointer; background:#222; border:2px solid gray; border-radius:10px; padding:10px 20px; transition: 0.2s;" onmouseover="this.style.background='gray'" onmouseout="this.style.background='#222'">☁️</button>
+                </div>
+                <button class="btn-acao-modal" style="margin-top: 25px; border-color: #e53935; color: #e53935;" onclick="document.getElementById('overlay-elemento').remove()">Cancelar</button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+window.confirmarElemento = function(fullId, elementoEscolhido) {
+    document.getElementById('overlay-elemento').remove();
+    // Liga a mira guardando a escolha secreta no "elementoExtra"
+    window.modoAlvo = {
+        tipo: 'habilidade',
+        origem: fullId,
+        elementoExtra: elementoEscolhido
+    };
+    window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Você escolheu ${elementoEscolhido}. Clique no monstro que vai recebê-lo!`);
+};
             window.adicionarAoBurst(acao);
 
         } else {
             // ==========================================
             // 🎯 ATIVAÇÃO COM MIRA (PADRÃO)
             // ==========================================
+            if (efeitoIdEncontrado === "guru_elemento") {
+                window.abrirModalEscolhaElemento(fullId, criatura);
+                return; // Pausa aqui, a janela vai ligar a mira depois!
+            }
+
             window.modoAlvo = {
                 tipo: 'habilidade',
                 origem: fullId
             };
-            
             window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para usar a habilidade de ${criatura.nome} (Ou num espaço vazio para cancelar).`);
             if(window.tocarSFX) window.tocarSFX('notificacao');
         }
@@ -4951,6 +4984,14 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("⚔️ ALERTA: O INIMIGO INICIOU UM COMBATE!");
         if(typeof window.iniciarCombate === 'function') window.iniciarCombate(origemReal, destinoReal);
         atualizarTelaBatalha();
+    }
+        else if (acao.tipo === 'sincronizar_elementos') {
+        let alvoReal = inverterId(acao.alvo); 
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura.elementos = acao.elementos; 
+            atualizarTelaBatalha(); 
+        }
     }
         else if (acao.tipo === 'sincronizar_fichas') {
         // 🔥 NUVEM AVISOU: Alguém ganhou ou perdeu fichas por efeito!
