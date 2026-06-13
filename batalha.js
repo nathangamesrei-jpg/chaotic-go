@@ -4110,7 +4110,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         if (window.tocarSFX) window.tocarSFX('notificacao');
     }
 };
-};
+
 
 /////////////////////////////////////////////////////////////////////////////////
 
