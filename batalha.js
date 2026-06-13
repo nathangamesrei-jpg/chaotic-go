@@ -1311,11 +1311,42 @@ window.lidarComCliqueTabuleiro = function(fullId) {
             }
 
             let acao = { dono: 'jogador', nomeAcao: `Mugic: ${ctx.mugicObj.nome} ➔ ${alvo.nome}`, tipo: 'mugic', executar: function() { window.mostrarMensagemScanner(`✨ Mugic explodiu em ${alvo.nome}!`); if(window.tocarSFX) window.tocarSFX('notificacao'); } };
-            window.adicionarAoBurst(acao);
+           window.adicionarAoBurst(acao);
+
+        } else if (ctx.tipo === 'passiva_leona') {
+            // 🔥 LEONA ATIRA NA MIRA! Coloca o tiro na Corrente (Burst)
+            let acaoLeona = {
+                dono: 'jogador',
+                nomeAcao: `Passiva da Leona ➔ ${alvo.nome}`,
+                tipo: 'habilidade',
+                executar: function() {
+                    alvo.hpAtual -= 5;
+                    if (alvo.hpAtual < 0) alvo.hpAtual = 0;
+                    
+                    window.mostrarMensagemScanner(`🦁 Leona atirou e causou 5 de dano em ${alvo.nome}!`);
+                    if(window.tocarSFX) window.tocarSFX('notificacao');
+                    
+                    // Avisa a rede pra tirar a vida do inimigo
+                    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                        window.enviarAcaoRede({ tipo: 'dano', alvo: fullId, valor: 5 });
+                    }
+                    
+                    // Treme a carta atingida
+                    let elAlvo = document.getElementById(fullId);
+                    if(elAlvo) {
+                        elAlvo.style.animation = "shake 0.5s";
+                        setTimeout(() => { elAlvo.style.animation = ""; }, 500);
+                    }
+                    
+                    atualizarTelaBatalha();
+                    if (alvo.hpAtual === 0) setTimeout(() => window.encerrarCombateMorte(fullId), 1000);
+                }
+            };
+            window.adicionarAoBurst(acaoLeona);
+            window.retomarCronometro();
         }
 
         return;
-
     }
 
 
@@ -4063,7 +4094,22 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             }
         }
     };
-    window.adicionarAoBurst(acaoDoAtaque);
+
+    window.adicionarAoBurst(acaoDoAtaque); // <-- Esta é a linha que você buscou
+
+    // ==========================================
+    // 🦁 GATILHO PASSIVO: A Fúria Sniper da Leona!
+    // ==========================================
+    if (minhaCriatura && minhaCriatura.nome === "Leona") {
+        window.modoAlvo = {
+            tipo: 'passiva_leona',
+            origem: idMeuMonstro
+        };
+        window.pausarCronometro();
+        window.mostrarMensagemScanner("🦁 PASSIVA DA LEONA: Clique em QUALQUER criatura na mesa para atirar 5 de dano!");
+        if (window.tocarSFX) window.tocarSFX('notificacao');
+    }
+};
 };
 
 /////////////////////////////////////////////////////////////////////////////////
