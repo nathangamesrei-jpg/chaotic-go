@@ -75,11 +75,8 @@ window.MotorDeEfeitos = {
         window.mostrarMensagemScanner(`✨ Ficha doada! ${alvo.nome} recebeu +1 Ficha de Habilidade!`);
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
-    }
-    
-};
-
-// =====================================
+    },
+    // =====================================
     // 🔥 NOVO: Efeito do Guru (ID 8): Doar Elemento
     // =====================================
     "guru_elemento": function(alvo, fullId, atualizarTela, contexto) {
@@ -104,3 +101,7 @@ window.MotorDeEfeitos = {
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     }
+    
+};
+
+
