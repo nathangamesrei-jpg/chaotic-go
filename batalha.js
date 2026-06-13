@@ -4985,6 +4985,15 @@ window.processarAcaoInimiga = function(acao) {
         if(typeof window.iniciarCombate === 'function') window.iniciarCombate(origemReal, destinoReal);
         atualizarTelaBatalha();
     }
+        else if (acao.tipo === 'sincronizar_fichas') {
+        // 🔥 NUVEM AVISOU: Alguém ganhou ou perdeu fichas por efeito!
+        let alvoReal = inverterId(acao.alvo); 
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura.fichasHabilidade = acao.qtd; 
+            atualizarTelaBatalha(); 
+        }
+    }
         else if (acao.tipo === 'sincronizar_hp') {
         let alvoReal = inverterId(acao.alvo); // Transforma o slot para a perspectiva dele
         let criatura = obterCriaturaNoSlot(alvoReal);
