@@ -4732,34 +4732,6 @@ window.confirmarElemento = function(fullId, elementoEscolhido) {
 };
 
 
-
-
-            window.adicionarAoBurst(acao);
-
-        } else {
-            // ==========================================
-            // 🎯 ATIVAÇÃO COM MIRA (PADRÃO)
-            // ==========================================
-            if (efeitoIdEncontrado === "guru_elemento") {
-                window.abrirModalEscolhaElemento(fullId, criatura);
-                return; // Pausa aqui, a janela vai ligar a mira depois!
-            }
-
-            window.modoAlvo = {
-                tipo: 'habilidade',
-                origem: fullId
-            };
-            window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para usar a habilidade de ${criatura.nome} (Ou num espaço vazio para cancelar).`);
-            if(window.tocarSFX) window.tocarSFX('notificacao');
-        }
-
-    } else {
-        window.mostrarMensagemScanner("❌ Fichas de habilidade insuficientes!");
-    }
-};
-
-
-
 // 3. PREPARAR MUGIC (Registra quem é o Conjurador sem gastar a ficha)
 
 window.prepararMugic = function(fullId) {
