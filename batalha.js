@@ -5028,13 +5028,14 @@ window.processarAcaoInimiga = function(acao) {
         window.declararVitoria('jogador', 'Todo o exército inimigo foi aniquilado!');
     }
    else if (acao.tipo === 'hacker_pedir_mao') {
-        // 🔥 NUVEM AVISOU: O Oponente usou o Johnes em você! Mande sua mão pra ele!
-        // Limpa os dados antes de enviar pela internet para não bugar o Firebase
-        let maoLimpa = window.maoAtaques.map(carta => {
-            if (typeof carta === 'object') return String(carta.nome || carta.id);
-            return String(carta);
+        // 🔥 NUVEM AVISOU: O Oponente usou o Johnes em você!
+        // O seu celular vai olhar o número de série da sua mão, achar o NOME das cartas no seu álbum e vazar os NOMES.
+        let maoVazadaNomes = window.maoAtaques.map(idDaCarta => {
+            let cartaReal = window.inventario.find(c => c.id == idDaCarta);
+            return cartaReal ? cartaReal.nome : "Carta Desconhecida"; 
         });
-        window.enviarAcaoRede({ tipo: 'hacker_receber_mao', maoVazada: maoLimpa });
+        
+        window.enviarAcaoRede({ tipo: 'hacker_receber_mao', maoVazada: maoVazadaNomes });
     }
     else if (acao.tipo === 'hacker_receber_mao') {
         // 🔥 NUVEM AVISOU: Os dados do Johnes chegaram! Mostre na tela.
