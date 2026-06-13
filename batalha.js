@@ -4097,7 +4097,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
 
     window.adicionarAoBurst(acaoDoAtaque);
 
-    // ==========================================
+   // ==========================================
     // 🦁 GATILHO PASSIVO: A Fúria Sniper da Leona!
     // ==========================================
     let atacanteAtual = idMeuMonstro ? obterCriaturaNoSlot(idMeuMonstro) : null;
@@ -4108,7 +4108,17 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             origem: idMeuMonstro
         };
         window.pausarCronometro();
-        window.mostrarMensagemScanner("🦁 PASSIVA DA LEONA: Clique em QUALQUER criatura na mesa para atirar 5 de dano!");
+        
+        // 🔥 ANIMAÇÃO ÉPICA PARA CHAMAR ATENÇÃO DO JOGADOR
+        if(typeof window.mostrarBannerTCG === 'function') {
+            window.mostrarBannerTCG('PASSIVA DA LEONA', 'rgba(229, 57, 53, 0.8)', '#ffd700');
+        }
+        
+        // Atraso de 300 milissegundos para garantir que a mensagem não seja engolida pelo Burst!
+        setTimeout(() => {
+            window.mostrarMensagemScanner("🎯 MIRA DA LEONA ATIVA: Selecione o alvo para o efeito passivo de 5 de dano!");
+        }, 300);
+        
         if (window.tocarSFX) window.tocarSFX('notificacao');
     }
 }; // <-- Aqui fecha a função usarCartaAtaque
