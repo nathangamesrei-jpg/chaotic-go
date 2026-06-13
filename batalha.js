@@ -4095,12 +4095,14 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         }
     };
 
-    window.adicionarAoBurst(acaoDoAtaque); // <-- Esta é a linha que você buscou
+    window.adicionarAoBurst(acaoDoAtaque);
 
     // ==========================================
     // 🦁 GATILHO PASSIVO: A Fúria Sniper da Leona!
     // ==========================================
-    if (minhaCriatura && minhaCriatura.nome === "Leona") {
+    let atacanteAtual = idMeuMonstro ? obterCriaturaNoSlot(idMeuMonstro) : null;
+    
+    if (atacanteAtual && atacanteAtual.nome === "Leona") {
         window.modoAlvo = {
             tipo: 'passiva_leona',
             origem: idMeuMonstro
@@ -4109,7 +4111,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         window.mostrarMensagemScanner("🦁 PASSIVA DA LEONA: Clique em QUALQUER criatura na mesa para atirar 5 de dano!");
         if (window.tocarSFX) window.tocarSFX('notificacao');
     }
-};
+}; // <-- Aqui fecha a função usarCartaAtaque
 
 
 /////////////////////////////////////////////////////////////////////////////////
