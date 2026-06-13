@@ -2803,14 +2803,11 @@ window.encerrarCombateMorte = function(idMorto) {
         }
     }
 
-    
-
     // 🔥 1. GUARDA O MORTO E O EQUIPAMENTO NO CEMITÉRIO PERMANENTE 🔥
     if (morto) {
         let isPlayer = morto.dono === 'jogador';
         let arrayCemiterio = isPlayer ? window.cemiterio : window.cemiterioOponente;
         
-        // Em vez de procurar no inventário, joga o NOME da carta direto na cova!
         arrayCemiterio.push(morto.nome);
         
         if (morto.equipamento) {
@@ -2818,82 +2815,52 @@ window.encerrarCombateMorte = function(idMorto) {
         }
     }
 
-
-
     // 2. CHAMA A ANIMAÇÃO DE CÓDIGOS ANTES DE APAGAR DA TELA!
-
     window.animarExplosaoCodigo(idMorto, () => {
-
         
-
         // Apaga a criatura da mesa
-
         setarCriaturaNoSlot(idMorto, null);
-
         
+        // Verifica se a batalha estava ativa antes de resetar os estados
+        let estavamosEmCombateReal = window.estadoCombate && window.estadoCombate.ativo;
 
-        // Destrava a mesa
-
+        // Destrava a mesa de combate
         window.estadoCombate.ativo = false;
-
         window.estadoCombate.atacante = null;
-
         window.estadoCombate.defensor = null;
-
         
-
         // ==========================================
-
-        // 🔥 FASE DE MANUTENÇÃO PÓS-COMBATE 🔥
-
+        // 🔥 ESCUDO PROTETOR: SÓ ENTRA NA MANUTENÇÃO SE FOI MORTE EM COMBATE! 🔥
         // ==========================================
-
-        
-
-        // 1. Os Pontos de Ataque voltam para a base de 3
-
-        window.pontosAtaque = { jogador: 3, oponente: 3 };
-
-        
-
-        // 2. O SEU BARALHO: Junta Mão + Lixo + Deck, embaralha e saca 3 novas
-
-        let todasMinhasCartas = [...(window.baralhoAtaques || []), ...(window.maoAtaques || []), ...(window.lixoAtaques || [])];
-
-        if (todasMinhasCartas.length > 0) {
-
-            window.baralhoAtaques = embaralharArray(todasMinhasCartas);
-
-            window.maoAtaques = window.baralhoAtaques.splice(0, 3);
-
+        if (estavamosEmCombateReal) {
+            // 1. Os Pontos de Ataque voltam para a base de 3
+            window.pontosAtaque = { jogador: 3, oponente: 3 };
+            
+            // 2. O SEU BARALHO: Junta Mão + Lixo + Deck, embaralha e saca 3 novas
+            let todasMinhasCartas = [...(window.baralhoAtaques || []), ...(window.maoAtaques || []), ...(window.lixoAtaques || [])];
+            if (todasMinhasCartas.length > 0) {
+                window.baralhoAtaques = embaralharArray(todasMinhasCartas);
+                window.maoAtaques = window.baralhoAtaques.splice(0, 3);
+            }
+            window.lixoAtaques = []; // Zera o seu Lixo
+            
+            // 3. O BARALHO DO BOT/ONLINE: Reseta a matemática
+            window.qtdBaralhoOponente = 17;
+            window.qtdMaoOponente = 3;
+            window.lixoAtaquesOponente = 0;
+            
+            // Avisa o jogo que o combate acabou para liberar o sorteio de Local
+            window.combateFinalizadoNesteTurno = true;
         }
-
-        window.lixoAtaques = []; // Zera o seu Lixo
-
-        
-
-       // 3. O BARALHO DO BOT: Reseta a matemática para 17 no deck, 3 na mão e 0 no lixo
-        window.qtdBaralhoOponente = 17;
-        window.qtdMaoOponente = 3;
-        window.lixoAtaquesOponente = 0;
-        
-        // 🔥 REGRA DO LOCAL: Avisa o jogo que o combate acabou de verdade, 
-        // e que o próximo jogador tem o direito de sortear um novo Local!
-        window.combateFinalizadoNesteTurno = true;
         
         // Atualiza a tela para refletir tudo instantaneamente
         atualizarTelaBatalha();
         
         if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
-
-
         // 🔥 2. CHECA SE ALGUÉM GANHOU O JOGO APÓS A REDEFINIÇÃO!
-
         if (typeof window.checarFimDeJogo === 'function') window.checarFimDeJogo();
-
     });
-
 };
 
 
