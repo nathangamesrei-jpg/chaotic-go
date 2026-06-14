@@ -3375,48 +3375,61 @@ function atualizarDecksEMaoCards() {
 
 
         window.maoAtaques.forEach((idAtaque, index) => {
-            // 🔥 DETETIVE DE ATAQUES 100% BLINDADO 🔥
+            // 🔥 DETETIVE DE ATAQUES NÍVEL MESTRE 🔥
             let cartaOriginal = null;
-            
-            if (typeof idAtaque === 'object' && idAtaque !== null) {
+            let idParaBusca = idAtaque;
+
+            // 1. Se a carta já for um objeto completo, extraímos o ID e usamos ela mesma!
+            if (idAtaque && typeof idAtaque === 'object') {
                 cartaOriginal = idAtaque;
-            } else {
-                // 1. Procura na lista global ATAQUES pelo Nome ou ID
-                if (typeof ATAQUES !== 'undefined') {
-                    cartaOriginal = ATAQUES.find(a => a.id == idAtaque || a.nome === idAtaque);
+                idParaBusca = idAtaque.id || idAtaque.nome;
+            } 
+            // 2. Se for só o texto/número, procuramos no banco de dados blindado!
+            else {
+                if (typeof window.inventario !== 'undefined' && Array.isArray(window.inventario)) {
+                    cartaOriginal = window.inventario.find(c => String(c.id) === String(idAtaque) || c.nome === idAtaque);
                 }
-                // 2. Se NÃO achou na lista ATAQUES, procura obrigatoriamente no inventário!
-                if (!cartaOriginal && window.inventario) {
-                    cartaOriginal = window.inventario.find(c => c.id == idAtaque || c.nome === idAtaque);
+                if (!cartaOriginal && typeof ATAQUES !== 'undefined' && Array.isArray(ATAQUES)) {
+                    cartaOriginal = ATAQUES.find(a => String(a.id) === String(idAtaque) || a.nome === idAtaque);
                 }
             }
 
-            if (cartaOriginal) {
-                let el = document.createElement('div');
-                el.className = 'carta-na-mao';
-                // Garante que pega a imagem certa, seja 'img' ou 'cartaBlank'
-                let imagemParaExibir = cartaOriginal.img || cartaOriginal.cartaBlank || URL_FUNDO_CARTA;
-                
-                el.style.backgroundImage = `url('${imagemParaExibir}')`;
-                el.style.backgroundSize = 'cover';
-                el.style.backgroundPosition = 'center';
-                el.style.pointerEvents = 'auto';
-                el.style.cursor = 'pointer';
-
-                let offset = index - meio;
-                let angulo = offset * 12; 
-                let descida = Math.abs(offset) * 6; 
-                
-                el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
-                el.style.zIndex = index + 1;
-                
-                el.onclick = function(e) {
-                    e.stopPropagation(); 
-                    // Passamos o objeto completo para o modal abrir com o texto e foto perfeitos!
-                    window.abrirModalAtaque(index, cartaOriginal.id, cartaOriginal);
+            // 3. O SEGREDO ANTI-INVISIBILIDADE: Se a carta não for achada, cria uma carta fantasma!
+            if (!cartaOriginal) {
+                cartaOriginal = {
+                    id: idParaBusca,
+                    nome: "Carta Oculta",
+                    img: typeof URL_FUNDO_CARTA !== 'undefined' ? URL_FUNDO_CARTA : 'cartas/verso.jpg',
+                    custo: 0,
+                    danoBase: 0,
+                    efeito: "Efeito desconhecido."
                 };
-                caixaMao.appendChild(el);
             }
+
+            // Agora desenha a carta com 100% de certeza que ela existe!
+            let el = document.createElement('div');
+            el.className = 'carta-na-mao';
+            
+            let imagemParaExibir = cartaOriginal.img || cartaOriginal.cartaBlank || (typeof URL_FUNDO_CARTA !== 'undefined' ? URL_FUNDO_CARTA : 'cartas/verso.jpg');
+            
+            el.style.backgroundImage = `url('${imagemParaExibir}')`;
+            el.style.backgroundSize = 'cover';
+            el.style.backgroundPosition = 'center';
+            el.style.pointerEvents = 'auto';
+            el.style.cursor = 'pointer';
+
+            let offset = index - meio;
+            let angulo = offset * 12; 
+            let descida = Math.abs(offset) * 6; 
+            
+            el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
+            el.style.zIndex = index + 1;
+            
+            el.onclick = function(e) {
+                e.stopPropagation(); 
+                window.abrirModalAtaque(index, cartaOriginal.id, cartaOriginal);
+            };
+            caixaMao.appendChild(el);
         });
  }
 
@@ -5581,17 +5594,21 @@ window.cartaRoubadaMaoNegra = null; // Memória da carta roubada
 window.cartaRoubadaMaoNegra = null; // Memória da carta roubada
 
 window.receberCartaRoubada = function(idCartaRoubada) {
-    window.cartaRoubadaMaoNegra = idCartaRoubada; // Marca a carta na memória
+    // Se a carta roubada for um objeto, salvamos o nome ou ID dela para a memória
+    let idMemoria = (typeof idCartaRoubada === 'object') ? (idCartaRoubada.id || idCartaRoubada.nome) : idCartaRoubada;
+    
+    window.cartaRoubadaMaoNegra = idMemoria; // Marca a carta na memória de devolução
     window.maoAtaques.push(idCartaRoubada); // Coloca na sua mão
-    atualizarDecksEMaoCards(); // Desenha a carta na tela com a imagem!
     
-    // Procura o nome da carta roubada em todos os lugares possíveis
+    // Procura o nome da carta roubada em todos os lugares possíveis para anunciar
     let db = null;
-    if (typeof ATAQUES !== 'undefined') db = ATAQUES.find(a => a.id == idCartaRoubada || a.nome === idCartaRoubada);
-    if (!db && window.inventario) db = window.inventario.find(a => a.id == idCartaRoubada || a.nome === idCartaRoubada);
+    if (typeof ATAQUES !== 'undefined') db = ATAQUES.find(a => String(a.id) === String(idMemoria) || a.nome === idMemoria);
+    if (!db && window.inventario) db = window.inventario.find(a => String(a.id) === String(idMemoria) || a.nome === idMemoria);
     
-    window.mostrarMensagemScanner(`🌑 SUCESSO! Você roubou: ${db ? db.nome : "Carta de Ataque"}`);
+    window.mostrarMensagemScanner(`🌑 SUCESSO! Você roubou: ${db ? db.nome : "Carta Secreta"}`);
     if(window.tocarSFX) window.tocarSFX('notificacao');
+    
+    atualizarDecksEMaoCards(); // Desenha a carta na tela com a imagem recarregada!
 };
 // ==========================================
 // ⏳ SISTEMA DE RECONEXÃO E ANTI-AFK (W.O.) ⏳
