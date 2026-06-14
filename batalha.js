@@ -4177,7 +4177,21 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         }
     }
 
-    let danoTotal = danoBase + danoExtra;
+   let danoTotal = danoBase + danoExtra;
+
+    // ==========================================
+    // 🛡️ GATILHO PASSIVO: A Imunidade do Rex!
+    // ==========================================
+    if (ataqueDB && idMonstroInimigo) {
+        let defensorAtual = obterCriaturaNoSlot(idMonstroInimigo);
+        // Descobre se o ataque possui elemento Vento/Ar na raiz dele
+        let ataqueTemVento = (ataqueDB.ar > 0 || ataqueDB.vento > 0 || (ataqueDB.danoElemental && (ataqueDB.danoElemental.ar > 0 || ataqueDB.danoElemental.vento > 0)));
+        
+        if (defensorAtual && defensorAtual.nome === "Rex" && ataqueTemVento) {
+            danoTotal = 0; // O Rex absorve tudo!
+            msgBonus = "[🛡️ IMUNE A VENTO] ";
+        }
+    }
 
     let acaoDoAtaque = {
         dono: 'jogador',
@@ -4192,6 +4206,11 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 
                 let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
                 if (danoExtra > 0) msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
+                
+                // 🔥 MENSAGEM ÉPICA DO REX!
+                if (danoTotal === 0 && alvo.nome === "Rex") {
+                    msgScanner = `🛡️ REX IMUNE! O ataque de Vento se dissipou nas escamas dele (0 de dano)!`;
+                }
                 
                 window.mostrarMensagemScanner(msgScanner);
 
