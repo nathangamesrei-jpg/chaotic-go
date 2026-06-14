@@ -5501,6 +5501,8 @@ window.processarAcaoInimiga = function(acao) {
       if (acao.categoria === 'ataque') {
             if (!Array.isArray(window.lixoAtaquesOponente)) window.lixoAtaquesOponente = [];
             window.lixoAtaquesOponente.push(acao.idCarta);
+            // 🔥 CORREÇÃO BUG 2: A mão visual do oponente também deve diminuir quando ele descarta/usa um ataque!
+            if (window.qtdMaoOponente > 0) window.qtdMaoOponente--;
         } else if (acao.categoria === 'mugic') {
             if (!window.cemiterioOponente) window.cemiterioOponente = [];
             window.cemiterioOponente.push(acao.idCarta);
@@ -5599,13 +5601,14 @@ window.processarAcaoInimiga = function(acao) {
 window.cartaRoubadaMaoNegra = null; // Memória da carta roubada
 
 window.receberCartaRoubada = function(idCartaRoubada) {
-    // 1. O SEGREDO DA IMAGEM: Extrai SÓ o nome/número da carta que veio da rede
+    // 1. O SEGREDO DA IMAGEM: Mantém o objeto completo para o renderizador não falhar!
+    let cartaParaMao = (typeof idCartaRoubada === 'object' && idCartaRoubada.nome) ? idCartaRoubada : idCartaRoubada;
     let idLimpo = (typeof idCartaRoubada === 'object') ? (idCartaRoubada.id || idCartaRoubada.nome) : idCartaRoubada;
     
     window.cartaRoubadaMaoNegra = idLimpo; // Marca a carta na memória de devolução
     
-    // Força a colocar só o ID na mão! Assim o Detetive é OBRIGADO a buscar a foto local perfeita
-    window.maoAtaques.push(idLimpo); 
+    // 🔥 CORREÇÃO BUG 1: Guarda o dado completo na mão, para a imagem carregar direto!
+    window.maoAtaques.push(cartaParaMao); 
     
     // 2. O SEGREDO DA MÃO INIMIGA: Tira visualmente a carta da mão do oponente na sua tela!
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
