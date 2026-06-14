@@ -3012,6 +3012,48 @@ window.cancelarRespostaBurst = function() {
     }
 };
 
+window.spedmanProtecaoAtiva = false;
+window.spedmanProtecaoAtivaInimiga = false;
+
+window.interceptarComSpedman = function(slotSpedman, slotDefensor) {
+    let spedman = campoJogador[slotSpedman];
+    let aliadoDefendendo = campoJogador[slotDefensor];
+    
+    if (!spedman || spedman.fichasHabilidade <= 0 || !aliadoDefendendo) return;
+    
+    spedman.fichasHabilidade -= 1;
+    window.spedmanProtecaoAtiva = true; // Prepara a armadura para o dano que vai chegar
+    
+    // 🔥 A GRANDE TROCA FÍSICA NA MESA!
+    if (slotSpedman !== slotDefensor) {
+        campoJogador[slotSpedman] = aliadoDefendendo;
+        campoJogador[slotDefensor] = spedman;
+    }
+    
+    let novoFullIdSpedman = 'jog-' + slotDefensor;
+    if (window.estadoCombate && window.estadoCombate.ativo) {
+        window.estadoCombate.defensor = novoFullIdSpedman; // Spedman assume a briga oficialmente!
+    }
+    
+    document.getElementById('overlay-burst').remove();
+    
+    // 🌐 AVISA A REDE QUE ACONTECEU UMA TROCA TÁTICA!
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        window.enviarAcaoRede({ 
+            tipo: 'spedman_ativado', 
+            slotOriginalSpedman: 'jog-' + slotSpedman, 
+            slotOriginalDefensor: 'jog-' + slotDefensor 
+        });
+    }
+    
+    window.mostrarMensagemScanner("⚡ TROCA TÁTICA! Spedman pulou na frente do aliado e assumiu o combate!");
+    if (window.tocarSFX) window.tocarSFX('notificacao');
+    atualizarTelaBatalha();
+    
+    // Destrava a corrente para o ataque inimigo vir (e dar zero)
+    window.aguardandoResposta = false;
+    window.resolverBurst();
+};
 
 window.atualizarSeusContadoresDeAtaque = function() {
 
@@ -4176,8 +4218,18 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             }
         }
     }
+// ==========================================
+    // ⚡ GATILHO: Inimigo ativou o Spedman lá!
+    // ==========================================
+    if (window.spedmanProtecaoAtivaInimiga) {
+        window.spedmanProtecaoAtivaInimiga = false;
+        danoBase = 0;
+        danoExtra = 0;
+        msgBonus = "[⚡ ANULADO POR SPEDMAN] ";
+    }
 
-   let danoTotal = danoBase + danoExtra;
+    let danoTotal = danoBase + danoExtra; // <-- A linha que você buscou!
+
 
     // ==========================================
     // 🛡️ GATILHO PASSIVO: A Imunidade do Rex!
@@ -4407,97 +4459,59 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
 
 
 
-    let htmlVisualCarta = "";
-
+   let htmlVisualCarta = "";
     if (cartaDB) {
-
         let imgCard = cartaDB.img || cartaDB.cartaBlank;
-
         let txtEfeito = cartaDB.efeito || cartaDB.textoCarta || "Sem efeito descrito.";
-
         htmlVisualCarta = `
-
             <div style="display: flex; flex-direction: column; align-items: center; background: rgba(0,0,0,0.5); padding: 15px 10px; border-radius: 8px; margin: 15px 0; border: 1px solid #444; box-shadow: inset 0 0 10px rgba(0,0,0,0.8);">
-
-                <div onclick="window.ampliarCartaClicada('${imgCard}')" style="width: 70px; height: 100px; background-image: url('${imgCard}'); background-size: cover; background-position: center; border: 2px solid #ffd700; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px rgba(255,215,0,0.4); margin-bottom: 10px; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"></div>
-
+                <div onclick="if(typeof window.ampliarCartaClicada === 'function') window.ampliarCartaClicada('${imgCard}')" style="width: 70px; height: 100px; background-image: url('${imgCard}'); background-size: cover; background-position: center; border: 2px solid #ffd700; border-radius: 5px; cursor: pointer; box-shadow: 0 0 15px rgba(255,215,0,0.4); margin-bottom: 10px; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'"></div>
                 <p style="font-size: 11px; color: #ccc; max-width: 250px; line-height: 1.4; font-style: italic; text-shadow: 0 0 3px #000;">"${txtEfeito}"</p>
-
                 <p style="font-size: 9px; color: #888; margin-top: 8px; text-transform: uppercase;">(Toque na carta para ver detalhes)</p>
-
             </div>
-
         `;
-
     }
 
-
+    // ==================================================
+    // ⚡ GATILHO SPEDMAN: O botão surge se ele puder salvar alguém!
+    // ==================================================
+    let btnSpedmanHTML = "";
+    if (jogadorAlvo === 'jogador' && window.estadoCombate && window.estadoCombate.ativo && acaoAnterior.tipo === 'ataque') {
+        // Acha o Spedman nas gavetas
+        let slotSpedman = Object.keys(campoJogador).find(k => campoJogador[k] && campoJogador[k].nome === "Spedman" && campoJogador[k].hpAtual > 0 && campoJogador[k].fichasHabilidade > 0);
+        let idDefensorAtual = window.estadoCombate.defensor; 
+        
+        // Só aparece o botão se nosso aliado (jog-) está apanhando!
+        if (slotSpedman && idDefensorAtual && idDefensorAtual.startsWith('jog-')) {
+            let slotDefendendo = idDefensorAtual.replace('jog-', '');
+            btnSpedmanHTML = `<button class="btn-acao-modal" style="width: 170px; border-color:#ff9800; color:#ff9800; background: #221100; font-size: 12px; margin-top: 10px;" onclick="window.interceptarComSpedman('${slotSpedman}', '${slotDefendendo}')">⚡ TROCA TÁTICA (SPEDMAN)</button>`;
+        }
+    }
 
     const modalHTML = `
-
         <div class="modal-overlay" id="overlay-burst" style="z-index: 1000000; background: rgba(0,0,0,0.9);">
-
             <div class="modal-content-fichas" style="text-align:center; border: 3px solid ${cor}; box-shadow: 0 0 30px ${cor};">
-
                 <h3 style="color:${cor}; margin-bottom:15px; font-size: 24px; text-shadow: 0 0 10px ${cor};">AÇÃO DO ADVERSÁRIO!</h3>
-
                 <p style="color:#fff; font-size: 14px; margin-bottom: 5px;">
-
                     O adversário ativou: <b style="color:#ffd700; font-size: 16px;">${acaoAnterior.nomeAcao}</b>
-
                 </p>
-
                 ${htmlVisualCarta}
-
                 <p style="color:#fff; font-size: 16px; margin-bottom: 20px;">
-
                     ${nomeJogador}, deseja responder a essa ação?
-
                 </p>
-
-                <div style="display:flex; gap: 20px; justify-content: center;">
-
-                    <button class="btn-acao-modal" style="width: 100px; border-color:#00bcd4; color:#00bcd4; background: #002222; font-size: 14px;" onclick="window.iniciarRespostaBurst('${jogadorAlvo}')">SIM</button>
-
-                    <button class="btn-acao-modal" style="width: 100px; border-color:#e53935; color:#e53935; background: #220000; font-size: 14px;" onclick="window.negarRespostaBurst()">NÃO</button>
-
+                <div style="display:flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+                    <button class="btn-acao-modal" style="width: 90px; border-color:#00bcd4; color:#00bcd4; background: #002222; font-size: 14px;" onclick="window.iniciarRespostaBurst('${jogadorAlvo}')">SIM</button>
+                    <button class="btn-acao-modal" style="width: 90px; border-color:#e53935; color:#e53935; background: #220000; font-size: 14px;" onclick="window.negarRespostaBurst()">NÃO</button>
+                    ${btnSpedmanHTML}
                 </div>
-
                 <p style="font-size: 10px; color: #888; margin-top: 15px;">Se clicar em SIM e não fizer nada, basta cancelar na sua carta.</p>
-
             </div>
-
         </div>
-
     `;
-
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-
 };
 
 
-
-
-
-
-
-
-
-
-
-
-
-// ==========================================
-
-// 🔥 NOVO MOTOR: VISUALIZAR CEMITÉRIO (LIXO) 🔥
-
-// ==========================================
-
-
-
-// ==========================================
-// 🔥 NOVO MOTOR: VISUALIZAR CEMITÉRIO (LIXO) 🔥
-// ==========================================
 
 // ==========================================
 // 🔥 NOVO MOTOR: VISUALIZAR CEMITÉRIO (LIXO) 🔥
@@ -5228,14 +5242,24 @@ window.processarAcaoInimiga = function(acao) {
             atualizarTelaBatalha(); // Redesenha o campo dele
         }
     }
-    else if (acao.tipo === 'dano') {
+
+                                  ///
+   else if (acao.tipo === 'dano') {
         let alvoReal = inverterId(acao.alvo);
+        let valorDanoFinal = acao.valor;
+        
+        // ⚡ O MEU SPEDMAN PULOU NA FRENTE! Anula o dano que veio da rede!
+        if (window.spedmanProtecaoAtiva) {
+            window.spedmanProtecaoAtiva = false;
+            valorDanoFinal = 0;
+            // Garante que a animação da pancada vá no Spedman que trocou de lugar
+            if (window.estadoCombate.ativo) alvoReal = window.estadoCombate.defensor; 
+        }
+        
         let criatura = obterCriaturaNoSlot(alvoReal);
         if (criatura) {
-            criatura.hpAtual -= acao.valor;
-            if (criatura.hpAtual <= 0) {
-                criatura.hpAtual = 0;
-            }
+            criatura.hpAtual -= valorDanoFinal;
+            if (criatura.hpAtual <= 0) criatura.hpAtual = 0;
             
             let elAlvo = document.getElementById(alvoReal);
             if(elAlvo) {
@@ -5244,10 +5268,38 @@ window.processarAcaoInimiga = function(acao) {
             }
             atualizarTelaBatalha();
 
-            // 🔥 SE A CRIATURA MORRER APÓS O DANO, RODA A EXPLOSÃO! 🔥
             if (criatura.hpAtual === 0) {
                 setTimeout(() => window.encerrarCombateMorte(alvoReal), 1000);
             }
+        }
+    }
+    // ⚡ RECEPTOR SPEDMAN: O Inimigo trocou as cartas dele lá, vamos espelhar aqui!
+    else if (acao.tipo === 'spedman_ativado') {
+        let origemSpedmanReal = inverterId(acao.slotOriginalSpedman); 
+        let origemDefensorReal = inverterId(acao.slotOriginalDefensor); 
+        
+        let slotSpedman = origemSpedmanReal.replace('op-', '');
+        let slotDefensor = origemDefensorReal.replace('op-', '');
+        
+        let spedmanInimigo = window.campoOponente[slotSpedman];
+        let aliadoDefendendo = window.campoOponente[slotDefensor];
+        
+        if (spedmanInimigo && aliadoDefendendo) {
+            spedmanInimigo.fichasHabilidade -= 1;
+            
+            // Troca as cartas de lugar no alto da sua tela!
+            if (slotSpedman !== slotDefensor) {
+                window.campoOponente[slotSpedman] = aliadoDefendendo;
+                window.campoOponente[slotDefensor] = spedmanInimigo;
+            }
+            
+            if (window.estadoCombate && window.estadoCombate.ativo) {
+                window.estadoCombate.defensor = origemDefensorReal; 
+            }
+            
+            window.spedmanProtecaoAtivaInimiga = true; // Trava o seu ataque!
+            window.mostrarMensagemScanner("⚡ TROCA INIMIGA: Spedman assumiu a defesa! O seu ataque causará 0 de dano.");
+            atualizarTelaBatalha();
         }
     }
     else if (acao.tipo === 'morte') {
