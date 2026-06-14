@@ -4748,13 +4748,21 @@ window.sairDaBatalhaAposFim = function() {
     document.getElementById("tela-menu").style.display = "flex";
     window.modoMenu = true;
     
-    // 🔥 DESLIGA O RADAR E EXORCIZA OS FANTASMAS DA NUVEM!
+    // 🔥 DESLIGA O RADAR, MATA O RELÓGIO E EXORCIZA OS FANTASMAS DA NUVEM!
     if (typeof window.desligarSistemaAntiAFK === 'function') window.desligarSistemaAntiAFK();
+    
+    // 🛑 MATA O RELÓGIO FANTASMA DO TURNO
+    if (window.cronometroTurnoInterval) {
+        clearInterval(window.cronometroTurnoInterval);
+        window.cronometroTurnoInterval = null;
+    }
+    
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
         if (typeof window._dbOff === 'function') {
             window._dbOff('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao');
             window._dbOff('salas_drome/' + window.salaBatalhaAtual + '/turno_ativo');
             window._dbOff('salas_drome/' + window.salaBatalhaAtual + '/pings');
+            window._dbOff('salas_drome/' + window.salaBatalhaAtual + '/sync_tempo');
         }
         window.salaBatalhaAtual = null; 
     }
@@ -4762,25 +4770,19 @@ window.sairDaBatalhaAposFim = function() {
     localStorage.removeItem('drome_save_state'); // 🔥 JOGA A FOTO DO TABULEIRO FORA!
     
     // FAXINA GERAL: Limpa a memória para uma próxima batalha limpa
-
     window.estadoCombate = { ativo: false, atacante: null, defensor: null };
-
     window.estadoTurno = { jogadorAtual: null, turnoNumero: 0, fase: 'pre-jogo' };
-
     window.pontosAtaque = { jogador: 3, oponente: 3 };
-
     window.baralhoAtaques = [];
-
     window.maoAtaques = [];
-
     window.lixoAtaques = [];
-
     window.campoJogador = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
-
     window.campoOponente = { c1: null, c2: null, c3: null, c4: null, c5: null, c6: null };
-
+    
+    // Zera os strikes para não vazar pra próxima luta!
+    window.strikesJogador = 0;
+    window.strikesOponente = 0;
 };
-
 
 
 
