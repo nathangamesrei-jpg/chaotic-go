@@ -5081,11 +5081,12 @@ window.processarAcaoInimiga = function(acao) {
             atualizarTelaBatalha(); 
         }
     }
-        else if (acao.tipo === 'sincronizar_hp') {
+       else if (acao.tipo === 'sincronizar_hp') {
         let alvoReal = inverterId(acao.alvo); // Transforma o slot para a perspectiva dele
         let criatura = obterCriaturaNoSlot(alvoReal);
         if (criatura) {
             criatura.hpAtual = acao.novoHp; // Copia o HP exato que você calculou
+            if (acao.novoMax) criatura.hpMax = acao.novoMax; // 🔥 Lion Upgrade: Aumenta o limite da barra!
             atualizarTelaBatalha(); // Redesenha o campo dele
         }
     }
