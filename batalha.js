@@ -3375,12 +3375,16 @@ function atualizarDecksEMaoCards() {
 
 
         window.maoAtaques.forEach((idAtaque, index) => {
-            // 🔥 DETETIVE DE ATAQUES: Se a carta não for um objeto completo, busca no dicionário!
+           // 🔥 DETETIVE DE ATAQUES: Se a carta não for um objeto completo, busca no dicionário!
             let cartaOriginal = idAtaque;
             if (typeof idAtaque !== 'object') {
+                // 1. Tenta achar na lista base de ataques
                 if (typeof ATAQUES !== 'undefined') {
                     cartaOriginal = ATAQUES.find(a => a.id == idAtaque || a.nome === idAtaque);
-                } else if (window.inventario) {
+                }
+                
+                // 2. O SEGREDO ESTÁ AQUI: Se a carta não foi encontrada acima, ele TEM QUE procurar no inventário!
+                if (!cartaOriginal && window.inventario) {
                     cartaOriginal = window.inventario.find(c => c.id == idAtaque || c.nome === idAtaque);
                 }
             }
@@ -5577,7 +5581,11 @@ window.receberCartaRoubada = function(idCartaRoubada) {
     window.maoAtaques.push(idCartaRoubada); // Coloca na sua mão
     atualizarDecksEMaoCards();
     
-    let db = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.id == idCartaRoubada) : null;
+    // Procura o nome da carta roubada em todos os lugares possíveis
+    let db = null;
+    if (typeof ATAQUES !== 'undefined') db = ATAQUES.find(a => a.id == idCartaRoubada || a.nome === idCartaRoubada);
+    if (!db && window.inventario) db = window.inventario.find(a => a.id == idCartaRoubada || a.nome === idCartaRoubada);
+    
     window.mostrarMensagemScanner(`🌑 SUCESSO! Você roubou: ${db ? db.nome : "Carta de Ataque"}`);
     if(window.tocarSFX) window.tocarSFX('notificacao');
 };
