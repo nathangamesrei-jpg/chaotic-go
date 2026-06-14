@@ -665,18 +665,20 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
 
 
     let textoMinusculo = (criatura.textoCarta || "").toLowerCase();
-
     let habilidadeAtiva = textoMinusculo.includes('descarte') || textoMinusculo.includes('gaste') || textoMinusculo.includes('ficha');
-
     
+    // 🔥 NOVO: Checa o custo real da habilidade no banco de dados!
+    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === criatura.nome) : null;
+    let custoHab = (dbCarta && dbCarta.custoHabilidade !== undefined) ? dbCarta.custoHabilidade : 1;
 
-    if (criatura.temEfeito && habilidadeAtiva && criatura.fichasHabilidade > 0) {
-
-        botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff9800; color: #ff9800;" onclick="window.usarHabilidade('${fullId}')">Usar Habilidade</button>`;
-
+    if (criatura.temEfeito && habilidadeAtiva) {
+        if (criatura.fichasHabilidade >= custoHab) {
+            botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff9800; color: #ff9800;" onclick="window.usarHabilidade('${fullId}')">Usar Habilidade</button>`;
+        } else {
+            // Mostra o botão cinza e bloqueado avisando quantas fichas faltam!
+            botoesHTML += `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>Usar Habilidade (${custoHab} Fichas)</button>`;
+        }
     }
-
-
 
     if (criatura.fichasHabilidade > 0) {
 
@@ -1242,30 +1244,27 @@ window.conjuradorMugicAtual = null; // Guarda quem vai lançar a magia
 window.lidarComCliqueTabuleiro = function(fullId) {
 
     // 🔥 1. INTERCEPTADOR DE ALVOS (MIRA HOLOGRÁFICA) 🔥
-
     if (window.modoAlvo) {
 
         let alvo = obterCriaturaNoSlot(fullId);
-
         if (!alvo) { window.modoAlvo = null; window.mostrarMensagemScanner("Mira desativada."); return; }
-
         
-
         let ctx = window.modoAlvo;
-
         window.modoAlvo = null; 
-
+        
         let conjurador = obterCriaturaNoSlot(ctx.origem);
+        let custo = ctx.custo || 1; // Puxa o custo salvo da habilidade (ou 1 se for Magia)
 
-        if (!conjurador || conjurador.fichasHabilidade <= 0) return;
+        if (!conjurador || conjurador.fichasHabilidade < custo) return;
 
-
-
-        conjurador.fichasHabilidade -= 1; 
-
+        conjurador.fichasHabilidade -= custo; // 🔥 GASTA AS 2 FICHAS DO FRADOR AQUI!
+        
+        // Avisa a rede que a arma descarregou as fichas!
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'sincronizar_fichas', alvo: ctx.origem, qtd: conjurador.fichasHabilidade });
+        }
+        
         atualizarTelaBatalha();
-
-
 
         if (ctx.tipo === 'habilidade') {
             let acao = { 
@@ -4829,11 +4828,13 @@ window.revelarEquipamento = function(fullId) {
 window.usarHabilidade = function(fullId) {
     let criatura = obterCriaturaNoSlot(fullId);
     
-    if (criatura && criatura.fichasHabilidade > 0) {
+    let monstroDB = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === criatura.nome) : null;
+    let custoHab = (monstroDB && monstroDB.custoHabilidade !== undefined) ? monstroDB.custoHabilidade : 1;
+
+    if (criatura && criatura.fichasHabilidade >= custoHab) {
         window.fecharModalAcoes();
 
         // 🕵️‍♂️ DETETIVE: Busca a carta no banco para saber se ela precisa de alvo
-        let monstroDB = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === criatura.nome) : null;
         let efeitoIdEncontrado = monstroDB ? monstroDB.efeitoId : null;
         let precisaAlvo = monstroDB && monstroDB.precisaAlvo !== undefined ? monstroDB.precisaAlvo : true; 
 
@@ -4841,7 +4842,12 @@ window.usarHabilidade = function(fullId) {
             // ==========================================
             // 🔥 ATIVAÇÃO INSTANTÂNEA (SEM MIRA) 🔥
             // ==========================================
-            criatura.fichasHabilidade -= 1;
+            criatura.fichasHabilidade -= custoHab; // DEDUZ O CUSTO CORRETO!
+            
+            // Avisa o oponente que a ficha foi gasta
+            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                window.enviarAcaoRede({ tipo: 'sincronizar_fichas', alvo: fullId, qtd: criatura.fichasHabilidade });
+            }
             atualizarTelaBatalha();
 
             let acao = {
@@ -4864,19 +4870,20 @@ window.usarHabilidade = function(fullId) {
             // ==========================================
             if (efeitoIdEncontrado === "guru_elemento") {
                 window.abrirModalEscolhaElemento(fullId, criatura);
-                return; // Pausa aqui, a janela vai ligar a mira depois!
+                return; 
             }
 
             window.modoAlvo = {
                 tipo: 'habilidade',
-                origem: fullId
+                origem: fullId,
+                custo: custoHab // SALVA O CUSTO PARA COBRAR NA HORA DO TIRO
             };
             window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para usar a habilidade de ${criatura.nome} (Ou num espaço vazio para cancelar).`);
             if(window.tocarSFX) window.tocarSFX('notificacao');
         }
 
     } else {
-        window.mostrarMensagemScanner("❌ Fichas de habilidade insuficientes!");
+        window.mostrarMensagemScanner(`❌ Fichas insuficientes! Essa habilidade requer ${custoHab}.`);
     }
 };
 
