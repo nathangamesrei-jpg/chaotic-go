@@ -2877,12 +2877,30 @@ window.encerrarCombateMorte = function(idMorto) {
         window.estadoCombate.atacante = null;
         window.estadoCombate.defensor = null;
         
-        // ==========================================
+       // ==========================================
         // 🔥 ESCUDO PROTETOR: SÓ ENTRA NA MANUTENÇÃO SE FOI MORTE EM COMBATE! 🔥
         // ==========================================
         if (estavamosEmCombateReal) {
             // 1. Os Pontos de Ataque voltam para a base de 3
             window.pontosAtaque = { jogador: 3, oponente: 3 };
+            
+            // 🌑 O EXTRATOR DA MÃO NEGRA (Devolve a carta roubada se não foi usada)
+            if (window.cartaRoubadaMaoNegra) {
+                // Tenta achar a carta roubada na nossa mão e retira
+                let indexRoubada = window.maoAtaques.findIndex(a => (typeof a === 'object' ? a.id : a) == window.cartaRoubadaMaoNegra);
+                if (indexRoubada !== -1) {
+                    window.maoAtaques.splice(indexRoubada, 1);
+                    window.mostrarMensagemScanner("A carta roubada (Mão Negra) fugiu e voltou para o oponente!");
+                    
+                    // Avisa a rede para colocar de volta no baralho do inimigo!
+                    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                        window.enviarAcaoRede({ tipo: 'devolver_carta_roubada', idCarta: window.cartaRoubadaMaoNegra });
+                    } else {
+                        window.qtdBaralhoOponente++; // Simula a devolução offline
+                    }
+                }
+                window.cartaRoubadaMaoNegra = null; // Apaga a memória do roubo
+            }
             
             // 2. O SEU BARALHO: Junta Mão + Lixo + Deck, embaralha e saca 3 novas
             let todasMinhasCartas = [...(window.baralhoAtaques || []), ...(window.maoAtaques || []), ...(window.lixoAtaques || [])];
@@ -3357,57 +3375,44 @@ function atualizarDecksEMaoCards() {
 
 
         window.maoAtaques.forEach((idAtaque, index) => {
-
-            let cartaOriginal = window.inventario.find(c => c.id == idAtaque);
-
-            if (cartaOriginal) {
-
-                let el = document.createElement('div');
-
-                el.className = 'carta-na-mao';
-
-                el.style.backgroundImage = `url('${cartaOriginal.img}')`;
-
-                el.style.backgroundSize = 'cover';
-
-                el.style.backgroundPosition = 'center';
-
-                el.style.pointerEvents = 'auto';
-
-                el.style.cursor = 'pointer';
-
-
-
-                let offset = index - meio;
-
-                let angulo = offset * 12; 
-
-                let descida = Math.abs(offset) * 6; 
-
-                
-
-                el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
-
-                el.style.zIndex = index + 1;
-
-                
-
-               el.onclick = function(e) {
-
-                    e.stopPropagation(); 
-
-                    window.abrirModalAtaque(index, idAtaque, cartaOriginal);
-
-                };
-
-                caixaMao.appendChild(el);
-
+            // 🔥 DETETIVE DE ATAQUES: Se a carta não for um objeto completo, busca no dicionário!
+            let cartaOriginal = idAtaque;
+            if (typeof idAtaque !== 'object') {
+                if (typeof ATAQUES !== 'undefined') {
+                    cartaOriginal = ATAQUES.find(a => a.id == idAtaque || a.nome === idAtaque);
+                } else if (window.inventario) {
+                    cartaOriginal = window.inventario.find(c => c.id == idAtaque || c.nome === idAtaque);
+                }
             }
 
+            if (cartaOriginal) {
+                let el = document.createElement('div');
+                el.className = 'carta-na-mao';
+                // Garante que pega a imagem certa, seja 'img' ou 'cartaBlank'
+                let imagemParaExibir = cartaOriginal.img || cartaOriginal.cartaBlank || URL_FUNDO_CARTA;
+                
+                el.style.backgroundImage = `url('${imagemParaExibir}')`;
+                el.style.backgroundSize = 'cover';
+                el.style.backgroundPosition = 'center';
+                el.style.pointerEvents = 'auto';
+                el.style.cursor = 'pointer';
+
+                let offset = index - meio;
+                let angulo = offset * 12; 
+                let descida = Math.abs(offset) * 6; 
+                
+                el.style.transform = `rotate(${angulo}deg) translateY(${descida}px)`;
+                el.style.zIndex = index + 1;
+                
+                el.onclick = function(e) {
+                    e.stopPropagation(); 
+                    // Passamos o objeto completo para o modal abrir com o texto e foto perfeitos!
+                    window.abrirModalAtaque(index, cartaOriginal.id, cartaOriginal);
+                };
+                caixaMao.appendChild(el);
+            }
         });
-
-    }
-
+ }
 
 
     let caixaMaoOp = document.getElementById('mao-oponente-ui');
@@ -5288,6 +5293,12 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O inimigo reposicionou uma criatura!");
         if(window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTelaBatalha();
+    }
+        // 🌑 RECEPTOR: O Inimigo não usou a Mão Negra e a carta voltou para o nosso baralho!
+    else if (acao.tipo === 'devolver_carta_roubada') {
+        if (!window.baralhoAtaques) window.baralhoAtaques = [];
+        window.baralhoAtaques.push(acao.idCarta); // Coloca no fundo do deck (vai ser embaralhado logo logo)
+        atualizarDecksEMaoCards();
     }
     else if (acao.tipo === 'combate') {
         let origemReal = inverterId(acao.origem);
