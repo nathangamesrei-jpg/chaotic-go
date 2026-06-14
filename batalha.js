@@ -4072,33 +4072,25 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
     let temPontos = (ptsAtuais >= custo);
 
 
-
-    let btnUsarHTML = "";
-
+//
+   let btnUsarHTML = "";
     
-
     if (window.aguardandoResposta) {
-
         btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Ataques não podem ser ativados em resposta na Corrente (Burst)!</p>`;
-
     } else if (podeAtacar) {
-
         if (temPontos) {
-
-            btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #e53935; color: #e53935; background: #220000; font-size: 16px;" onclick="window.usarCartaAtaque(${indexMao}, '${idAtaque}', ${custo}, ${dano}, '${cartaInventario.nome}')">💥 USAR ATAQUE</button>`;
-
+            // 🤝 SE FOR A ALIANÇA, O BOTÃO É OUTRO!
+            if (ataqueDB && ataqueDB.id === 103) {
+                btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #4CAF50; color: #4CAF50; background: #002200; font-size: 16px;" onclick="window.abrirModalAlianca(${indexMao}, '${idAtaque}', ${custo}, '${cartaInventario.nome}')">🤝 ESCOLHER ALIADO MORTO</button>`;
+            } else {
+                btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #e53935; color: #e53935; background: #220000; font-size: 16px;" onclick="window.usarCartaAtaque(${indexMao}, '${idAtaque}', ${custo}, ${dano}, '${cartaInventario.nome}')">💥 USAR ATAQUE</button>`;
+            }
         } else {
-
             btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>Sem Pontos Suficientes</button>`;
-
         }
-
     } else {
-
         btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Ataques permitidos apenas durante o seu turno no Combate!</p>`;
-
     }
-
 
 
     const modalHTML = `
@@ -4257,7 +4249,6 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 
                 let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
                 if (danoExtra > 0) msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
-                
                 // 🔥 MENSAGEM ÉPICA DO REX!
                 if (danoTotal === 0 && alvo.nome === "Rex") {
                     msgScanner = `🛡️ REX IMUNE! O ataque de Vento se dissipou nas escamas dele (0 de dano)!`;
@@ -4265,7 +4256,41 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 
                 window.mostrarMensagemScanner(msgScanner);
 
-                // 🌐 O TRANSMISSOR VITAL QUE FALTAVA: Avisa a rede pra tirar o HP no PC do Inimigo!
+                // ==========================================
+                // 🧪 EFEITO: Ácido Gástrico (ID 101)
+                // ==========================================
+                if (ataqueDB && ataqueDB.id === 101) {
+                    if (alvo.equipamento) {
+                        let eqText = (alvo.equipamento.efeito || "").toLowerCase();
+                        if (eqText.includes('indestrutível') || eqText.includes('indestrutivel')) {
+                            window.mostrarMensagemScanner("🛡️ O equipamento resistiu ao Ácido (Indestrutível)!");
+                        } else {
+                            let nomeEq = alvo.equipamento.nome;
+                            alvo.equipamento = null;
+                            alvo.equipamentoRevelado = false;
+                            window.cemiterioOponente.push(nomeEq); // Manda pro lixo do inimigo
+                            window.mostrarMensagemScanner(`🧪 Ácido derreteu o equipamento: ${nomeEq}!`);
+                            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                window.enviarAcaoRede({ tipo: 'destruir_equipamento', alvo: idMonstroInimigo, nomeEquip: nomeEq });
+                            }
+                        }
+                    }
+                }
+
+                // ==========================================
+                // 🌑 EFEITO: Mão Negra (ID 102)
+                // ==========================================
+                if (ataqueDB && ataqueDB.id === 102) {
+                    window.mostrarMensagemScanner("🌑 Mão Negra ativada! Roubando carta da mente do inimigo...");
+                    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                        window.enviarAcaoRede({ tipo: 'mao_negra_roubar' });
+                    } else {
+                        // Modo offline (simula pegando o primeiro ataque do baralho)
+                        if (window.baralhoAtaques.length > 0) window.receberCartaRoubada(window.baralhoAtaques[0].id);
+                    }
+                }
+
+                // 🌐 O TRANSMISSOR VITAL QUE FALTAVA
                 if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
                     window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
                 }
@@ -4312,7 +4337,85 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
     }
 }; // <-- Aqui fecha a função usarCartaAtaque
 
+window.abrirModalAlianca = function(indexMao, idAtaque, custo, nomeAtaque) {
+    document.getElementById('overlay-ataque').remove();
+    
+    // Procura monstros mortos no seu cemitério
+    let monstrosMortosHTML = "";
+    let temMonstro = false;
 
+    (window.cemiterio || []).forEach(nomeMorto => {
+        let db = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === nomeMorto) : null;
+        if (db) {
+            temMonstro = true;
+            let curaCalculada = Math.floor((db.statsMax.energia / 2) / 5) * 5; // Metade arredondada pra baixo em múltiplos de 5
+            
+            monstrosMortosHTML += `
+                <div onclick="window.confirmarAlianca(${indexMao}, '${idAtaque}', ${custo}, '${nomeAtaque}', ${curaCalculada}, '${db.nome}')" style="width: 80px; height: 115px; background-image: url('${db.cartaBlank}'); background-size: cover; background-position: center; border: 2px solid #4CAF50; border-radius: 5px; cursor: pointer; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 5px;">
+                    <span style="background: rgba(0,0,0,0.8); color: #00ff00; font-weight: bold; padding: 2px 5px; border-radius: 3px; font-size: 11px;">+${curaCalculada} HP</span>
+                </div>
+            `;
+        }
+    });
+
+    if (!temMonstro) {
+        window.mostrarMensagemScanner("❌ Você não possui Monstros no Lixo para fazer a Aliança!");
+        return;
+    }
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-alianca" style="z-index: 10000000; background: rgba(0,0,0,0.95); flex-direction: column; align-items: center; justify-content: center; display: flex;">
+            <h2 style="color: #4CAF50; text-shadow: 0 0 10px #4CAF50; margin-bottom: 20px;">🤝 ALIANÇA</h2>
+            <p style="color: #fff; margin-bottom: 15px;">Escolha a essência de um campeão derrotado:</p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; max-width: 400px; padding: 15px; background: rgba(0,255,0,0.05); border-radius: 10px; border: 1px dashed #4CAF50;">
+                ${monstrosMortosHTML}
+            </div>
+            <button class="btn-acao-modal" style="width: 150px; background: #222; color: #fff; margin-top: 25px;" onclick="document.getElementById('overlay-alianca').remove()">CANCELAR</button>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+window.confirmarAlianca = function(indexMao, idAtaque, custo, nomeAtaque, curaFinal, nomeMorto) {
+    document.getElementById('overlay-alianca').remove();
+    
+    // Gasta o ataque normalmente
+    window.pontosAtaque['jogador'] -= custo;
+    window.maoAtaques.splice(indexMao, 1);
+    window.lixoAtaques.push(idAtaque); 
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: nomeAtaque, categoria: 'ataque' });
+    }
+    atualizarDecksEMaoCards();
+    if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
+
+    // 🌟 Manda para a corrente (Burst)
+    let acaoAlianca = {
+        dono: 'jogador',
+        nomeAcao: nomeAtaque,
+        tipo: 'ataque',
+        executar: function() {
+            let idMeuAtivo = window.estadoCombate.atacante;
+            if (obterCriaturaNoSlot(idMeuAtivo).dono !== 'jogador') idMeuAtivo = window.estadoCombate.defensor;
+            
+            let meuMonstro = obterCriaturaNoSlot(idMeuAtivo);
+            if (meuMonstro) {
+                let vidaMax = Number(meuMonstro.hpMax || meuMonstro.statsMax.energia);
+                meuMonstro.hpAtual = Number(meuMonstro.hpAtual) + curaFinal;
+                if (meuMonstro.hpAtual > vidaMax) meuMonstro.hpAtual = vidaMax;
+
+                window.mostrarMensagemScanner(`🤝 Aliança com ${nomeMorto}! ${meuMonstro.nome} recuperou ${curaFinal} de HP!`);
+                if(window.tocarSFX) window.tocarSFX('notificacao'); 
+                
+                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                    window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: idMeuAtivo, novoHp: meuMonstro.hpAtual });
+                }
+                atualizarTelaBatalha();
+            }
+        }
+    };
+    window.adicionarAoBurst(acaoAlianca);
+};
 /////////////////////////////////////////////////////////////////////////////////
 
 
@@ -5252,6 +5355,34 @@ window.processarAcaoInimiga = function(acao) {
             }
         }
     }
+       // 🧪 RECEPTOR: Ácido Gástrico (Inimigo derreteu nosso item)
+    else if (acao.tipo === 'destruir_equipamento') {
+        let alvoReal = inverterId(acao.alvo);
+        let def = obterCriaturaNoSlot(alvoReal);
+        if (def && def.equipamento) {
+            def.equipamento = null;
+            def.equipamentoRevelado = false;
+            window.cemiterio.push(acao.nomeEquip); // Vai pro nosso lixo real
+            window.mostrarMensagemScanner(`🧪 O Ácido inimigo derreteu seu equipamento: ${acao.nomeEquip}!`);
+            atualizarTelaBatalha();
+        }
+    }
+    // 🌑 RECEPTOR: Mão Negra (Inimigo está pedindo uma carta nossa)
+    else if (acao.tipo === 'mao_negra_roubar') {
+        if (window.maoAtaques && window.maoAtaques.length > 0) {
+            let indexAleatorio = Math.floor(Math.random() * window.maoAtaques.length);
+            let idRoubado = window.maoAtaques.splice(indexAleatorio, 1)[0]; // Arranca da nossa mão
+            atualizarDecksEMaoCards();
+            window.enviarAcaoRede({ tipo: 'mao_negra_entregar', idCarta: idRoubado });
+            window.mostrarMensagemScanner("🌑 Mão Negra! O oponente roubou uma carta sua!");
+        } else {
+            window.mostrarMensagemScanner("O oponente tentou roubar, mas sua mão está vazia!");
+        }
+    }
+    // 🌑 RECEPTOR: Mão Negra (Recebendo a carta que roubamos)
+    else if (acao.tipo === 'mao_negra_entregar') {
+        window.receberCartaRoubada(acao.idCarta);
+    }
     // ⚡ RECEPTOR SPEDMAN: O Inimigo trocou as cartas dele lá, vamos espelhar aqui!
     else if (acao.tipo === 'spedman_ativado') {
         let origemSpedmanReal = inverterId(acao.slotOriginalSpedman); 
@@ -5428,7 +5559,17 @@ window.processarAcaoInimiga = function(acao) {
         document.body.insertAdjacentHTML('beforeend', modalVisaoHTML);
     }
 };
+window.cartaRoubadaMaoNegra = null; // Memória da carta roubada
 
+window.receberCartaRoubada = function(idCartaRoubada) {
+    window.cartaRoubadaMaoNegra = idCartaRoubada; // Marca a carta na memória
+    window.maoAtaques.push(idCartaRoubada); // Coloca na sua mão
+    atualizarDecksEMaoCards();
+    
+    let db = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.id == idCartaRoubada) : null;
+    window.mostrarMensagemScanner(`🌑 SUCESSO! Você roubou: ${db ? db.nome : "Carta de Ataque"}`);
+    if(window.tocarSFX) window.tocarSFX('notificacao');
+};
 // ==========================================
 // ⏳ SISTEMA DE RECONEXÃO E ANTI-AFK (W.O.) ⏳
 // ==========================================
