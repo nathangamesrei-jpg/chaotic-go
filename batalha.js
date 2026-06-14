@@ -4396,70 +4396,38 @@ if (btnSairDrome) {
 
 
 window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
-
     if (jogadorAlvo === 'oponente') {
-
         window.mostrarMensagemScanner("Oponente pensando...");
-
         setTimeout(() => {
-
             window.mostrarMensagemScanner("Oponente não tem respostas! O ataque vai acertar!");
-
             window.aguardandoResposta = false;
-
             window.resolverBurst(); 
-
         }, 2000);
-
         return; 
-
     }
-
-
 
     window.aguardandoResposta = true;
-
     let cor = jogadorAlvo === 'jogador' ? '#4CAF50' : '#e53935';
-
     let nomeJogador = jogadorAlvo === 'jogador' ? 'VOCÊ' : 'OPONENTE';
 
-
-
     // 🔍 DETETIVE DE CARTAS: Extrai o nome da carta da mensagem da rede!
-
     let nomeBusca = acaoAnterior.nomeAcao;
-
     if (nomeBusca.includes('Mugic:')) {
-
         nomeBusca = nomeBusca.split('Mugic: ')[1].split(' ➔')[0].trim();
-
     } else if (nomeBusca.includes('Habilidade de')) {
-
         nomeBusca = nomeBusca.split('Habilidade de ')[1].split(' ➔')[0].trim();
-
     } else if (nomeBusca.includes('Revelar Equipamento')) {
-
         nomeBusca = nomeBusca.replace('Revelar Equipamento (', '').replace(')', '').trim();
-
     }
 
-
-
     // 📚 Procura a carta em todos os bancos de dados para mostrar a foto!
-
     let cartaDB = null;
-
     if(typeof ATAQUES !== 'undefined') cartaDB = ATAQUES.find(c => c.nome === nomeBusca);
-
     if(!cartaDB && typeof MAGIAS !== 'undefined') cartaDB = MAGIAS.find(c => c.nome === nomeBusca);
-
     if(!cartaDB && typeof MONSTROS !== 'undefined') cartaDB = MONSTROS.find(c => c.nome === nomeBusca);
-
     if(!cartaDB && typeof EQUIPAMENTOS !== 'undefined') cartaDB = EQUIPAMENTOS.find(c => c.nome === nomeBusca);
 
-
-
-   let htmlVisualCarta = "";
+    let htmlVisualCarta = "";
     if (cartaDB) {
         let imgCard = cartaDB.img || cartaDB.cartaBlank;
         let txtEfeito = cartaDB.efeito || cartaDB.textoCarta || "Sem efeito descrito.";
@@ -4476,7 +4444,10 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
     // ⚡ GATILHO SPEDMAN: O botão surge se ele puder salvar alguém!
     // ==================================================
     let btnSpedmanHTML = "";
-    if (jogadorAlvo === 'jogador' && window.estadoCombate && window.estadoCombate.ativo && acaoAnterior.tipo === 'ataque') {
+    // 🔥 O segredo: Avaliamos se é um Ataque checando o Banco de Dados, independente do sinal da rede!
+    let ehUmAtaque = (cartaDB && cartaDB.tipoCarta === 'Ataque'); 
+
+    if (jogadorAlvo === 'jogador' && window.estadoCombate && window.estadoCombate.ativo && ehUmAtaque) {
         // Acha o Spedman nas gavetas
         let slotSpedman = Object.keys(campoJogador).find(k => campoJogador[k] && campoJogador[k].nome === "Spedman" && campoJogador[k].hpAtual > 0 && campoJogador[k].fichasHabilidade > 0);
         let idDefensorAtual = window.estadoCombate.defensor; 
@@ -4510,7 +4481,6 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
     `;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 };
-
 
 
 // ==========================================
