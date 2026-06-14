@@ -4309,8 +4309,15 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
                         window.enviarAcaoRede({ tipo: 'mao_negra_roubar' });
                     } else {
-                        // Modo offline (simula pegando o primeiro ataque do baralho)
-                        if (window.baralhoAtaques.length > 0) window.receberCartaRoubada(window.baralhoAtaques[0].id);
+                        // CORREÇÃO: No Modo offline (Bot), diminui a mão dele visualmente e sorteia um ataque válido
+                        if (window.qtdMaoOponente > 0) {
+                            window.qtdMaoOponente--; 
+                            let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
+                            let cartaSimulada = todosAtaques[Math.floor(Math.random() * todosAtaques.length)];
+                            window.receberCartaRoubada(cartaSimulada.id || cartaSimulada.nome); // Manda um ID válido!
+                        } else {
+                            window.mostrarMensagemScanner("O oponente tentou roubar, mas não há cartas!");
+                        }
                     }
                 }
 
@@ -5600,6 +5607,11 @@ window.receberCartaRoubada = function(idCartaRoubada) {
     window.cartaRoubadaMaoNegra = idMemoria; // Marca a carta na memória de devolução
     window.maoAtaques.push(idCartaRoubada); // Coloca na sua mão
     
+    // 🔥 CORREÇÃO: Tira visualmente a carta da mão do oponente na sua tela no modo Online!
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        if (window.qtdMaoOponente > 0) window.qtdMaoOponente--; 
+    }
+    
     // Procura o nome da carta roubada em todos os lugares possíveis para anunciar
     let db = null;
     if (typeof ATAQUES !== 'undefined') db = ATAQUES.find(a => String(a.id) === String(idMemoria) || a.nome === idMemoria);
@@ -5608,7 +5620,7 @@ window.receberCartaRoubada = function(idCartaRoubada) {
     window.mostrarMensagemScanner(`🌑 SUCESSO! Você roubou: ${db ? db.nome : "Carta Secreta"}`);
     if(window.tocarSFX) window.tocarSFX('notificacao');
     
-    atualizarDecksEMaoCards(); // Desenha a carta na tela com a imagem recarregada!
+    atualizarDecksEMaoCards(); // Desenha a sua carta e a do oponente na tela!
 };
 // ==========================================
 // ⏳ SISTEMA DE RECONEXÃO E ANTI-AFK (W.O.) ⏳
