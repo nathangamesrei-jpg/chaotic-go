@@ -3055,10 +3055,12 @@ window.iniciarCronometroTurno = function() {
     window.tempoRestanteTurno = 45;
     window.cronometroPausado = false;
     
-    let jogadorAtual = window.estadoTurno.jogadorAtual;
     let btn = document.getElementById('btn-passar-turno');
 
     window.cronometroTurnoInterval = setInterval(() => {
+        // 🔥 CORREÇÃO: O relógio agora olha de quem é a vez A CADA SEGUNDO!
+        let jogadorAtual = window.estadoTurno.jogadorAtual; 
+
         // 🛑 CONGELA O TEMPO: Se o jogo estiver rodando animações ou resolvendo mágicas!
         if (window.cronometroPausado) {
             if (btn) btn.innerHTML = jogadorAtual === 'jogador' ? `PASSAR<br>TURNO (⏳)` : `TURNO<br>OPONENTE (⏳)`;
@@ -3067,11 +3069,13 @@ window.iniciarCronometroTurno = function() {
 
         window.tempoRestanteTurno--;
 
-        // Atualiza o botão visualmente
+        // Atualiza o botão visualmente e garante que a cor bate com o texto!
         if (btn) {
             if (jogadorAtual === 'jogador') {
+                btn.disabled = false; // Garante que fica VERDE
                 btn.innerHTML = `PASSAR<br>TURNO (${window.tempoRestanteTurno}s)`;
             } else {
+                btn.disabled = true; // Garante que fica VERMELHO e bloqueado
                 btn.innerHTML = `TURNO<br>OPONENTE (${window.tempoRestanteTurno}s)`;
             }
         }
@@ -3697,6 +3701,7 @@ window.abrirModalNaty = function(fullId, qtdGanha) {
 window.confirmarElementosNaty = function(fullId, qtdDesejada) {
     let marcados = document.querySelectorAll('.naty-cb:checked');
     
+    // Se o teimoso não marcou a quantidade certa, recusa!
     if (marcados.length !== qtdDesejada) {
         window.mostrarMensagemScanner(`⚠️ Você DEVE marcar exatamente ${qtdDesejada} elemento(s)!`);
         if(window.tocarSFX) window.tocarSFX('erro');
@@ -3711,7 +3716,7 @@ window.confirmarElementosNaty = function(fullId, qtdDesejada) {
     if (criatura) {
         criatura.elementos = elementosEscolhidos;
         
-        // 🔥 TRANSMISSOR: Avisa a rede global para destravar o celular do inimigo!
+        // 🔥 TRANSMISSOR CORRIGIDO: Avisa a rede global para destravar o celular do inimigo!
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
             window.enviarAcaoRede({ tipo: 'naty_escolha_pronta', alvo: fullId, elementos: criatura.elementos });
         }
