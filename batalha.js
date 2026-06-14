@@ -1903,14 +1903,10 @@ setTimeout(() => {
                 el.onpointerdown = null;
                 el.ontouchstart = null;
 
-                if (lado === 'jog') {
-                    // 🔥 SUAS CARTAS: Precisam suportar o recurso de "Arrastar"
-                    el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `jog-${slot}`);
-                    el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `jog-${slot}`);
-                } else {
-                    // 🔥 CARTAS INIMIGAS: Leitura super rápida com um toque simples!
-                    el.onclick = () => window.lidarComCliqueTabuleiro(`op-${slot}`);
-                }
+                // 🔥 CORREÇÃO: Agora a mesa INTEIRA suporta o toque de arrasto!
+                // O sistema já checa de quem é a carta antes de permitir puxar.
+                el.onpointerdown = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
+                el.ontouchstart = (e) => window.iniciarInteracaoSlot(e, `${lado}-${slot}`);
             }
         });
     });
