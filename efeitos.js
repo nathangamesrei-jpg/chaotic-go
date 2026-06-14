@@ -126,7 +126,25 @@ window.MotorDeEfeitos = {
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     },
-    
+    // =====================================
+    // 🔥 NOVO: Efeito da Naty (ID 12): Resetar Memória
+    // =====================================
+    "resetar_naty": function(alvo, fullId, atualizarTela) {
+        if (!alvo) return;
+        
+        // Zera a memória de batalhas e tira os elementos velhos
+        alvo.batalhasRealizadas = 0;
+        alvo.elementos = []; 
+        
+        // 🌐 AVISA A NUVEM: "Ela resetou os elementos!"
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'sincronizar_elementos', alvo: fullId, elementos: alvo.elementos });
+        }
+
+        window.mostrarMensagemScanner(`🌟 A memória de ${alvo.nome} foi renovada! Ela ganhará os 4 elementos na próxima luta!`);
+        if (window.tocarSFX) window.tocarSFX('notificacao');
+        atualizarTela();
+    },
 };
 
 
