@@ -108,9 +108,9 @@ window.MotorDeEfeitos = {
         // Agora o alvo é o próprio Lion!
         if (!alvo) return;
 
-        // Aumenta o limite máximo de vida para a barra não bugar, e cura 10!
-        alvo.hpMax = (alvo.hpMax || alvo.statsMax.energia) + 10;
-        alvo.hpAtual += 10;
+        // Forçamos o JavaScript a usar "Number()" para ele somar matematicamente em vez de colar o texto!
+        alvo.hpMax = Number(alvo.hpMax || alvo.statsMax.energia) + 10;
+        alvo.hpAtual = Number(alvo.hpAtual) + 10;
 
         // 🌐 AVISA A NUVEM (Mandamos o HP atual e o Máximo para a barra do inimigo sincronizar)
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
@@ -122,7 +122,7 @@ window.MotorDeEfeitos = {
             });
         }
 
-        window.mostrarMensagemScanner(`🦁 ROAR! A energia de ${alvo.nome} aumentou em +10!`);
+        window.mostrarMensagemScanner(`🦁 ROAR! A energia de ${alvo.nome} aumentou para ${alvo.hpAtual}!`);
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     },
