@@ -3605,8 +3605,106 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 window.retomarCronometro();
         atualizarTelaBatalha();
 
-    }, 8000); 
+        // ==========================================
+        // 🌟 GATILHO PASSIVO: NATY ENTRA EM BATALHA!
+        // ==========================================
+        let idMinhaNaty = null;
+        if (atacante && atacante.dono === 'jogador' && atacante.nome === "Naty") idMinhaNaty = idAtacante;
+        if (defensor && defensor.dono === 'jogador' && defensor.nome === "Naty") idMinhaNaty = idDefensor;
 
+        if (idMinhaNaty) {
+            let minhaNaty = obterCriaturaNoSlot(idMinhaNaty);
+            // Conta +1 batalha na memória da Naty
+            minhaNaty.batalhasRealizadas = (minhaNaty.batalhasRealizadas || 0) + 1;
+            
+            if (minhaNaty.batalhasRealizadas === 1) {
+                // Primeira batalha: Dá os 4 automaticamente sem perguntar
+                minhaNaty.elementos = ["Fogo", "Água", "Terra", "Ar"];
+                window.mostrarMensagemScanner("🌟 1ª Batalha de Naty: Ela evocou os 4 Elementos automaticamente!");
+                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                    window.enviarAcaoRede({ tipo: 'sincronizar_elementos', alvo: idMinhaNaty, elementos: minhaNaty.elementos });
+                }
+                atualizarTelaBatalha();
+            } else {
+                // Da 2ª batalha pra frente: Calcula quantos ela pode pegar (3, 2 ou 1)
+                let qtdEscolha = 5 - minhaNaty.batalhasRealizadas;
+                if (qtdEscolha < 1) qtdEscolha = 1; // Na 4ª em diante ela só pega 1
+                
+                // Abre a janela complexa com um mini atraso para a tela de VS sumir suavemente
+                setTimeout(() => {
+                    window.abrirModalNaty(idMinhaNaty, qtdEscolha);
+                }, 600); 
+            }
+        }
+
+    }, 8000); 
+}; // <-- Aqui fecha a função iniciarCombate
+
+
+// ==========================================
+// 🌟 TELA BOSS: SELETOR DE ELEMENTOS DA NATY
+// ==========================================
+window.abrirModalNaty = function(fullId, qtdGanha) {
+    window.pausarCronometro(); 
+    
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-naty" style="z-index: 10000000; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="modal-content-fichas" style="text-align: center; border: 3px solid #ffd700; background: #111; padding: 25px; border-radius: 10px; max-width: 340px;">
+                <h2 style="color: #ffd700; font-family: 'Arial Black', sans-serif; margin-bottom: 10px; text-shadow: 0 0 10px #ffd700;">🌟 O PODER DA NATY</h2>
+                <p style="color: #fff; font-size: 14px; margin-bottom: 20px;">Marque exatamente <b style="color:#00bcd4; font-size: 20px;">${qtdGanha}</b> elemento(s) para ela evocar nesta batalha!</p>
+                
+                <div id="naty-checkboxes" style="display: flex; gap: 15px; justify-content: center; font-size: 18px; margin-bottom: 25px; flex-wrap: wrap;">
+                    <label style="cursor:pointer; background:#222; border:2px solid red; border-radius:8px; padding:10px; display:flex; align-items:center; gap:8px;"><input type="checkbox" value="Fogo" class="naty-cb" style="transform: scale(1.5);"> 🔥 Fogo</label>
+                    <label style="cursor:pointer; background:#222; border:2px solid blue; border-radius:8px; padding:10px; display:flex; align-items:center; gap:8px;"><input type="checkbox" value="Água" class="naty-cb" style="transform: scale(1.5);"> 🌊 Água</label>
+                    <label style="cursor:pointer; background:#222; border:2px solid brown; border-radius:8px; padding:10px; display:flex; align-items:center; gap:8px;"><input type="checkbox" value="Terra" class="naty-cb" style="transform: scale(1.5);"> ⛰️ Terra</label>
+                    <label style="cursor:pointer; background:#222; border:2px solid gray; border-radius:8px; padding:10px; display:flex; align-items:center; gap:8px;"><input type="checkbox" value="Ar" class="naty-cb" style="transform: scale(1.5);"> ☁️ Ar</label>
+                </div>
+                
+                <button class="btn-acao-modal" style="background:#222; border-color: #ffd700; color: #ffd700; font-size: 16px; width: 100%;" onclick="window.confirmarElementosNaty('${fullId}', ${qtdGanha})">CONFIRMAR E LUTAR</button>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // 🔒 TRAVA DE SEGURANÇA: Se o jogador tentar roubar e marcar mais que o limite, desmarca sozinho!
+    let checkboxes = document.querySelectorAll('.naty-cb');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            let marcados = document.querySelectorAll('.naty-cb:checked').length;
+            if (marcados > qtdGanha) {
+                this.checked = false; 
+            }
+        });
+    });
+};
+
+window.confirmarElementosNaty = function(fullId, qtdDesejada) {
+    let marcados = document.querySelectorAll('.naty-cb:checked');
+    
+    // Se o teimoso não marcou a quantidade certa, recusa!
+    if (marcados.length !== qtdDesejada) {
+        window.mostrarMensagemScanner(`⚠️ Você DEVE marcar exatamente ${qtdDesejada} elemento(s)!`);
+        if(window.tocarSFX) window.tocarSFX('erro');
+        return;
+    }
+
+    let elementosEscolhidos = Array.from(marcados).map(cb => cb.value);
+    document.getElementById('overlay-naty').remove();
+    
+    let criatura = obterCriaturaNoSlot(fullId);
+    if (criatura) {
+        criatura.elementos = elementosEscolhidos;
+        
+        // 🌐 Avisa o inimigo na nuvem
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'sincronizar_elementos', alvo: fullId, elementos: criatura.elementos });
+        }
+
+        window.mostrarMensagemScanner(`🌟 Naty moldou seus elementos para: ${elementosEscolhidos.join(", ")}!`);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        atualizarTelaBatalha();
+    }
+    window.retomarCronometro();
 };
 
 /////////////////////////////////////////////////////////////////////
