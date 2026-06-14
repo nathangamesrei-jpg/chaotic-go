@@ -3606,34 +3606,50 @@ window.retomarCronometro();
         atualizarTelaBatalha();
 
         // ==========================================
-        // 🌟 GATILHO PASSIVO: NATY ENTRA EM BATALHA!
+        // 🌟 GATILHO PASSIVO P2P: NATY ENTRA EM BATALHA! (REDE BLINDADA)
         // ==========================================
         let idMinhaNaty = null;
-        if (atacante && atacante.dono === 'jogador' && atacante.nome === "Naty") idMinhaNaty = idAtacante;
-        if (defensor && defensor.dono === 'jogador' && defensor.nome === "Naty") idMinhaNaty = idDefensor;
+        let idNatyInimiga = null;
+
+        if (atacante && atacante.nome === "Naty") {
+            if (atacante.dono === 'jogador') idMinhaNaty = idAtacante;
+            else idNatyInimiga = idAtacante;
+        }
+        if (defensor && defensor.nome === "Naty") {
+            if (defensor.dono === 'jogador') idMinhaNaty = idDefensor;
+            else idNatyInimiga = idDefensor;
+        }
 
         if (idMinhaNaty) {
             let minhaNaty = obterCriaturaNoSlot(idMinhaNaty);
-            // Conta +1 batalha na memória da Naty
             minhaNaty.batalhasRealizadas = (minhaNaty.batalhasRealizadas || 0) + 1;
             
             if (minhaNaty.batalhasRealizadas === 1) {
-                // Primeira batalha: Dá os 4 automaticamente sem perguntar
                 minhaNaty.elementos = ["Fogo", "Água", "Terra", "Ar"];
                 window.mostrarMensagemScanner("🌟 1ª Batalha de Naty: Ela evocou os 4 Elementos automaticamente!");
                 if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                    window.enviarAcaoRede({ tipo: 'sincronizar_elementos', alvo: idMinhaNaty, elementos: minhaNaty.elementos });
+                    window.enviarAcaoRede({ tipo: 'naty_escolha_pronta', alvo: idMinhaNaty, elementos: minhaNaty.elementos, rodada: 1 });
                 }
                 atualizarTelaBatalha();
             } else {
-                // Da 2ª batalha pra frente: Calcula quantos ela pode pegar (3, 2 ou 1)
                 let qtdEscolha = 5 - minhaNaty.batalhasRealizadas;
-                if (qtdEscolha < 1) qtdEscolha = 1; // Na 4ª em diante ela só pega 1
+                if (qtdEscolha < 1) qtdEscolha = 1;
                 
-                // Abre a janela complexa com um mini atraso para a tela de VS sumir suavemente
+                window.pausarCronometro(); // Tranca o Smart Clock local
                 setTimeout(() => {
-                    window.abrirModalNaty(idMinhaNaty, qtdEscolha);
+                    window.openModalNatyFix(idMinhaNaty, qtdEscolha);
                 }, 600); 
+            }
+        } 
+        else if (idNatyInimiga) {
+            // ⏳ SE VOCÊ É O OPONENTE DA NATY: Congela sua tela com um escudo de rede até o dono dela escolher!
+            window.pausarCronometro();
+            if (!document.getElementById('bloqueio-espera-naty')) {
+                let msgNaty = document.createElement('div');
+                msgNaty.id = 'bloqueio-espera-naty';
+                msgNaty.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:monospace; font-weight:bold; text-align:center;";
+                msgNaty.innerHTML = `<h2 style="color:#ffd700; font-size:22px; letter-spacing:3px; animation: pulse 1s infinite;">⏳ MOLDANDO ELEMENTOS...</h2><br><p style="color:#ccc; font-size:12px;">Aguardando oponente escolher os elementos da Naty.</p>`;
+                document.body.appendChild(msgNaty);
             }
         }
 
@@ -3681,7 +3697,6 @@ window.abrirModalNaty = function(fullId, qtdGanha) {
 window.confirmarElementosNaty = function(fullId, qtdDesejada) {
     let marcados = document.querySelectorAll('.naty-cb:checked');
     
-    // Se o teimoso não marcou a quantidade certa, recusa!
     if (marcados.length !== qtdDesejada) {
         window.mostrarMensagemScanner(`⚠️ Você DEVE marcar exatamente ${qtdDesejada} elemento(s)!`);
         if(window.tocarSFX) window.tocarSFX('erro');
@@ -3690,21 +3705,26 @@ window.confirmarElementosNaty = function(fullId, qtdDesejada) {
 
     let elementosEscolhidos = Array.from(marcados).map(cb => cb.value);
     document.getElementById('overlay-naty').remove();
+    window.retomarCronometro(); // Destrava seu relógio
     
     let criatura = obterCriaturaNoSlot(fullId);
     if (criatura) {
         criatura.elementos = elementosEscolhidos;
         
-        // 🌐 Avisa o inimigo na nuvem
+        // 🔥 TRANSMISSOR: Avisa a rede global para destravar o celular do inimigo!
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-            window.enviarAcaoRede({ tipo: 'sincronizar_elementos', alvo: fullId, elementos: criatura.elementos });
+            window.enviarAcaoRede({ tipo: 'naty_escolha_pronta', alvo: fullId, elementos: criatura.elementos });
         }
 
         window.mostrarMensagemScanner(`🌟 Naty moldou seus elementos para: ${elementosEscolhidos.join(", ")}!`);
         if(window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTelaBatalha();
     }
-    window.retomarCronometro();
+};
+
+// Pequeno ajuste de nome para blindar a chamada
+window.openModalNatyFix = function(fullId, qtdGanha) {
+    if(typeof window.abrirModalNaty === 'function') window.abrirModalNaty(fullId, qtdGanha);
 };
 
 /////////////////////////////////////////////////////////////////////
@@ -5236,6 +5256,26 @@ window.processarAcaoInimiga = function(acao) {
         window.sortearLocalAnimado('oponente', () => {
             window.mostrarMensagemScanner("Local revelado! Aguarde a jogada do oponente.");
         }, acao.img); // A variável acao.img entra como o 'localForcado' na função!
+    }
+        else if (acao.tipo === 'naty_escolha_pronta') {
+        let alvoReal = inverterId(acao.alvo); 
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura.elementos = acao.elementos;
+            if(acao.rodada) {
+                criatura.batalhasRealizadas = acao.rodada;
+            } else {
+                criatura.batalhasRealizadas = (criatura.batalhasRealizadas || 0) + 1;
+            }
+            
+            // 🔓 RECEPTOR DE DESTRAVAMENTO: Apaga a tela preta e libera o Smart Clock dele!
+            let bannerEspera = document.getElementById('bloqueio-espera-naty');
+            if (bannerEspera) bannerEspera.remove();
+            
+            window.retomarCronometro();
+            window.mostrarMensagemScanner(`🌟 Naty inimiga moldou os elementos para: ${acao.elementos.join(", ")}!`);
+            atualizarTelaBatalha();
+        }
     }
     else if (acao.tipo === 'descarte_lixo') {
         // 🔥 NUVEM AVISOU: O inimigo descartou uma carta e mandou a identidade dela!
