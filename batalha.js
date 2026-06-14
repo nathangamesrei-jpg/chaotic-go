@@ -5598,24 +5598,24 @@ window.processarAcaoInimiga = function(acao) {
 };
 window.cartaRoubadaMaoNegra = null; // Memória da carta roubada
 
-window.cartaRoubadaMaoNegra = null; // Memória da carta roubada
-
 window.receberCartaRoubada = function(idCartaRoubada) {
-    // Se a carta roubada for um objeto, salvamos o nome ou ID dela para a memória
-    let idMemoria = (typeof idCartaRoubada === 'object') ? (idCartaRoubada.id || idCartaRoubada.nome) : idCartaRoubada;
+    // 1. O SEGREDO DA IMAGEM: Extrai SÓ o nome/número da carta que veio da rede
+    let idLimpo = (typeof idCartaRoubada === 'object') ? (idCartaRoubada.id || idCartaRoubada.nome) : idCartaRoubada;
     
-    window.cartaRoubadaMaoNegra = idMemoria; // Marca a carta na memória de devolução
-    window.maoAtaques.push(idCartaRoubada); // Coloca na sua mão
+    window.cartaRoubadaMaoNegra = idLimpo; // Marca a carta na memória de devolução
     
-    // 🔥 CORREÇÃO: Tira visualmente a carta da mão do oponente na sua tela no modo Online!
+    // Força a colocar só o ID na mão! Assim o Detetive é OBRIGADO a buscar a foto local perfeita
+    window.maoAtaques.push(idLimpo); 
+    
+    // 2. O SEGREDO DA MÃO INIMIGA: Tira visualmente a carta da mão do oponente na sua tela!
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
         if (window.qtdMaoOponente > 0) window.qtdMaoOponente--; 
     }
     
-    // Procura o nome da carta roubada em todos os lugares possíveis para anunciar
+    // Procura o nome da carta roubada nos bancos para anunciar no Scanner
     let db = null;
-    if (typeof ATAQUES !== 'undefined') db = ATAQUES.find(a => String(a.id) === String(idMemoria) || a.nome === idMemoria);
-    if (!db && window.inventario) db = window.inventario.find(a => String(a.id) === String(idMemoria) || a.nome === idMemoria);
+    if (typeof ATAQUES !== 'undefined') db = ATAQUES.find(a => String(a.id) === String(idLimpo) || a.nome === idLimpo);
+    if (!db && window.inventario) db = window.inventario.find(a => String(a.id) === String(idLimpo) || a.nome === idLimpo);
     
     window.mostrarMensagemScanner(`🌑 SUCESSO! Você roubou: ${db ? db.nome : "Carta Secreta"}`);
     if(window.tocarSFX) window.tocarSFX('notificacao');
