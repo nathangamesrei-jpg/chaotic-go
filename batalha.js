@@ -3375,15 +3375,17 @@ function atualizarDecksEMaoCards() {
 
 
         window.maoAtaques.forEach((idAtaque, index) => {
-           // 🔥 DETETIVE DE ATAQUES: Se a carta não for um objeto completo, busca no dicionário!
-            let cartaOriginal = idAtaque;
-            if (typeof idAtaque !== 'object') {
-                // 1. Tenta achar na lista base de ataques
+            // 🔥 DETETIVE DE ATAQUES 100% BLINDADO 🔥
+            let cartaOriginal = null;
+            
+            if (typeof idAtaque === 'object' && idAtaque !== null) {
+                cartaOriginal = idAtaque;
+            } else {
+                // 1. Procura na lista global ATAQUES pelo Nome ou ID
                 if (typeof ATAQUES !== 'undefined') {
                     cartaOriginal = ATAQUES.find(a => a.id == idAtaque || a.nome === idAtaque);
                 }
-                
-                // 2. O SEGREDO ESTÁ AQUI: Se a carta não foi encontrada acima, ele TEM QUE procurar no inventário!
+                // 2. Se NÃO achou na lista ATAQUES, procura obrigatoriamente no inventário!
                 if (!cartaOriginal && window.inventario) {
                     cartaOriginal = window.inventario.find(c => c.id == idAtaque || c.nome === idAtaque);
                 }
@@ -5576,10 +5578,12 @@ window.processarAcaoInimiga = function(acao) {
 };
 window.cartaRoubadaMaoNegra = null; // Memória da carta roubada
 
+window.cartaRoubadaMaoNegra = null; // Memória da carta roubada
+
 window.receberCartaRoubada = function(idCartaRoubada) {
     window.cartaRoubadaMaoNegra = idCartaRoubada; // Marca a carta na memória
     window.maoAtaques.push(idCartaRoubada); // Coloca na sua mão
-    atualizarDecksEMaoCards();
+    atualizarDecksEMaoCards(); // Desenha a carta na tela com a imagem!
     
     // Procura o nome da carta roubada em todos os lugares possíveis
     let db = null;
