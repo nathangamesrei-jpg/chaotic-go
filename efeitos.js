@@ -104,32 +104,28 @@ window.MotorDeEfeitos = {
     // =====================================
     // 🔥 NOVO: Efeito do Lion (ID 11): Aumentar Energia
     // =====================================
-    "aumenta_energia_10": function(alvo_nulo, fullId, atualizarTela) {
-        // Como o Lion não tem mira (precisaAlvo: false), a mágica acontece nele mesmo (fullId).
-        let leao = null;
-        if (fullId.startsWith('jog-')) leao = campoJogador[fullId.replace('jog-', '')];
-        if (fullId.startsWith('op-')) leao = window.campoOponente[fullId.replace('op-', '')];
-
-        if (!leao) return;
+    "aumenta_energia_10": function(alvo, fullId, atualizarTela) {
+        // Agora o alvo é o próprio Lion!
+        if (!alvo) return;
 
         // Aumenta o limite máximo de vida para a barra não bugar, e cura 10!
-        leao.hpMax = (leao.hpMax || leao.statsMax.energia) + 10;
-        leao.hpAtual += 10;
+        alvo.hpMax = (alvo.hpMax || alvo.statsMax.energia) + 10;
+        alvo.hpAtual += 10;
 
         // 🌐 AVISA A NUVEM (Mandamos o HP atual e o Máximo para a barra do inimigo sincronizar)
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
             window.enviarAcaoRede({ 
                 tipo: 'sincronizar_hp', 
                 alvo: fullId, 
-                novoHp: leao.hpAtual, 
-                novoMax: leao.hpMax // <- O segredo de expansão da barra tá aqui!
+                novoHp: alvo.hpAtual, 
+                novoMax: alvo.hpMax // <- O segredo de expansão da barra tá aqui!
             });
         }
 
-        window.mostrarMensagemScanner(`🦁 ROAR! A energia de ${leao.nome} aumentou em +10!`);
+        window.mostrarMensagemScanner(`🦁 ROAR! A energia de ${alvo.nome} aumentou em +10!`);
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
-    }
+    },
     
 };
 
