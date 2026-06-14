@@ -5415,7 +5415,17 @@ window.processarAcaoInimiga = function(acao) {
             let indexAleatorio = Math.floor(Math.random() * window.maoAtaques.length);
             let idRoubado = window.maoAtaques.splice(indexAleatorio, 1)[0]; // Arranca da nossa mão
             atualizarDecksEMaoCards();
-            window.enviarAcaoRede({ tipo: 'mao_negra_entregar', idCarta: idRoubado });
+            
+            // 🔥 TRADUTOR UNIVERSAL: Acha o nome real da carta antes de mandar pela rede!
+            let nomeParaEnviar = idRoubado; // Valor padrão de segurança
+            if (typeof idRoubado === 'object' && idRoubado.nome) {
+                nomeParaEnviar = idRoubado.nome;
+            } else {
+                let cartaLocal = window.inventario ? window.inventario.find(c => String(c.id) === String(idRoubado) || c.nome === idRoubado) : null;
+                if (cartaLocal) nomeParaEnviar = cartaLocal.nome;
+            }
+
+            window.enviarAcaoRede({ tipo: 'mao_negra_entregar', idCarta: nomeParaEnviar });
             window.mostrarMensagemScanner("🌑 Mão Negra! O oponente roubou uma carta sua!");
         } else {
             window.mostrarMensagemScanner("O oponente tentou roubar, mas sua mão está vazia!");
