@@ -3376,6 +3376,8 @@ function atualizarDecksEMaoCards() {
 
         window.maoAtaques.forEach((idAtaque, index) => {
             // 🔥 DETETIVE DE ATAQUES NÍVEL MESTRE 🔥
+            console.log(`🕵️‍♂️ RASTREADOR [Renderizador Mão] - Posição ${index}: Tipo do dado:`, typeof idAtaque, "| Valor:", idAtaque);
+
             let cartaOriginal = null;
             let idParaBusca = idAtaque;
 
@@ -3383,6 +3385,7 @@ function atualizarDecksEMaoCards() {
             if (idAtaque && typeof idAtaque === 'object') {
                 cartaOriginal = idAtaque;
                 idParaBusca = idAtaque.id || idAtaque.nome;
+                console.log(`🕵️‍♂️ RASTREADOR [Renderizador Mão] - Posição ${index}: Sucesso! É um objeto válido.`);
             } 
             // 2. Se for só o texto/número, procuramos no banco de dados blindado!
             else {
@@ -3392,10 +3395,12 @@ function atualizarDecksEMaoCards() {
                 if (!cartaOriginal && typeof ATAQUES !== 'undefined' && Array.isArray(ATAQUES)) {
                     cartaOriginal = ATAQUES.find(a => String(a.id) === String(idAtaque) || a.nome === idAtaque);
                 }
+                console.log(`🕵️‍♂️ RASTREADOR [Renderizador Mão] - Posição ${index}: Achou no banco de dados?`, cartaOriginal ? "SIM" : "NÃO");
             }
 
             // 3. O SEGREDO ANTI-INVISIBILIDADE: Se a carta não for achada, cria uma carta fantasma!
             if (!cartaOriginal) {
+                console.error(`🚨 ALERTA BUG 1: A carta na posição ${index} não é objeto e não está no banco! Renderizando o verso.`);
                 cartaOriginal = {
                     id: idParaBusca,
                     nome: "Carta Oculta",
@@ -5601,9 +5606,14 @@ window.processarAcaoInimiga = function(acao) {
 window.cartaRoubadaMaoNegra = null; // Memória da carta roubada
 
 window.receberCartaRoubada = function(idCartaRoubada) {
+    console.log("🕵️‍♂️ RASTREADOR [Mão Negra]: Pacote recebido da rede:", idCartaRoubada);
+
     // 1. O SEGREDO DA IMAGEM: Mantém o objeto completo para o renderizador não falhar!
     let cartaParaMao = (typeof idCartaRoubada === 'object' && idCartaRoubada.nome) ? idCartaRoubada : idCartaRoubada;
     let idLimpo = (typeof idCartaRoubada === 'object') ? (idCartaRoubada.id || idCartaRoubada.nome) : idCartaRoubada;
+    
+    console.log("🕵️‍♂️ RASTREADOR [Mão Negra]: Variável idLimpo ficou:", idLimpo);
+    console.log("🕵️‍♂️ RASTREADOR [Mão Negra]: O que está sendo salvo na Mão:", cartaParaMao);
     
     window.cartaRoubadaMaoNegra = idLimpo; // Marca a carta na memória de devolução
     
