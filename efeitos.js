@@ -145,6 +145,22 @@ window.MotorDeEfeitos = {
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     },
+    // =====================================
+    // 🔥 NOVO: Efeito do Xamã (ID 16): Cura 10
+    // =====================================
+    "cura_10": function(alvo, fullId, atualizarTela) {
+        if (!alvo) return;
+        let vidaMaxima = Number(alvo.hpMax || alvo.statsMax.energia);
+        alvo.hpAtual = Number(alvo.hpAtual) + 10;
+        if (alvo.hpAtual > vidaMaxima) alvo.hpAtual = vidaMaxima; 
+        
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: fullId, novoHp: alvo.hpAtual });
+        }
+        window.mostrarMensagemScanner(`✨ EFEITO ATIVADO: ${alvo.nome} recuperou 10 de Energia!`);
+        if (window.tocarSFX) window.tocarSFX('notificacao');
+        atualizarTela();
+    },
 };
 
 
