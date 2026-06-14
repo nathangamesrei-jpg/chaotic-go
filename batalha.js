@@ -3711,15 +3711,37 @@ window.retomarCronometro();
                 }, 600); 
             }
         } 
-        else if (idNatyInimiga) {
-            // ⏳ SE VOCÊ É O OPONENTE DA NATY: Congela sua tela com um escudo de rede até o dono dela escolher!
-            window.pausarCronometro();
-            if (!document.getElementById('bloqueio-espera-naty')) {
-                let msgNaty = document.createElement('div');
-                msgNaty.id = 'bloqueio-espera-naty';
-                msgNaty.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:monospace; font-weight:bold; text-align:center;";
-                msgNaty.innerHTML = `<h2 style="color:#ffd700; font-size:22px; letter-spacing:3px; animation: pulse 1s infinite;">⏳ MOLDANDO ELEMENTOS...</h2><br><p style="color:#ccc; font-size:12px;">Aguardando oponente escolher os elementos da Naty.</p>`;
-                document.body.appendChild(msgNaty);
+       else if (idNatyInimiga) {
+            let natyInimiga = obterCriaturaNoSlot(idNatyInimiga);
+            let numBatalha = (natyInimiga.batalhasRealizadas || 0) + 1;
+
+            if (numBatalha === 1) {
+                // 🔥 CORREÇÃO: Na primeira batalha, o computador do inimigo sabe que é automático! Não precisa travar a tela.
+                natyInimiga.batalhasRealizadas = 1;
+                natyInimiga.elementos = ["Fogo", "Água", "Terra", "Ar"];
+                window.mostrarMensagemScanner("🌟 1ª Batalha de Naty: Ela evocou os 4 Elementos automaticamente!");
+                atualizarTelaBatalha();
+            } else {
+                // ⏳ SE VOCÊ É O OPONENTE DA NATY: Congela sua tela com um escudo de rede até o dono dela escolher!
+                window.pausarCronometro();
+                if (!document.getElementById('bloqueio-espera-naty')) {
+                    let msgNaty = document.createElement('div');
+                    msgNaty.id = 'bloqueio-espera-naty';
+                    msgNaty.style.cssText = "position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9999999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:monospace; font-weight:bold; text-align:center;";
+                    msgNaty.innerHTML = `<h2 style="color:#ffd700; font-size:22px; letter-spacing:3px; animation: pulse 1s infinite;">⏳ MOLDANDO ELEMENTOS...</h2><br><p style="color:#ccc; font-size:12px;">Aguardando oponente escolher os elementos da Naty.</p>`;
+                    document.body.appendChild(msgNaty);
+                }
+                
+                // 🤖 SALVA-VIDAS MODO BOT: Se for contra a máquina, ele solta a tela depois de um tempinho!
+                if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") {
+                    setTimeout(() => {
+                        let banner = document.getElementById('bloqueio-espera-naty');
+                        if (banner) banner.remove();
+                        window.retomarCronometro();
+                        natyInimiga.batalhasRealizadas = numBatalha;
+                        atualizarTelaBatalha();
+                    }, 2500);
+                }
             }
         }
 
