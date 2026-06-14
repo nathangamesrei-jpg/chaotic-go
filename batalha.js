@@ -4726,7 +4726,7 @@ window.usarHabilidade = function(fullId) {
                 tipo: 'habilidade',
                 executar: function() {
                     if (efeitoIdEncontrado && window.MotorDeEfeitos && window.MotorDeEfeitos[efeitoIdEncontrado]) {
-                        window.MotorDeEfeitos[efeitoIdEncontrado](null, fullId, atualizarTelaBatalha);
+                        window.MotorDeEfeitos[efeitoIdEncontrado](criatura, fullId, atualizarTelaBatalha);
                     } else {
                         window.mostrarMensagemScanner(`⚡ Efeito ativado!`);
                     }
