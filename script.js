@@ -134,7 +134,7 @@ onValue(albumRef, (snapshot) => {
     // 👑 MODO DEUS (CONTA DE DESENVOLVEDOR) 👑
     // ==========================================
     console.log("🔑 SEU UID ATUAL É:", uid); // <-- Olhe o console (F12) para pegar seu código!
-    const DEV_UID = "COLE_SEU_UID_AQUI"; // Substitua pelo seu código do Firebase
+    const DEV_UID = "Uetuh99BvhcnlzCxBbBg1Yu0CJv2"; // A chave mestra do Arquiteto!
 
     if (uid === DEV_UID) {
         window.inventario = [];
