@@ -339,13 +339,13 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
 function atualizarTelaBatalha() {
     const slots = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
 
-    // 🕵️‍♂️ DETETIVE DE AURAS: Procura se o Guru está vivo no seu lado da mesa ANTES de desenhar
-    let temGuruAura = false;
+    // ==========================================
+    // 🕵️‍♂️ DETETIVE DE AURAS - SEU LADO DA MESA
+    // ==========================================
+    let temGuruAuraJog = false;
     slots.forEach(slotId => {
         let carta = campoJogador[slotId];
-        if (carta && carta.nome === "Guru" && carta.hpAtual > 0) {
-            temGuruAura = true;
-        }
+        if (carta && carta.nome === "Guru" && carta.hpAtual > 0) temGuruAuraJog = true;
     });
 
     slots.forEach(slotId => {
@@ -353,42 +353,59 @@ function atualizarTelaBatalha() {
         let carta = campoJogador[slotId];
         
         if (carta) {
-            // Se o Guru estiver vivo e o monstro atual NÃO FOR ele próprio, aplica a aura!
-            if (temGuruAura && carta.nome !== "Guru") {
-                // 🔥 CORREÇÃO DO GURU: Puxa os elementos de fábrica ANTES de soprar o Vento!
+            if (temGuruAuraJog && carta.nome !== "Guru") {
                 if (!carta.elementos || carta.elementos.length === 0) {
                     let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === carta.nome) : null;
                     carta.elementos = (dbCarta && dbCarta.elementos) ? [...dbCarta.elementos] : [];
                 }
-                // Se o aliado ainda não tiver 'Ar', ele "empresta" o elemento temporariamente
                 if (!carta.elementos.includes('Ar')) {
-                    carta.auraVento = true; // Marca que o 'Ar' dele veio do Guru e não é fixo
+                    carta.auraVento = true; 
                     carta.elementos.push('Ar');
                 }
-            }
-            // Se o Guru morrer, o jogo limpa a Aura de quem tinha pegado emprestado!
-            else if (!temGuruAura && carta.auraVento) {
+            } else if (!temGuruAuraJog && carta.auraVento) {
                 carta.elementos = carta.elementos.filter(el => el !== 'Ar');
                 carta.auraVento = false;
             }
         }
-
         if(el) el.innerHTML = desenharMiniCarta(carta);
     });
 
+    // ==========================================
+    // 🕵️‍♂️ DETETIVE DE AURAS - LADO DO OPONENTE
+    // ==========================================
     const slotsOp = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
+    let temGuruAuraOp = false;
+
+    if (window.campoOponente) {
+        slotsOp.forEach(slotId => {
+            let cartaOp = window.campoOponente[slotId];
+            if (cartaOp && cartaOp.nome === "Guru" && cartaOp.hpAtual > 0) temGuruAuraOp = true;
+        });
+    }
 
     slotsOp.forEach(slotId => {
-
         const el = document.getElementById('op-' + slotId);
+        let cartaOp = window.campoOponente ? window.campoOponente[slotId] : null;
 
-        if(el) el.innerHTML = desenharMiniCarta(window.campoOponente ? window.campoOponente[slotId] : null); 
-
+        if (cartaOp) {
+            if (temGuruAuraOp && cartaOp.nome !== "Guru") {
+                if (!cartaOp.elementos || cartaOp.elementos.length === 0) {
+                    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === cartaOp.nome) : null;
+                    cartaOp.elementos = (dbCarta && dbCarta.elementos) ? [...dbCarta.elementos] : [];
+                }
+                if (!cartaOp.elementos.includes('Ar')) {
+                    cartaOp.auraVento = true;
+                    cartaOp.elementos.push('Ar');
+                }
+            } else if (!temGuruAuraOp && cartaOp.auraVento) {
+                cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Ar');
+                cartaOp.auraVento = false;
+            }
+        }
+        if(el) el.innerHTML = desenharMiniCarta(cartaOp); 
     });
 
-
-
-   atualizarContadorFichasHabilidade();
+    atualizarContadorFichasHabilidade();
     atualizarDecksEMaoCards(); 
     atualizarMugicsDaTela(); 
     
@@ -408,10 +425,9 @@ function atualizarTelaBatalha() {
             jogadorMugics: window.jogadorMugics,
             qtdBaralhoOponente: window.qtdBaralhoOponente,
             qtdMaoOponente: window.qtdMaoOponente,
-           estadoTurno: window.estadoTurno,
-            ultimaAcaoProcessada: window.ultimaAcaoProcessada, // Memória para não tomar dano 2x!
-            modo: modoAtual, // Salva o CSS do tabuleiro (1x1, 3x3, etc)
-            // 🔥 AS MEMÓRIAS QUE FALTAVAM: O jogo agora lembra do Combate, Local e Miras!
+            estadoTurno: window.estadoTurno,
+            ultimaAcaoProcessada: window.ultimaAcaoProcessada,
+            modo: modoAtual, 
             localAtivoAtual: window.localAtivoAtual,
             estadoCombate: window.estadoCombate,
             combateFinalizadoNesteTurno: window.combateFinalizadoNesteTurno,
@@ -419,14 +435,11 @@ function atualizarTelaBatalha() {
             modoAlvo: window.modoAlvo,
             conjuradorMugicAtual: window.conjuradorMugicAtual,
             slotSelecionadoMovimento: window.slotSelecionadoMovimento,
-            // 🔥 PREVENÇÃO DE AMNÉSIA: Grava qual era o seu deck original para a roleta de Locais não bugar!
             deckSelecionado: window.estadoDrome ? window.estadoDrome.deckSelecionado : null
         };
         localStorage.setItem('drome_save_state', JSON.stringify(saveState));
     }
 }
-
-
 
 function atualizarMugicsDaTela() {
 
