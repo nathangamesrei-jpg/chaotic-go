@@ -133,11 +133,9 @@ window.MotorDeEfeitos = {
     "cancao_criacao": function(alvo, fullId, atualizarTela, contexto) {
         if (!alvo || !contexto || !contexto.origem) return;
 
-        // 🔥 CORREÇÃO 1: Usa o motor global que enxerga o tabuleiro perfeitamente
-        let conjurador = typeof obterCriaturaNoSlot === 'function' ? obterCriaturaNoSlot(contexto.origem) : null;
+        // 🔥 CHAVE MESTRA: Agora usamos a ponte para achar o conjurador!
+        let conjurador = window.obterCriaturaNoSlot ? window.obterCriaturaNoSlot(contexto.origem) : null;
 
-        // O sistema já descontou 1 ficha na hora de mirar. 
-        // Para pagar o efeito duplo (3 fichas totais), ele precisa ter pelo menos mais 2 sobrando agora!
         let fichasRestantes = conjurador ? conjurador.fichasHabilidade : 0;
         let podePagarExtra = fichasRestantes >= 2;
 
@@ -207,9 +205,9 @@ window.confirmarCancaoCriacao = function(alvoId, conjuradorId) {
     let elementosEscolhidos = Array.from(marcados).map(cb => cb.value);
     document.getElementById('overlay-cancao').remove();
     
-    // 🔥 CORREÇÃO 2: Acha as criaturas usando o motor principal do jogo
-    let alvo = typeof obterCriaturaNoSlot === 'function' ? obterCriaturaNoSlot(alvoId) : null;
-    let conjurador = typeof obterCriaturaNoSlot === 'function' ? obterCriaturaNoSlot(conjuradorId) : null;
+    // 🔥 CHAVE MESTRA: Acha as criaturas usando a ponte global
+    let alvo = window.obterCriaturaNoSlot ? window.obterCriaturaNoSlot(alvoId) : null;
+    let conjurador = window.obterCriaturaNoSlot ? window.obterCriaturaNoSlot(conjuradorId) : null;
 
     if (alvo) {
         // Cobra o custo extra do conjurador caso tenha marcado 2 elementos
@@ -220,11 +218,10 @@ window.confirmarCancaoCriacao = function(alvoId, conjuradorId) {
             }
         }
 
-        // 🔥 CORREÇÃO 3: Desconecta o array de elementos do Banco de Dados para evitar apagão geral!
         if (!alvo.elementos || !Array.isArray(alvo.elementos)) {
             alvo.elementos = [];
         } else {
-            alvo.elementos = [...alvo.elementos]; 
+            alvo.elementos = [...alvo.elementos]; // Cópia segura para não corromper o banco de dados
         }
 
         elementosEscolhidos.forEach(el => {
