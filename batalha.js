@@ -4234,19 +4234,31 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             let dAr = ataqueDB.ar || ataqueDB.vento || ataqueDB.danoElemental?.ar || ataqueDB.danoElemental?.vento || 0;
 
             if (dFogo > 0 || dAgua > 0 || dTerra > 0 || dAr > 0) {
-                let elemsBrutos = minhaCriatura.elementos;
-                if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
-                    let dbCarta = MONSTROS.find(m => m.nome === minhaCriatura.nome);
-                    if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
+                // ==========================================
+                // ⚙️ MOTOR DE EQUIPAMENTOS: IMUNIDADE ELEMENTAL
+                // ==========================================
+                let imunidadeElemental = false;
+                if (criaturaInimiga && criaturaInimiga.equipamento && criaturaInimiga.equipamentoRevelado) {
+                    if (criaturaInimiga.equipamento.nome === "Anel Precioso") {
+                        imunidadeElemental = true;
+                        msgBonus += "[💍 IMUNE A ELEMENTOS] ";
+                    }
                 }
-                let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
 
-                if (textoElementos.includes('fogo') && dFogo > 0) { danoExtra += parseInt(dFogo); msgBonus += `[+${dFogo} 🔥] `; }
-                if (textoElementos.includes('agua') && dAgua > 0) { danoExtra += parseInt(dAgua); msgBonus += `[+${dAgua} 🌊] `; }
-                if (textoElementos.includes('terra') && dTerra > 0) { danoExtra += parseInt(dTerra); msgBonus += `[+${dTerra} ⛰️] `; }
-                if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && dAr > 0) { danoExtra += parseInt(dAr); msgBonus += `[+${dAr} ☁️] `; }
+                if (!imunidadeElemental) {
+                    let elemsBrutos = minhaCriatura.elementos;
+                    if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
+                        let dbCarta = MONSTROS.find(m => m.nome === minhaCriatura.nome);
+                        if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
+                    }
+                    let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+
+                    if (textoElementos.includes('fogo') && dFogo > 0) { danoExtra += parseInt(dFogo); msgBonus += `[+${dFogo} 🔥] `; }
+                    if (textoElementos.includes('agua') && dAgua > 0) { danoExtra += parseInt(dAgua); msgBonus += `[+${dAgua} 🌊] `; }
+                    if (textoElementos.includes('terra') && dTerra > 0) { danoExtra += parseInt(dTerra); msgBonus += `[+${dTerra} ⛰️] `; }
+                    if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && dAr > 0) { danoExtra += parseInt(dAr); msgBonus += `[+${dAr} ☁️] `; }
+                }
             }
-
             if (ataqueDB.checkAtributo && criaturaInimiga) {
                 let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); 
                 let bonus = ataqueDB.checkAtributo.danoExtra;
@@ -4972,6 +4984,31 @@ window.revelarEquipamento = function(fullId) {
                 window.mostrarMensagemScanner(`✨ EQUIPAMENTO REVELADO: ${criatura.nome} revelou ${criatura.equipamento.nome}!`);
                 if(window.tocarSFX) window.tocarSFX('notificacao');
                 
+                // ==========================================
+                // ⚙️ MOTOR DE EQUIPAMENTOS: APLICAR STATUS
+                // ==========================================
+                if (criatura.equipamento.nome === "Anel Precioso") {
+                    criatura.hpAtual = Number(criatura.hpAtual) - 15;
+                    
+                    setTimeout(() => {
+                        window.mostrarMensagemScanner(`💍 O peso do Anel Precioso drenou 15 de energia de ${criatura.nome}!`);
+                    }, 1500); // Atraso para dar tempo de ler a primeira mensagem de revelação
+
+                    // 🌐 Sincroniza a nova vida pela rede
+                    if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                        window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: fullId, novoHp: criatura.hpAtual });
+                    }
+
+                    // 💀 A MECÂNICA DE MORTE POR REVELAÇÃO!
+                    if (criatura.hpAtual <= 0) {
+                        criatura.hpAtual = 0;
+                        setTimeout(() => {
+                            window.mostrarMensagemScanner(`💀 A energia de ${criatura.nome} foi esgotada pelo equipamento!`);
+                            window.encerrarCombateMorte(fullId);
+                        }, 3000);
+                    }
+                }
+
                 // 🔥 O TRANSMISSOR FALTANTE: Avisa a Nuvem para virar a carta na tela do inimigo também!
                 if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
                     window.enviarAcaoRede({ tipo: 'revelar_equipamento_direto', alvo: fullId });
