@@ -161,6 +161,71 @@ window.MotorDeEfeitos = {
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     },
+    // =====================================
+    // 🔥 NOVO: MUGIC - Canção da Criação
+    // =====================================
+    "cancao_criacao": function(alvo, fullId, atualizarTela, contexto) {
+        if (!alvo || !contexto || !contexto.origem) return;
+
+        let conjurador = null;
+        if (contexto.origem.startsWith('jog-')) conjurador = window.campoJogador ? window.campoJogador[contexto.origem.replace('jog-', '')] : null;
+        if (contexto.origem.startsWith('op-')) conjurador = window.campoOponente ? window.campoOponente[contexto.origem.replace('op-', '')] : null;
+
+        // O sistema já descontou 1 ficha na hora de mirar. 
+        // Para pagar o efeito duplo (3 fichas totais), ele precisa ter pelo menos mais 2 sobrando agora!
+        let fichasRestantes = conjurador ? conjurador.fichasHabilidade : 0;
+        let podePagarExtra = fichasRestantes >= 2;
+
+        window.pausarCronometro();
+
+        const modalHTML = `
+            <div class="modal-overlay" id="overlay-cancao" style="z-index: 10000000; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <div class="modal-content-fichas" style="text-align: center; border: 3px solid #00bcd4; background: #111; padding: 25px; border-radius: 10px; max-width: 380px;">
+                    <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif; margin-bottom: 10px;">🎵 CANÇÃO DA CRIAÇÃO</h2>
+                    <p style="color: #fff; font-size: 13px; margin-bottom: 15px;">Escolha os elementos para <b>${alvo.nome}</b>:</p>
+                    
+                    <div style="margin-bottom: 15px; padding: 10px; background: #222; border-radius: 8px; border: 1px solid #444; text-align: left;">
+                        <label style="color: #ffd700; font-weight: bold; cursor: pointer; display: block; margin-bottom: 10px; font-size: 14px;">
+                            <input type="radio" name="opcao_cancao" value="1" checked onchange="window.atualizarLimiteCancao(1)" style="transform: scale(1.3); margin-right: 8px;"> 
+                            1 Elemento (Custo Padrão: 1 Ficha)
+                        </label>
+                        <label style="color: ${podePagarExtra ? '#ffd700' : '#555'}; font-weight: bold; cursor: ${podePagarExtra ? 'pointer' : 'not-allowed'}; display: block; font-size: 14px;">
+                            <input type="radio" name="opcao_cancao" value="2" ${!podePagarExtra ? 'disabled' : ''} onchange="window.atualizarLimiteCancao(2)" style="transform: scale(1.3); margin-right: 8px;"> 
+                            2 Elementos (Pagar +2 Fichas extras)
+                        </label>
+                    </div>
+
+                    <div id="cancao-checkboxes" style="display: flex; gap: 10px; justify-content: center; font-size: 16px; margin-bottom: 25px; flex-wrap: wrap;">
+                        <label style="cursor:pointer; background:#222; border:2px solid red; border-radius:8px; padding:8px; display:flex; align-items:center; gap:5px;"><input type="checkbox" value="Fogo" class="cancao-cb"> 🔥</label>
+                        <label style="cursor:pointer; background:#222; border:2px solid blue; border-radius:8px; padding:8px; display:flex; align-items:center; gap:5px;"><input type="checkbox" value="Água" class="cancao-cb"> 🌊</label>
+                        <label style="cursor:pointer; background:#222; border:2px solid brown; border-radius:8px; padding:8px; display:flex; align-items:center; gap:5px;"><input type="checkbox" value="Terra" class="cancao-cb"> ⛰️</label>
+                        <label style="cursor:pointer; background:#222; border:2px solid gray; border-radius:8px; padding:8px; display:flex; align-items:center; gap:5px;"><input type="checkbox" value="Ar" class="cancao-cb"> ☁️</label>
+                    </div>
+                    
+                    <button class="btn-acao-modal" style="background:#222; border-color: #00bcd4; color: #00bcd4; font-size: 16px; width: 100%;" onclick="window.confirmarCancaoCriacao('${fullId}', '${contexto.origem}')">CONJURAR MAGIA</button>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+        window.limiteCancao = 1;
+        window.atualizarLimiteCancao = function(limite) {
+            window.limiteCancao = limite;
+            let marcados = document.querySelectorAll('.cancao-cb:checked');
+            if (marcados.length > limite) {
+                marcados.forEach(cb => cb.checked = false); 
+            }
+        };
+
+        document.querySelectorAll('.cancao-cb').forEach(cb => {
+            cb.addEventListener('change', function() {
+                let marcados = document.querySelectorAll('.cancao-cb:checked').length;
+                if (marcados > window.limiteCancao) {
+                    this.checked = false; 
+                }
+            });
+        });
+    },
 };
 
 
