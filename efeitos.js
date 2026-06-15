@@ -52,108 +52,70 @@ window.MotorDeEfeitos = {
         }
     },
 
-    // =====================================
-    // 🔥 NOVO: Efeito do Alakazaz (ID 3): Doar Ficha
-    // =====================================
     "doar_ficha": function(alvo, fullId, atualizarTela) {
         if (!alvo) return;
-
-        // Regra do Alakazaz: Só pode doar para seus PRÓPRIOS campeões
         if (alvo.dono !== 'jogador') {
             window.mostrarMensagemScanner("❌ Ação Invalida: Você só pode doar fichas para campeões aliados!");
             return;
         }
-
-        // Dá +1 ficha para o aliado escolhido
         alvo.fichasHabilidade = Number(alvo.fichasHabilidade) + 1;
-
-        // 🌐 AVISA A NUVEM: "A quantidade de fichas desse slot mudou!"
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
             window.enviarAcaoRede({ tipo: 'sincronizar_fichas', alvo: fullId, qtd: alvo.fichasHabilidade });
         }
-
         window.mostrarMensagemScanner(`✨ Ficha doada! ${alvo.nome} recebeu +1 Ficha de Habilidade!`);
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     },
-    // =====================================
-    // 🔥 NOVO: Efeito do Guru (ID 8): Doar Elemento
-    // =====================================
+
     "guru_elemento": function(alvo, fullId, atualizarTela, contexto) {
         if (!alvo || !contexto || !contexto.elementoExtra) return;
-
         let elementoDado = contexto.elementoExtra;
-        
-        // Se a criatura ainda não tiver a lista de elementos, cria uma vazia
         if (!alvo.elementos) alvo.elementos = [];
-
-        // Verifica se a criatura já tem esse elemento. Se não tiver, adiciona!
         if (!alvo.elementos.includes(elementoDado)) {
             alvo.elementos.push(elementoDado);
         }
-
-        // 🌐 AVISA A NUVEM: "Os elementos desse monstro mudaram!"
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
             window.enviarAcaoRede({ tipo: 'sincronizar_elementos', alvo: fullId, elementos: alvo.elementos });
         }
-
         window.mostrarMensagemScanner(`✨ Efeito Concluído! ${alvo.nome} ganhou o elemento ${elementoDado}!`);
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     },
-    // =====================================
-    // 🔥 NOVO: Efeito do Lion (ID 11): Aumentar Energia
-    // =====================================
-    "aumenta_energia_10": function(alvo, fullId, atualizarTela) {
-        // Agora o alvo é o próprio Lion!
-        if (!alvo) return;
 
-        // Forçamos o JavaScript a usar "Number()" para ele somar matematicamente em vez de colar o texto!
+    "aumenta_energia_10": function(alvo, fullId, atualizarTela) {
+        if (!alvo) return;
         alvo.hpMax = Number(alvo.hpMax || alvo.statsMax.energia) + 10;
         alvo.hpAtual = Number(alvo.hpAtual) + 10;
-
-        // 🌐 AVISA A NUVEM (Mandamos o HP atual e o Máximo para a barra do inimigo sincronizar)
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
             window.enviarAcaoRede({ 
                 tipo: 'sincronizar_hp', 
                 alvo: fullId, 
                 novoHp: alvo.hpAtual, 
-                novoMax: alvo.hpMax // <- O segredo de expansão da barra tá aqui!
+                novoMax: alvo.hpMax
             });
         }
-
         window.mostrarMensagemScanner(`🦁 ROAR! A energia de ${alvo.nome} aumentou para ${alvo.hpAtual}!`);
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     },
-    // =====================================
-    // 🔥 NOVO: Efeito da Naty (ID 12): Resetar Memória
-    // =====================================
+
     "resetar_naty": function(alvo, fullId, atualizarTela) {
         if (!alvo) return;
-        
-        // Zera a memória de batalhas e tira os elementos velhos
         alvo.batalhasRealizadas = 0;
         alvo.elementos = []; 
-        
-        // 🌐 AVISA A NUVEM: "Ela resetou os elementos!"
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
             window.enviarAcaoRede({ tipo: 'sincronizar_elementos', alvo: fullId, elementos: alvo.elementos });
         }
-
         window.mostrarMensagemScanner(`🌟 A memória de ${alvo.nome} foi renovada! Ela ganhará os 4 elementos na próxima luta!`);
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     },
-    // =====================================
-    // 🔥 NOVO: Efeito do Xamã (ID 16): Cura 10
-    // =====================================
+
     "cura_10": function(alvo, fullId, atualizarTela) {
         if (!alvo) return;
         let vidaMaxima = Number(alvo.hpMax || alvo.statsMax.energia);
         alvo.hpAtual = Number(alvo.hpAtual) + 10;
         if (alvo.hpAtual > vidaMaxima) alvo.hpAtual = vidaMaxima; 
-        
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
             window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: fullId, novoHp: alvo.hpAtual });
         }
@@ -161,6 +123,7 @@ window.MotorDeEfeitos = {
         if (window.tocarSFX) window.tocarSFX('notificacao');
         atualizarTela();
     },
+
     // =====================================
     // 🔥 NOVO: MUGIC - Canção da Criação
     // =====================================
@@ -228,4 +191,50 @@ window.MotorDeEfeitos = {
     },
 };
 
+// ==========================================
+// 🔥 FUNÇÃO DE RESOLUÇÃO EXCLUSIVA DO MUGIC
+// ==========================================
+window.confirmarCancaoCriacao = function(alvoId, conjuradorId) {
+    let marcados = document.querySelectorAll('.cancao-cb:checked');
+    if (marcados.length !== window.limiteCancao) {
+        window.mostrarMensagemScanner(`⚠️ Você deve marcar exatamente ${window.limiteCancao} elemento(s)!`);
+        if(window.tocarSFX) window.tocarSFX('erro');
+        return;
+    }
 
+    let elementosEscolhidos = Array.from(marcados).map(cb => cb.value);
+    document.getElementById('overlay-cancao').remove();
+    
+    let alvo = null;
+    if (alvoId.startsWith('jog-')) alvo = window.campoJogador ? window.campoJogador[alvoId.replace('jog-', '')] : null;
+    if (alvoId.startsWith('op-')) alvo = window.campoOponente ? window.campoOponente[alvoId.replace('op-', '')] : null;
+    
+    let conjurador = null;
+    if (conjuradorId.startsWith('jog-')) conjurador = window.campoJogador ? window.campoJogador[conjuradorId.replace('jog-', '')] : null;
+    if (conjuradorId.startsWith('op-')) conjurador = window.campoOponente ? window.campoOponente[conjuradorId.replace('op-', '')] : null;
+
+    if (alvo) {
+        // Cobra o custo extra do conjurador caso tenha marcado 2 elementos
+        if (window.limiteCancao === 2 && conjurador) {
+            conjurador.fichasHabilidade -= 2;
+            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                window.enviarAcaoRede({ tipo: 'sincronizar_fichas', alvo: conjuradorId, qtd: conjurador.fichasHabilidade });
+            }
+        }
+
+        if (!alvo.elementos) alvo.elementos = [];
+        elementosEscolhidos.forEach(el => {
+            if (!alvo.elementos.includes(el)) alvo.elementos.push(el);
+        });
+
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'sincronizar_elementos', alvo: alvoId, elementos: alvo.elementos });
+        }
+
+        window.mostrarMensagemScanner(`🎵 A Canção ecoou! ${alvo.nome} ganhou: ${elementosEscolhidos.join(", ")}!`);
+        if(window.tocarSFX) window.tocarSFX('notificacao');
+        
+        window.retomarCronometro();
+        if (typeof atualizarTelaBatalha === 'function') window.atualizarTelaBatalha();
+    }
+};
