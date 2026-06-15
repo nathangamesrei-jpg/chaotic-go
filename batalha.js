@@ -1309,8 +1309,29 @@ window.lidarComCliqueTabuleiro = function(fullId) {
                 window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: ctx.mugicObj.nome, categoria: 'mugic' });
             }
 
-            let acao = { dono: 'jogador', nomeAcao: `Mugic: ${ctx.mugicObj.nome} ➔ ${alvo.nome}`, tipo: 'mugic', executar: function() { window.mostrarMensagemScanner(`✨ Mugic explodiu em ${alvo.nome}!`); if(window.tocarSFX) window.tocarSFX('notificacao'); } };
+            let acao = { 
+                dono: 'jogador', 
+                nomeAcao: `Mugic: ${ctx.mugicObj.nome} ➔ ${alvo.nome}`, 
+                tipo: 'mugic', 
+                executar: function() { 
+                    // 1. Tenta achar o ID do efeito
+                    let efeitoIdEncontrado = ctx.mugicObj.efeitoId;
+                    if (!efeitoIdEncontrado && typeof MAGIAS !== 'undefined') {
+                        let magiaDB = MAGIAS.find(m => m.nome === ctx.mugicObj.nome);
+                        if (magiaDB && magiaDB.efeitoId) efeitoIdEncontrado = magiaDB.efeitoId;
+                    }
+
+                    // 2. Chama o Motor de Efeitos, igual as Habilidades!
+                    if (efeitoIdEncontrado && window.MotorDeEfeitos && window.MotorDeEfeitos[efeitoIdEncontrado]) {
+                        window.MotorDeEfeitos[efeitoIdEncontrado](alvo, fullId, atualizarTelaBatalha, ctx);
+                    } else {
+                        window.mostrarMensagemScanner(`✨ Mugic explodiu em ${alvo.nome}!`); 
+                        if(window.tocarSFX) window.tocarSFX('notificacao'); 
+                    }
+                } 
+            };
            window.adicionarAoBurst(acao);
+            
 
         } else if (ctx.tipo === 'passiva_leona') {
             // 🔥 LEONA ATIRA NA MIRA! Coloca o tiro na Corrente (Burst)
