@@ -1241,6 +1241,7 @@ function obterCriaturaNoSlot(fullId) {
 }
 
 window.obterCriaturaNoSlot = obterCriaturaNoSlot; // 🔥 A PONTE GLOBAL PARA O EFEITOS.JS
+window.atualizarTelaBatalha = atualizarTelaBatalha; // 🔥 A PONTE DO RENDERIZADOR VISUAL
 
 function setarCriaturaNoSlot(fullId, criatura) {
 
