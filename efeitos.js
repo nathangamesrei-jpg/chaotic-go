@@ -70,7 +70,10 @@ window.MotorDeEfeitos = {
     "guru_elemento": function(alvo, fullId, atualizarTela, contexto) {
         if (!alvo || !contexto || !contexto.elementoExtra) return;
         let elementoDado = contexto.elementoExtra;
-        if (!alvo.elementos) alvo.elementos = [];
+        
+        // Desconecta o array do banco de dados para evitar vazamento
+        alvo.elementos = alvo.elementos ? [...alvo.elementos] : [];
+        
         if (!alvo.elementos.includes(elementoDado)) {
             alvo.elementos.push(elementoDado);
         }
@@ -130,9 +133,8 @@ window.MotorDeEfeitos = {
     "cancao_criacao": function(alvo, fullId, atualizarTela, contexto) {
         if (!alvo || !contexto || !contexto.origem) return;
 
-        let conjurador = null;
-        if (contexto.origem.startsWith('jog-')) conjurador = window.campoJogador ? window.campoJogador[contexto.origem.replace('jog-', '')] : null;
-        if (contexto.origem.startsWith('op-')) conjurador = window.campoOponente ? window.campoOponente[contexto.origem.replace('op-', '')] : null;
+        // 🔥 CORREÇÃO 1: Usa o motor global que enxerga o tabuleiro perfeitamente
+        let conjurador = typeof obterCriaturaNoSlot === 'function' ? obterCriaturaNoSlot(contexto.origem) : null;
 
         // O sistema já descontou 1 ficha na hora de mirar. 
         // Para pagar o efeito duplo (3 fichas totais), ele precisa ter pelo menos mais 2 sobrando agora!
@@ -188,11 +190,11 @@ window.MotorDeEfeitos = {
                 }
             });
         });
-    },
+    }
 };
 
 // ==========================================
-// 🔥 FUNÇÃO DE RESOLUÇÃO EXCLUSIVA DO MUGIC
+// 🔥 FUNÇÃO DE RESOLUÇÃO EXCLUSIVA DO MUGIC (Fora do dicionário!)
 // ==========================================
 window.confirmarCancaoCriacao = function(alvoId, conjuradorId) {
     let marcados = document.querySelectorAll('.cancao-cb:checked');
@@ -205,13 +207,9 @@ window.confirmarCancaoCriacao = function(alvoId, conjuradorId) {
     let elementosEscolhidos = Array.from(marcados).map(cb => cb.value);
     document.getElementById('overlay-cancao').remove();
     
-    let alvo = null;
-    if (alvoId.startsWith('jog-')) alvo = window.campoJogador ? window.campoJogador[alvoId.replace('jog-', '')] : null;
-    if (alvoId.startsWith('op-')) alvo = window.campoOponente ? window.campoOponente[alvoId.replace('op-', '')] : null;
-    
-    let conjurador = null;
-    if (conjuradorId.startsWith('jog-')) conjurador = window.campoJogador ? window.campoJogador[conjuradorId.replace('jog-', '')] : null;
-    if (conjuradorId.startsWith('op-')) conjurador = window.campoOponente ? window.campoOponente[conjuradorId.replace('op-', '')] : null;
+    // 🔥 CORREÇÃO 2: Acha as criaturas usando o motor principal do jogo
+    let alvo = typeof obterCriaturaNoSlot === 'function' ? obterCriaturaNoSlot(alvoId) : null;
+    let conjurador = typeof obterCriaturaNoSlot === 'function' ? obterCriaturaNoSlot(conjuradorId) : null;
 
     if (alvo) {
         // Cobra o custo extra do conjurador caso tenha marcado 2 elementos
@@ -222,7 +220,13 @@ window.confirmarCancaoCriacao = function(alvoId, conjuradorId) {
             }
         }
 
-        if (!alvo.elementos) alvo.elementos = [];
+        // 🔥 CORREÇÃO 3: Desconecta o array de elementos do Banco de Dados para evitar apagão geral!
+        if (!alvo.elementos || !Array.isArray(alvo.elementos)) {
+            alvo.elementos = [];
+        } else {
+            alvo.elementos = [...alvo.elementos]; 
+        }
+
         elementosEscolhidos.forEach(el => {
             if (!alvo.elementos.includes(el)) alvo.elementos.push(el);
         });
