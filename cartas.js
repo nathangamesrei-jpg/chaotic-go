@@ -106,6 +106,9 @@ const MAGIAS = [
 // ==========================================
 // 5. BANCO DE DADOS: LOCAIS
 // ==========================================
+// ==========================================
+// 5. BANCO DE DADOS: LOCAIS
+// ==========================================
 const LOCAIS_DB = [
     {
         id: 501, 
@@ -115,6 +118,7 @@ const LOCAIS_DB = [
         elementoNativo: null, // Regra 2: Qualquer Elemento (null)
         img: "cartas/locais/locais azul/cidade de kiru.jpg", 
         tipoCarta: "Local", 
+        efeito: "As criaturas da tribo azul têm 10 de Energia adicionais.",
         raridade: 0.0
     },
     {
@@ -130,6 +134,7 @@ const LOCAIS_DB = [
         ],
         img: "cartas/locais/tunel_tempestade.jpg", 
         tipoCarta: "Local", 
+        efeito: "Ataques aéreos causam 5 de dano adicional. O dano causado por ataques de água é reduzido em 5.",
         raridade: 0.5
     }
 ];
