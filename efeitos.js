@@ -236,6 +236,10 @@ window.confirmarCancaoCriacao = function(alvoId, conjuradorId) {
         if(window.tocarSFX) window.tocarSFX('notificacao');
         
         window.retomarCronometro();
-        if (typeof atualizarTelaBatalha === 'function') window.atualizarTelaBatalha();
+        if (typeof window.atualizarTelaBatalha === 'function') {
+            window.atualizarTelaBatalha(); // Chama a ponte global para acender a luz na hora!
+        } else {
+            console.error("ERRO: A ponte do renderizador não foi encontrada!");
+        }
     }
 };
