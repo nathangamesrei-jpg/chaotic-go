@@ -355,13 +355,17 @@ function atualizarTelaBatalha() {
         if (carta) {
             // Se o Guru estiver vivo e o monstro atual NÃO FOR ele próprio, aplica a aura!
             if (temGuruAura && carta.nome !== "Guru") {
-                if (!carta.elementos) carta.elementos = [];
+                // 🔥 CORREÇÃO DO GURU: Puxa os elementos de fábrica ANTES de soprar o Vento!
+                if (!carta.elementos || carta.elementos.length === 0) {
+                    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === carta.nome) : null;
+                    carta.elementos = (dbCarta && dbCarta.elementos) ? [...dbCarta.elementos] : [];
+                }
                 // Se o aliado ainda não tiver 'Ar', ele "empresta" o elemento temporariamente
                 if (!carta.elementos.includes('Ar')) {
                     carta.auraVento = true; // Marca que o 'Ar' dele veio do Guru e não é fixo
                     carta.elementos.push('Ar');
                 }
-            } 
+            }
             // Se o Guru morrer, o jogo limpa a Aura de quem tinha pegado emprestado!
             else if (!temGuruAura && carta.auraVento) {
                 carta.elementos = carta.elementos.filter(el => el !== 'Ar');
@@ -1223,7 +1227,7 @@ function obterCriaturaNoSlot(fullId) {
 
 }
 
-
+window.obterCriaturaNoSlot = obterCriaturaNoSlot; // 🔥 A PONTE GLOBAL PARA O EFEITOS.JS
 
 function setarCriaturaNoSlot(fullId, criatura) {
 
