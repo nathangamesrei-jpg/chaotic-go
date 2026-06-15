@@ -129,23 +129,58 @@ onValue(perfilRef, (snapshot) => {
 // 2.2 Puxando Álbum (Inventário)
 const albumRef = ref(db, 'jogadores/' + uid + '/album');
 onValue(albumRef, (snapshot) => {
+
+    // ==========================================
+    // 👑 MODO DEUS (CONTA DE DESENVOLVEDOR) 👑
+    // ==========================================
+    console.log("🔑 SEU UID ATUAL É:", uid); // <-- Olhe o console (F12) para pegar seu código!
+    const DEV_UID = "COLE_SEU_UID_AQUI"; // Substitua pelo seu código do Firebase
+
+    if (uid === DEV_UID) {
+        window.inventario = [];
+        let idFalso = 999000;
+        
+        const adicionarTudo = (bancoGlob, tipo) => {
+            if (typeof bancoGlob !== 'undefined') {
+                bancoGlob.forEach(carta => {
+                    window.inventario.push({
+                        id: idFalso++, 
+                        nome: carta.nome, 
+                        tribo: carta.tribo || "Neutro", 
+                        tipoCarta: tipo, 
+                        img: carta.img || carta.cartaBlank, 
+                        favorito: false, 
+                        quantidade: 4, // 4 cópias para montar qualquer deck!
+                        stats: carta.statsMax ? {
+                            c: carta.statsMax.coragem, p: carta.statsMax.poder,
+                            s: carta.statsMax.sabedoria, v: carta.statsMax.velocidade, e: carta.statsMax.energia
+                        } : { c: "-", p: "-", s: "-", v: "-", e: "-" }
+                    });
+                });
+            }
+        };
+
+        adicionarTudo(typeof MONSTROS !== 'undefined' ? MONSTROS : [], "Criatura");
+        adicionarTudo(typeof ATAQUES !== 'undefined' ? ATAQUES : [], "Ataque");
+        adicionarTudo(typeof MAGIAS !== 'undefined' ? MAGIAS : [], "Magia");
+        adicionarTudo(typeof EQUIPAMENTOS !== 'undefined' ? EQUIPAMENTOS : [], "Equipamento");
+        adicionarTudo(typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB : [], "Local");
+
+        if (document.getElementById("tela-album").style.display === "flex") renderizarListaAlbum();
+        return; // Bloqueia o carregamento normal da nuvem para o Dev!
+    }
+    // ==========================================
+
     if (snapshot.exists()) {
         let dadosNuvem = snapshot.val();
-        
         // CÓDIGO DE PROTEÇÃO: Força o Firebase a devolver uma Lista (Array) limpa!
         window.inventario = Array.isArray(dadosNuvem) ? dadosNuvem : Object.values(dadosNuvem);
         window.inventario = window.inventario.filter(item => item !== null && item !== undefined);
-        
     } else {
         // PLANO B DO ÁLBUM: Conta nova? Recebe a Cidade de Kiru de brinde!
         window.inventario = [{
-            id: Date.now(), 
-            nome: "Cidade de Kiru", 
-            tribo: "Azul", 
-            tipoCarta: "Local", 
-            img: "cartas/locais/locais azul/cidade de kiru.jpg", 
-            favorito: false, 
-            quantidade: 1,
+            id: Date.now(), nome: "Cidade de Kiru", tribo: "Azul", tipoCarta: "Local", 
+            img: "cartas/locais/locais azul/cidade de kiru.jpg", favorito: false, quantidade: 1,
             stats: { c: "-", p: "-", s: "-", v: "-", e: "-" }
         }];
         salvarAlbumNaNuvem(); // Grava o brinde no Firebase na mesma hora!
