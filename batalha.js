@@ -3537,21 +3537,27 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 
 
 
-    let nomeLocal = "Local Desconhecido";
-
+   let nomeLocal = "Local Desconhecido";
     let locDB = null;
-
     if (window.localAtivoAtual) {
-
         if (typeof LOCAIS_DB !== 'undefined') locDB = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
-
         if (!locDB && window.inventario) locDB = window.inventario.find(l => l.img === window.localAtivoAtual);
-
         if (locDB) nomeLocal = locDB.nome;
-
     }
 
-
+    // ==========================================
+    // 🗺️ MOTOR DE LOCAIS: EFEITOS DE INÍCIO DE COMBATE
+    // ==========================================
+    if (locDB && locDB.nome === "Cidade de Kiru") {
+        [atacante, defensor].forEach(criatura => {
+            if (criatura && criatura.tribo === "Azul" && !criatura.buffKiruAplicado) {
+                criatura.hpMax = Number(criatura.hpMax || criatura.statsMax.energia) + 10;
+                criatura.hpAtual = Number(criatura.hpAtual) + 10;
+                criatura.buffKiruAplicado = true; // Trava para o bônus não acumular se a rede piscar
+                setTimeout(() => window.mostrarMensagemScanner(`🏰 Cidade de Kiru: ${criatura.nome} ganhou +10 de Energia!`), 1000);
+            }
+        });
+    }
 
     // 🔥 CÁLCULO DE INICIATIVA CORRIGIDO 🔥
     let atributoIniciativa = locDB && locDB.iniciativa ? locDB.iniciativa.toLowerCase() : "velocidade"; // Velocidade é o padrão se falhar
@@ -4321,7 +4327,31 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         msgBonus = "[⚡ ANULADO POR SPEDMAN] ";
     }
 
-    let danoTotal = danoBase + danoExtra; // <-- A linha que você buscou!
+    // ==========================================
+    // 🗺️ MOTOR DE LOCAIS: MODIFICADORES DE DANO
+    // ==========================================
+    let locDBAtual = null;
+    if (window.localAtivoAtual) {
+        if (typeof LOCAIS_DB !== 'undefined') locDBAtual = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
+        if (!locDBAtual && window.inventario) locDBAtual = window.inventario.find(l => l.img === window.localAtivoAtual);
+    }
+
+    if (locDBAtual && locDBAtual.nome === "O Túnel da Tempestade") {
+        let ataqueTemVento = (ataqueDB && (ataqueDB.ar > 0 || ataqueDB.vento > 0 || (ataqueDB.danoElemental && (ataqueDB.danoElemental.ar > 0 || ataqueDB.danoElemental.vento > 0))));
+        let ataqueTemAgua = (ataqueDB && (ataqueDB.agua > 0 || (ataqueDB.danoElemental && ataqueDB.danoElemental.agua > 0)));
+
+        if (ataqueTemVento) {
+            danoExtra += 5;
+            msgBonus += "[🌪️ +5 Dano Aéreo] ";
+        }
+        if (ataqueTemAgua) {
+            danoExtra -= 5;
+            msgBonus += "[💧 -5 Dano Aquático] ";
+        }
+    }
+
+    // 🔥 CORREÇÃO MATEMÁTICA: Garante que o dano não fique negativo e cure o inimigo por acidente!
+    let danoTotal = Math.max(0, danoBase + danoExtra);
 
 
     // ==========================================
