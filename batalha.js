@@ -974,7 +974,7 @@ window.verMugicModal = function(index) {
 
 
 
-// 🔥 FUNÇÃO NOVA QUE JOGA A MAGIA NO LIXO
+
 
 // 🔥 FUNÇÃO NOVA QUE JOGA A MAGIA NO LIXO
 window.descartarMugic = function(index) {
@@ -5262,16 +5262,13 @@ window.descartarMugic = function(index) {
 
     // Ativa o Modo Alvo para o Mugic!
 
+   // Ativa o Modo Alvo para o Mugic!
     window.modoAlvo = {
-
         tipo: 'mugic',
-
         origem: conjuradorId,
-
         mugicIndex: index,
-
-        mugicObj: mugic
-
+        mugicObj: mugic,
+        custo: mugic.custoAtivacao || 1 // 🔥 AGORA ELE COBRA AS 2 FICHAS CORRETAMENTE!
     };
 
 
