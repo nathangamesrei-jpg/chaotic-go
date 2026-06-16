@@ -138,19 +138,18 @@ onValue(albumRef, (snapshot) => {
 
     if (uid === DEV_UID) {
         window.inventario = [];
-        let idFalso = 999000;
         
         const adicionarTudo = (bancoGlob, tipo) => {
             if (typeof bancoGlob !== 'undefined') {
                 bancoGlob.forEach(carta => {
                     window.inventario.push({
-                        id: idFalso++, 
+                        id: carta.id, // 🔥 A CORREÇÃO: Usa o ID oficial e imutável do Banco de Dados!
                         nome: carta.nome, 
                         tribo: carta.tribo || "Neutro", 
                         tipoCarta: tipo, 
                         img: carta.img || carta.cartaBlank, 
                         favorito: false, 
-                        quantidade: 4, // 4 cópias para montar qualquer deck!
+                        quantidade: 4, 
                         stats: carta.statsMax ? {
                             c: carta.statsMax.coragem, p: carta.statsMax.poder,
                             s: carta.statsMax.sabedoria, v: carta.statsMax.velocidade, e: carta.statsMax.energia
@@ -167,7 +166,7 @@ onValue(albumRef, (snapshot) => {
         adicionarTudo(typeof LOCAIS_DB !== 'undefined' ? LOCAIS_DB : [], "Local");
 
         if (document.getElementById("tela-album").style.display === "flex") renderizarListaAlbum();
-        return; // Bloqueia o carregamento normal da nuvem para o Dev!
+        return; 
     }
     // ==========================================
 
