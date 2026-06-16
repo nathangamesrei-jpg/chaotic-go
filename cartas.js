@@ -96,7 +96,8 @@ const EQUIPAMENTOS = [
 
 // ==========================================
 // 4. BANCO DE DADOS: MAGIAS (MUGIC)
-// ==========================================const MAGIAS = [
+// ==========================================
+const MAGIAS = [
     {
         id: 301, nome: "Canção da Criação", triboRestricao: null, custoAtivacao: 1, efeitoId: "cancao_criacao", tipoCarta: "Magia", img: "cartas/magias/cancao_criacao.png", efeito: "Adicione qualquer elemento a um campeão. Gaste 3 fichas para adicionar 2 elementos.", raridade: 0.5
     },
