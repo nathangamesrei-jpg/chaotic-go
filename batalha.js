@@ -5071,32 +5071,56 @@ window.revelarEquipamento = function(fullId) {
             nomeAcao: `Revelar Equipamento (${criatura.equipamento.nome})`,
             tipo: 'equipamento',
             executar: function() {
-                criatura.equipamentoRevelado = true; // Vira a carta pra cima só na resolução!
+                criatura.equipamentoRevelado = true;
+                // Vira a carta pra cima só na resolução!
                 window.mostrarMensagemScanner(`✨ EQUIPAMENTO REVELADO: ${criatura.nome} revelou ${criatura.equipamento.nome}!`);
                 if(window.tocarSFX) window.tocarSFX('notificacao');
                 
                 // ==========================================
                 // ⚙️ MOTOR DE EQUIPAMENTOS: APLICAR STATUS
                 // ==========================================
+                
+                // EFEITO 1: ANEL PRECIOSO
                 if (criatura.equipamento.nome === "Anel Precioso") {
                     criatura.hpAtual = Number(criatura.hpAtual) - 15;
                     
                     setTimeout(() => {
                         window.mostrarMensagemScanner(`💍 O peso do Anel Precioso drenou 15 de energia de ${criatura.nome}!`);
-                    }, 1500); // Atraso para dar tempo de ler a primeira mensagem de revelação
+                    }, 1500); 
 
-                    // 🌐 Sincroniza a nova vida pela rede
                     if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
                         window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: fullId, novoHp: criatura.hpAtual });
                     }
 
-                    // 💀 A MECÂNICA DE MORTE POR REVELAÇÃO!
                     if (criatura.hpAtual <= 0) {
                         criatura.hpAtual = 0;
                         setTimeout(() => {
                             window.mostrarMensagemScanner(`💀 A energia de ${criatura.nome} foi esgotada pelo equipamento!`);
                             window.encerrarCombateMorte(fullId);
                         }, 3000);
+                    }
+                }
+
+                // 🔥 EFEITO 2: BASTÃO DA SABEDORIA (NOVO)
+                if (criatura.equipamento.nome === "Bastão da Sabedoria") {
+                    if(criatura.statsMax) {
+                        criatura.statsMax.sabedoria = Number(criatura.statsMax.sabedoria) + 40;
+                    }
+                    window.mostrarMensagemScanner(`📖 Sabedoria Ancestral! A Sabedoria de ${criatura.nome} aumentou em +40!`);
+                }
+
+                // 🔥 EFEITO 3: ARPA MÁGICA (NOVO)
+                if (criatura.equipamento.nome === "Arpa Mágica") {
+                    // Adiciona a ficha e destrói o equipamento instantaneamente
+                    criatura.fichasHabilidade = Number(criatura.fichasHabilidade) + 1;
+                    criatura.equipamento = null; 
+                    criatura.equipamentoRevelado = false;
+                    
+                    window.mostrarMensagemScanner(`🎵 A Arpa Mágica tocou! ${criatura.nome} ganhou +1 Ficha e a Arpa desintegrou-se!`);
+                    
+                    // Sincroniza a nova ficha de habilidade com a rede (ecrã do oponente)
+                    if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                        window.enviarAcaoRede({ tipo: 'sincronizar_fichas', alvo: fullId, qtd: criatura.fichasHabilidade });
                     }
                 }
 
@@ -5111,7 +5135,6 @@ window.revelarEquipamento = function(fullId) {
         window.adicionarAoBurst(acaoRevelar);
     }
 };
-
     
 // 2. USAR HABILIDADE (AGORA INTELIGENTE: COM OU SEM MIRA)
 window.usarHabilidade = function(fullId) {
