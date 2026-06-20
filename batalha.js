@@ -4371,16 +4371,22 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
 
 
     // ==========================================
-    // 🛡️ GATILHO PASSIVO: A Imunidade do Rex!
+    // 🛡️ GATILHOS PASSIVOS: Imunidades (Rex, Amuleto do Vácuo, etc)
     // ==========================================
     if (ataqueDB && idMonstroInimigo) {
         let defensorAtual = obterCriaturaNoSlot(idMonstroInimigo);
         // Descobre se o ataque possui elemento Vento/Ar na raiz dele
         let ataqueTemVento = (ataqueDB.ar > 0 || ataqueDB.vento > 0 || (ataqueDB.danoElemental && (ataqueDB.danoElemental.ar > 0 || ataqueDB.danoElemental.vento > 0)));
         
-        if (defensorAtual && defensorAtual.nome === "Rex" && ataqueTemVento) {
-            danoTotal = 0; // O Rex absorve tudo!
-            msgBonus = "[🛡️ IMUNE A VENTO] ";
+        if (defensorAtual && ataqueTemVento) {
+            // Checa se o equipamento está equipado e revelado (virado para cima)
+            let temAmuleto = (defensorAtual.equipamento && defensorAtual.equipamentoRevelado && defensorAtual.equipamento.nome === "Amuleto do Vácuo");
+            
+            // Se for o Rex OU se estiver usando o Amuleto... anula o dano!
+            if (defensorAtual.nome === "Rex" || temAmuleto) {
+                danoTotal = 0; 
+                msgBonus = "[🛡️ IMUNE A VENTO] ";
+            }
         }
     }
 
