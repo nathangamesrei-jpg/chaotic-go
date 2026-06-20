@@ -5231,7 +5231,6 @@ window.prepararMugic = function(fullId) {
 };
 
 
-
 // 4. USAR MUGIC (CHECA A TRIBO E ABRE A MIRA)
 window.descartarMugic = function(index) {
     let mugic = window.jogadorMugics[index];
@@ -5244,7 +5243,7 @@ window.descartarMugic = function(index) {
     }
 
     let criatura = obterCriaturaNoSlot(conjuradorId);
-    let custoReal = mugic.custoAtivacao || 1; // 🔥 Puxa o custo correto do Banco de Dados!
+    let custoReal = mugic.custoAtivacao || 1;
 
     if (!criatura || criatura.fichasHabilidade < custoReal) {
         window.mostrarMensagemScanner(`❌ Fichas insuficientes! A magia custa ${custoReal}.`);
@@ -5258,18 +5257,99 @@ window.descartarMugic = function(index) {
 
     document.getElementById('overlay-ver-mugic').remove();
 
+    // 🔥 SISTEMA INTELIGENTE DE MIRA (NOVA LÓGICA) 🔥
+    if (mugic.efeitoId === "cancao_rejeicao") {
+        // Essa magia não mira numa criatura física, ela abre o painel de anulação direto!
+        window.abrirModalConfirmacaoMugic(conjuradorId, index, mugic, custoReal);
+        return;
+    }
+
+    // Magias normais de alvo continuam usando a mira no tabuleiro
     window.modoAlvo = {
         tipo: 'mugic',
         origem: conjuradorId,
         mugicIndex: index,
         mugicObj: mugic,
-        custo: custoReal // Passa o custo para a arma descarregar depois
+        custo: custoReal 
     };
 
     window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para o ${mugic.nome}...`);
     if(window.tocarSFX) window.tocarSFX('notificacao');
 };
 
+// ==========================================
+// 🔥 NOVO: MOTOR DE MAGIAS SEM ALVO FÍSICO 🔥
+// ==========================================
+window.abrirModalConfirmacaoMugic = function(conjuradorId, index, mugic, custoReal) {
+    let conjurador = obterCriaturaNoSlot(conjuradorId);
+    // Lê qual foi o último golpe que o inimigo ativou
+    let acaoAlvo = window.pilhaBurst.length > 0 ? window.pilhaBurst[window.pilhaBurst.length - 1].nomeAcao : "Nenhuma ação na corrente";
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-confirma-mugic" style="z-index: 10000000; background: rgba(0,0,0,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="modal-content-fichas" style="text-align: center; border: 3px solid #00bcd4; background: #111; padding: 25px; border-radius: 10px; max-width: 380px; box-shadow: 0 0 30px rgba(0,188,212,0.4);">
+                <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif; margin-bottom: 10px;">🛡️ CONJURAR MAGIA?</h2>
+                <p style="color: #fff; font-size: 13px; margin-bottom: 15px;">Deseja que <b>${conjurador.nome}</b> pague ${custoReal} fichas para usar <b>${mugic.nome}</b>?</p>
+                
+                <div style="background: #222; border: 1px dashed #ff5555; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+                    <p style="color: #aaa; font-size: 10px; margin-bottom: 5px; text-transform: uppercase;">Alvo da Anulação:</p>
+                    <p style="color: #ff5555; font-size: 14px; font-weight: bold; margin: 0;">${acaoAlvo}</p>
+                </div>
+                
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button class="btn-acao-modal" style="background:#220000; border-color: #ff5555; color: #ff5555;" onclick="document.getElementById('overlay-confirma-mugic').remove(); window.mostrarMensagemScanner('Magia cancelada.');">CANCELAR</button>
+                    <button class="btn-acao-modal" style="background:#002222; border-color: #00bcd4; color: #00bcd4;" onclick="window.dispararMugicSemAlvo('${conjuradorId}', ${index}, ${custoReal})">CONJURAR</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+window.dispararMugicSemAlvo = function(conjuradorId, index, custoReal) {
+    document.getElementById('overlay-confirma-mugic').remove();
+    
+    let mugic = window.jogadorMugics[index];
+    let conjurador = obterCriaturaNoSlot(conjuradorId);
+    
+    // 1. Cobra o custo da criatura
+    conjurador.fichasHabilidade -= custoReal;
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        window.enviarAcaoRede({ tipo: 'sincronizar_fichas', alvo: conjuradorId, qtd: conjurador.fichasHabilidade });
+    }
+    
+    // 2. Manda a carta pro lixo visualmente
+    if (!window.cemiterio) window.cemiterio = [];
+    window.cemiterio.push(mugic.nome);
+    window.jogadorMugics[index] = null;
+    
+    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        window.enviarAcaoRede({ tipo: 'descarte_lixo', idCarta: mugic.nome, categoria: 'mugic' });
+    }
+    
+    atualizarMugicsDaTela(); 
+    atualizarDecksEMaoCards();
+
+    // 3. Coloca a ação na Corrente (Burst)
+    let ctx = { origem: conjuradorId, custo: custoReal, mugicObj: mugic };
+    
+    let acao = { 
+        dono: 'jogador', 
+        nomeAcao: `Mugic: ${mugic.nome}`, 
+        tipo: 'mugic', 
+        executar: function() { 
+            let efeitoIdEncontrado = mugic.efeitoId;
+            if (efeitoIdEncontrado && window.MotorDeEfeitos && window.MotorDeEfeitos[efeitoIdEncontrado]) {
+                // Passa "null" pro alvo já que não clicamos em ninguém na mesa!
+                window.MotorDeEfeitos[efeitoIdEncontrado](null, null, atualizarTelaBatalha, ctx);
+            } else {
+                window.mostrarMensagemScanner(`✨ Mugic conjurado sem alvo definido!`); 
+            }
+        } 
+    };
+    
+    window.adicionarAoBurst(acao);
+};
 
 
 
