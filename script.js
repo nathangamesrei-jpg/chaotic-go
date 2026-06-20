@@ -130,10 +130,10 @@ onValue(perfilRef, (snapshot) => {
 const albumRef = ref(db, 'jogadores/' + uid + '/album');
 onValue(albumRef, (snapshot) => {
 
-    // ==========================================
+   // ==========================================
     // 👑 MODO DEUS (CONTA DE DESENVOLVEDOR) 👑
     // ==========================================
-    console.log("🔑 SEU UID ATUAL É:", uid); // <-- Olhe o console (F12) para pegar seu código!
+    console.log("🔑 SEU UID ATUAL É:", uid); 
     const DEV_UID = "Uetuh99BvhcnlzCxBbBg1Yu0CJv2"; // A chave mestra do Arquiteto!
 
     if (uid === DEV_UID) {
@@ -143,13 +143,12 @@ onValue(albumRef, (snapshot) => {
             if (typeof bancoGlob !== 'undefined') {
                 bancoGlob.forEach(carta => {
                     window.inventario.push({
-                        id: carta.id, // 🔥 A CORREÇÃO: Usa o ID oficial e imutável do Banco de Dados!
-                        nome: carta.nome, 
+                        ...carta, // 🔥 A MÁGICA: Copia TUDO da carta original (custo, dano, efeitos, iniciativa)!
                         tribo: carta.tribo || "Neutro", 
                         tipoCarta: tipo, 
                         img: carta.img || carta.cartaBlank, 
                         favorito: false, 
-                        quantidade: 4, 
+                        quantidade: 20, 
                         stats: carta.statsMax ? {
                             c: carta.statsMax.coragem, p: carta.statsMax.poder,
                             s: carta.statsMax.sabedoria, v: carta.statsMax.velocidade, e: carta.statsMax.energia
