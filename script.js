@@ -2387,7 +2387,7 @@ if(btnPA) btnPA.onclick = () => abrirModalPilha('Ataque', btnPA);
 let btnPL = document.getElementById('pilha-locais'); 
 if(btnPL) btnPL.onclick = () => abrirModalPilha('Local', btnPL);
 
-// Função que monta a lista de cartas dentro do Modal (Agora usa ID)
+// Função que monta a lista de cartas dentro do Modal (Agora usa ID e limpa fantasmas!)
 window.abrirModalPilha = function(tipo, slotElement) {
     let m = document.getElementById("modal-pilha-deck");
     let titulo = document.getElementById("titulo-modal-pilha");
@@ -2399,9 +2399,38 @@ window.abrirModalPilha = function(tipo, slotElement) {
     
     lista.innerHTML = "";
 
-    // Pega as memórias salvas na pilha (agora procurando por ID!)
+    // Pega as memórias salvas na pilha
     let idsNaPilha = slotElement.dataset.cartas ? JSON.parse(slotElement.dataset.cartas) : [];
+    
+    // 🔥 AUTO-FIX (FAXINA DE FANTASMAS): Filtra e joga fora os IDs velhos que não existem mais!
+    let idsValidos = idsNaPilha.filter(id => window.inventario.some(c => c.id == id));
+    
+    // Se ele achou fantasmas e limpou a lista, a gente atualiza os contadores na tela pra consertar o bug!
+    if (idsValidos.length !== idsNaPilha.length) {
+        idsNaPilha = idsValidos;
+        slotElement.dataset.cartas = JSON.stringify(idsNaPilha); // Salva a lista limpa
+        
+        let maxCartas = tipo === 'Ataque' ? 20 : 10;
+        let cont = slotElement.querySelector('.contador-cartas');
+        if(cont) {
+            cont.innerText = `${idsNaPilha.length}/${maxCartas}`;
+            cont.style.color = idsNaPilha.length > 0 ? "#00ffff" : "white";
+        }
+        if (tipo === 'Ataque') {
+            let custoTotal = 0;
+            idsNaPilha.forEach(id => {
+                let c = window.inventario.find(carta => carta.id == id);
+                if (c) custoTotal += (parseInt(c.custo) || 0);
+            });
+            let contCusto = slotElement.querySelector('.contador-custo');
+            if(contCusto) {
+                contCusto.innerText = `Custo: ${custoTotal}/20`;
+                contCusto.style.color = custoTotal > 20 ? "#ff5555" : (idsNaPilha.length > 0 ? "#00ffff" : "#ff5555");
+            }
+        }
+    }
 
+    // Agora sim, desenha a tela com segurança
     if (idsNaPilha.length === 0) {
         lista.innerHTML = "<p style='color:#aaa; text-align:center; font-size:12px; margin: 20px 0;'>A pilha está vazia.</p>";
     } else {
