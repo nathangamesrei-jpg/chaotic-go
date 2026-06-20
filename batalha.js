@@ -705,18 +705,14 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
 
 
 
-    if (criatura.equipamento) {
-
+  if (criatura.equipamento) {
         if (!criatura.equipamentoRevelado) {
-
             botoesHTML += `<button class="btn-acao-modal btn-revelar" onclick="window.revelarEquipamento('${fullId}')">Revelar Equipamento</button>`;
-
         } else {
-
             botoesHTML += `<button class="btn-acao-modal btn-ver" onclick="window.verEquipamentoModal('${fullId}')">Ver Equipamento</button>`;
-
+            // 🔥 NOVO: BOTÃO DE DESCARTAR EQUIPAMENTO!
+            botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff5555; color: #ff5555; margin-top: 10px;" onclick="window.descartarEquipamentoMesa('${fullId}')">Descartar Equipamento</button>`;
         }
-
     }
 
 
@@ -5072,26 +5068,18 @@ window.revelarEquipamento = function(fullId) {
             tipo: 'equipamento',
             executar: function() {
                 criatura.equipamentoRevelado = true;
-                // Vira a carta pra cima só na resolução!
                 window.mostrarMensagemScanner(`✨ EQUIPAMENTO REVELADO: ${criatura.nome} revelou ${criatura.equipamento.nome}!`);
                 if(window.tocarSFX) window.tocarSFX('notificacao');
                 
-                // ==========================================
-                // ⚙️ MOTOR DE EQUIPAMENTOS: APLICAR STATUS
-                // ==========================================
-                
-                // EFEITO 1: ANEL PRECIOSO
-                if (criatura.equipamento.nome === "Anel Precioso") {
-                    criatura.hpAtual = Number(criatura.hpAtual) - 15;
-                    
-                    setTimeout(() => {
-                        window.mostrarMensagemScanner(`💍 O peso do Anel Precioso drenou 15 de energia de ${criatura.nome}!`);
-                    }, 1500); 
+                let eqNome = criatura.equipamento.nome.toLowerCase();
 
+                // EFEITO 1: ANEL PRECIOSO
+                if (eqNome === "anel precioso") {
+                    criatura.hpAtual = Number(criatura.hpAtual) - 15;
+                    setTimeout(() => window.mostrarMensagemScanner(`💍 O peso do Anel Precioso drenou 15 de energia de ${criatura.nome}!`), 1500); 
                     if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
                         window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: fullId, novoHp: criatura.hpAtual });
                     }
-
                     if (criatura.hpAtual <= 0) {
                         criatura.hpAtual = 0;
                         setTimeout(() => {
@@ -5101,40 +5089,79 @@ window.revelarEquipamento = function(fullId) {
                     }
                 }
 
-                // 🔥 EFEITO 2: BASTÃO DA SABEDORIA (NOVO)
-                if (criatura.equipamento.nome === "Bastão da Sabedoria") {
-                    if(criatura.statsMax) {
-                        criatura.statsMax.sabedoria = Number(criatura.statsMax.sabedoria) + 40;
-                    }
+                // 🔥 EFEITO 2: BASTÃO DA SABEDORIA (Agora com Sincronização de Rede!)
+                if (eqNome === "bastão da sabedoria" || eqNome === "bastao da sabedoria") {
+                    if(criatura.statsMax) criatura.statsMax.sabedoria = Number(criatura.statsMax.sabedoria) + 40;
                     window.mostrarMensagemScanner(`📖 Sabedoria Ancestral! A Sabedoria de ${criatura.nome} aumentou em +40!`);
-                }
-
-                // 🔥 EFEITO 3: ARPA MÁGICA (NOVO)
-                if (criatura.equipamento.nome === "Arpa Mágica") {
-                    // Adiciona a ficha e destrói o equipamento instantaneamente
-                    criatura.fichasHabilidade = Number(criatura.fichasHabilidade) + 1;
-                    criatura.equipamento = null; 
-                    criatura.equipamentoRevelado = false;
                     
-                    window.mostrarMensagemScanner(`🎵 A Arpa Mágica tocou! ${criatura.nome} ganhou +1 Ficha e a Arpa desintegrou-se!`);
-                    
-                    // Sincroniza a nova ficha de habilidade com a rede (ecrã do oponente)
-                    if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                        window.enviarAcaoRede({ tipo: 'sincronizar_fichas', alvo: fullId, qtd: criatura.fichasHabilidade });
+                    if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                        window.enviarAcaoRede({ tipo: 'sincronizar_stats', alvo: fullId, statsMax: criatura.statsMax });
                     }
                 }
 
-                // 🔥 O TRANSMISSOR FALTANTE: Avisa a Nuvem para virar a carta na tela do inimigo também!
                 if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
                     window.enviarAcaoRede({ tipo: 'revelar_equipamento_direto', alvo: fullId });
                 }
-                
                 atualizarTelaBatalha(); 
             }
         };
         window.adicionarAoBurst(acaoRevelar);
     }
 };
+
+// 🔥 NOVO: DESCARTAR EQUIPAMENTO E ATIVAR A ARPA MÁGICA!
+window.descartarEquipamentoMesa = function(fullId) {
+    window.fecharModalAcoes();
+    let criatura = obterCriaturaNoSlot(fullId);
+    if (!criatura || !criatura.equipamento) return;
+
+    let acaoDescarte = {
+        dono: criatura.dono,
+        nomeAcao: `Descartar Equipamento (${criatura.equipamento.nome})`,
+        tipo: 'equipamento',
+        executar: function() {
+            let eqNome = criatura.equipamento.nome.toLowerCase();
+            let eqNomeOriginal = criatura.equipamento.nome;
+            
+            // Manda pro Lixo permanentemente
+            if (!window.cemiterio) window.cemiterio = [];
+            window.cemiterio.push(eqNomeOriginal);
+
+            criatura.equipamento = null;
+            criatura.equipamentoRevelado = false;
+
+            window.mostrarMensagemScanner(`🗑️ ${criatura.nome} descartou o equipamento ${eqNomeOriginal}.`);
+            if(window.tocarSFX) window.tocarSFX('notificacao');
+
+            // 🔥 O GATILHO DA ARPA MÁGICA
+            if (eqNome === "arpa mágica" || eqNome === "arpa magica") {
+                criatura.fichasHabilidade = Number(criatura.fichasHabilidade) + 1;
+                setTimeout(() => window.mostrarMensagemScanner(`🎵 A Arpa Mágica tocou ao ser descartada! ${criatura.nome} ganhou +1 Ficha!`), 1500);
+                if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                    window.enviarAcaoRede({ tipo: 'sincronizar_fichas', alvo: fullId, qtd: criatura.fichasHabilidade });
+                }
+            }
+
+            // 🔥 SE JOGOU O BASTÃO FORA, PERDE A SABEDORIA!
+            if (eqNome === "bastão da sabedoria" || eqNome === "bastao da sabedoria") {
+                if(criatura.statsMax) criatura.statsMax.sabedoria = Number(criatura.statsMax.sabedoria) - 40;
+                setTimeout(() => window.mostrarMensagemScanner(`📉 Sem o Bastão, a Sabedoria de ${criatura.nome} voltou ao normal.`), 1500);
+                if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                    window.enviarAcaoRede({ tipo: 'sincronizar_stats', alvo: fullId, statsMax: criatura.statsMax });
+                }
+            }
+
+            // Avisa a rede do descarte
+            if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                window.enviarAcaoRede({ tipo: 'descarte_equipamento_mesa', alvo: fullId, nomeEquip: eqNomeOriginal });
+            }
+
+            atualizarTelaBatalha();
+        }
+    };
+    window.adicionarAoBurst(acaoDescarte);
+};
+////////////
     
 // 2. USAR HABILIDADE (AGORA INTELIGENTE: COM OU SEM MIRA)
 window.usarHabilidade = function(fullId) {
@@ -5545,6 +5572,28 @@ window.processarAcaoInimiga = function(acao) {
         if (!window.baralhoAtaques) window.baralhoAtaques = [];
         window.baralhoAtaques.push(acao.idCarta); // Coloca no fundo do deck (vai ser embaralhado logo logo)
         atualizarDecksEMaoCards();
+    }
+        // 📊 RECEPTOR: O inimigo ganhou ou perdeu atributos na mesa!
+    else if (acao.tipo === 'sincronizar_stats') {
+        let alvoReal = inverterId(acao.alvo); 
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura.statsMax = acao.statsMax;
+            atualizarTelaBatalha(); 
+        }
+    }
+    // 🗑️ RECEPTOR: O inimigo jogou o equipamento dele no lixo de propósito!
+    else if (acao.tipo === 'descarte_equipamento_mesa') {
+        let alvoReal = inverterId(acao.alvo); 
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura && criatura.equipamento) {
+            criatura.equipamento = null;
+            criatura.equipamentoRevelado = false;
+            if (!window.cemiterioOponente) window.cemiterioOponente = [];
+            window.cemiterioOponente.push(acao.nomeEquip);
+            window.mostrarMensagemScanner(`🗑️ O Inimigo descartou o equipamento: ${acao.nomeEquip}!`);
+            atualizarTelaBatalha();
+        }
     }
     else if (acao.tipo === 'combate') {
         let origemReal = inverterId(acao.origem);
