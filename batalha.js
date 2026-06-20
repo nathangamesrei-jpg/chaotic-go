@@ -4963,6 +4963,9 @@ window.checarFimDeJogo = function() {
 
 
 window.declararVitoria = function(vencedor, motivo) {
+    // 🔥 PROTEÇÃO CONTRA TELA DUPLA: Se já tem uma tela de fim de jogo aberta, ignora o resto!
+    if (document.getElementById('overlay-vitoria')) return;
+
     // 🔥 PARADA DE EMERGÊNCIA: A partida acabou! Desliga o Anti-AFK IMEDIATAMENTE para evitar W.O. Fantasma!
     if (typeof window.desligarSistemaAntiAFK === 'function') window.desligarSistemaAntiAFK();
 
@@ -5464,32 +5467,26 @@ window.enviarAcaoRede = function(acaoData) {
 
 
 // 🎧 O RECEPTOR: Fica escutando a Nuvem o tempo todo
-
 window.iniciarEscutaAcoesOnline = function() {
-
     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
-
     
+    // 🔥 O MARCADOR DE TEMPO: Anota a hora exata que você conectou na sala!
+    window.tempoEntradaNaSala = Date.now();
 
     // Rádio 1: Escuta as ações pesadas (Movimento final, combate, magias)
-
     window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao', (snap) => {
-
         if (!snap.exists()) return;
-
         let acao = snap.val();
-
+        
         if (acao.remetente === (window.souP1Batalha ? 'p1' : 'p2')) return;
+        
+        // 👻 O EXORCISTA: Se a mensagem da nuvem for mais velha que a sua conexão, IGNORA!
+        if (acao.timestamp && acao.timestamp < window.tempoEntradaNaSala) return;
 
         if (window.ultimaAcaoProcessada === acao.timestamp) return;
-
         window.ultimaAcaoProcessada = acao.timestamp;
-
         window.processarAcaoInimiga(acao);
-
     });
-
-
 
     // 👻 Rádio 2: O Radar de Fantasmas (Vê a carta do oponente flutuando na tela)
 
