@@ -5233,72 +5233,42 @@ window.prepararMugic = function(fullId) {
 
 
 // 4. USAR MUGIC (CHECA A TRIBO E ABRE A MIRA)
-
 window.descartarMugic = function(index) {
-
     let mugic = window.jogadorMugics[index];
-
     if (!mugic) return;
 
-
-
     let conjuradorId = window.conjuradorMugicAtual;
-
     if (!conjuradorId) {
-
         window.mostrarMensagemScanner("❌ Erro: Selecione primeiro uma criatura (Usar Mugic) antes de escolher a carta!");
-
         return;
-
     }
-
-
 
     let criatura = obterCriaturaNoSlot(conjuradorId);
+    let custoReal = mugic.custoAtivacao || 1; // 🔥 Puxa o custo correto do Banco de Dados!
 
-    if (!criatura || criatura.fichasHabilidade <= 0) return;
-
-
-
-    // 🔥 REGRA DA COR (RESTRIÇÃO DE TRIBO) 🔥
-
-    if (mugic.triboRestricao && mugic.triboRestricao.toLowerCase() !== criatura.tribo.toLowerCase()) {
-
-        window.mostrarMensagemScanner(`❌ Falha! O Mugic é da tribo ${mugic.triboRestricao}. ${criatura.nome} (${criatura.tribo}) não pode conjurá-lo!`);
-
-        return;
-
+    if (!criatura || criatura.fichasHabilidade < custoReal) {
+        window.mostrarMensagemScanner(`❌ Fichas insuficientes! A magia custa ${custoReal}.`);
+        return; 
     }
 
-
+    if (mugic.triboRestricao && mugic.triboRestricao.toLowerCase() !== criatura.tribo.toLowerCase()) {
+        window.mostrarMensagemScanner(`❌ Tribo incompatível!`);
+        return;
+    }
 
     document.getElementById('overlay-ver-mugic').remove();
 
-
-
-    // Ativa o Modo Alvo para o Mugic!
-
-   // Ativa o Modo Alvo para o Mugic!
     window.modoAlvo = {
         tipo: 'mugic',
         origem: conjuradorId,
         mugicIndex: index,
         mugicObj: mugic,
-        custo: mugic.custoAtivacao || 1 // 🔥 AGORA ELE COBRA AS 2 FICHAS CORRETAMENTE!
+        custo: custoReal // Passa o custo para a arma descarregar depois
     };
 
-
-
-    window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para o ${mugic.nome}... (Ou num vazio para cancelar)`);
-
+    window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para o ${mugic.nome}...`);
     if(window.tocarSFX) window.tocarSFX('notificacao');
-
 };
-
-
-
-
-
 
 
 
@@ -5324,17 +5294,12 @@ window.ultimaAcaoProcessada = 0; // Memória anti-eco
 
 
 // 🎤 O TRANSMISSOR: Envia o que você fez para a Nuvem
-
 window.enviarAcaoRede = function(acaoData) {
-
     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
-
-    acaoData.timestamp = Date.now();
-
+    // 🔥 CORREÇÃO DE COLISÃO: Soma um número aleatório para garantir que nenhum milissegundo seja igual ao outro!
+    acaoData.timestamp = Date.now() + Math.random(); 
     acaoData.remetente = window.souP1Batalha ? 'p1' : 'p2';
-
     window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { ultima_acao: acaoData });
-
 };
 
 
@@ -5650,6 +5615,13 @@ window.processarAcaoInimiga = function(acao) {
             window.retomarCronometro();
             window.mostrarMensagemScanner(`🌟 Naty inimiga moldou os elementos para: ${acao.elementos.join(", ")}!`);
             atualizarTelaBatalha();
+        }
+    }
+            else if (acao.tipo === 'anular_acao') {
+        // 🔥 NUVEM AVISOU: O Inimigo usou um Counter (Rejeição) e deletou a nossa ação!
+        if (window.pilhaBurst && window.pilhaBurst.length > 0) {
+            let acaoAnulada = window.pilhaBurst.pop();
+            window.mostrarMensagemScanner(`🚫 NEGADO! O oponente anulou a sua ação: ${acaoAnulada.nomeAcao}!`);
         }
     }
     else if (acao.tipo === 'descarte_lixo') {
