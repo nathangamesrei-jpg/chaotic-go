@@ -189,32 +189,28 @@ window.MotorDeEfeitos = {
             });
         });
     },
+
     // =====================================
     // 🔥 NOVO: MUGIC - Canção da Rejeição (COUNTER)
     // =====================================
     "cancao_rejeicao": function(alvo, fullId, atualizarTela, contexto) {
-        // Acessa a fila de ações da Corrente (Burst)
         if (window.pilhaBurst && window.pilhaBurst.length > 0) {
-            
-            // Olha para a próxima ação que está na fila para ser resolvida
             let acaoAlvo = window.pilhaBurst[window.pilhaBurst.length - 1]; 
             
-            // Verifica se a ação que está na fila NÃO é sua
             if (acaoAlvo.dono !== 'jogador') {
-                
-                // 🛑 A MÁGICA DO COUNTER: Remove a ação inimiga da fila antes que ela aconteça!
                 window.pilhaBurst.pop(); 
-                
                 window.mostrarMensagemScanner(`🚫 NEGADO! A Canção da Rejeição dissipou: ${acaoAlvo.nomeAcao}!`);
                 if(window.tocarSFX) window.tocarSFX('notificacao');
                 
+                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                    window.enviarAcaoRede({ tipo: 'anular_acao' });
+                }
             } else {
-                window.mostrarMensagemScanner(`⚠️ Você não pode anular sua própria ação! A magia foi desperdiçada.`);
+                window.mostrarMensagemScanner(`⚠️ Você não pode anular sua própria ação! Magia desperdiçada.`);
             }
         } else {
-            window.mostrarMensagemScanner(`⚠️ Silêncio absoluto... Não havia ação do oponente para anular.`);
+            window.mostrarMensagemScanner(`⚠️ Não havia ação inimiga na Corrente para anular.`);
         }
-        
         atualizarTela();
     },
 };
