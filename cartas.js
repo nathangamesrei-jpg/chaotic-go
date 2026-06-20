@@ -109,9 +109,6 @@ const MAGIAS = [
 // ==========================================
 // 5. BANCO DE DADOS: LOCAIS
 // ==========================================
-// ==========================================
-// 5. BANCO DE DADOS: LOCAIS
-// ==========================================
 const LOCAIS_DB = [
     {
         id: 501, 
@@ -130,20 +127,30 @@ const LOCAIS_DB = [
         iniciativa: "Poder", 
         triboNativa: "Qualquer", // Regra 1: Qualquer Tribo
         elementoNativo: "Ar",    // Regra 2: SÓ monstros com o elemento "Ar"
-        // 🚀 BOOST DE SPAWN: Guru e Rex dominam este local!
         boostSpawn: [
-            { nome: "Guru", peso: 50 }, // Adiciona 50 bilhetes extras do Guru na urna
-            { nome: "Rex", peso: 50 }   // Adiciona 50 bilhetes extras do Rex na urna
+            { nome: "Guru", peso: 50 }, 
+            { nome: "Rex", peso: 50 }   
         ],
         img: "cartas/locais/tunel_tempestade.jpg", 
         tipoCarta: "Local", 
         efeito: "Ataques aéreos causam 5 de dano adicional. O dano causado por ataques de água é reduzido em 5.",
-        raridade: 0.5
+        raridade: 0.0
+    },
+    {
+        id: 503, 
+        nome: "A Barragem de Magma", 
+        iniciativa: "Ar", // O motor vai usar "Velocidade" como desempate natural, como manda a regra para elementos!
+        triboNativa: "Qualquer", 
+        elementoNativo: "Fogo", 
+        img: "cartas/locais/A barragem.png", 
+        tipoCarta: "Local", 
+        efeito: "Criaturas sem Fogo, ganham ele.",
+        raridade: 0.4
     }
 ];
 
-
 const CENARIOS = {
     "Cidade de Kiru": "cartas/locais/locais azul/kiru-bg.png",
-    "O Túnel da Tempestade": "cartas/locais/tempestade-bg.jpg"
+    "O Túnel da Tempestade": "cartas/locais/tempestade-bg.jpg",
+    "A Barragem de Magma": "cartas/locais/A barragem-bg.png" // Pode trocar por um BG específico depois se quiser
 };
