@@ -4412,21 +4412,20 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 if (ataqueDB && ataqueDB.id === 101) {
                     if (alvo.equipamento) {
                         let eqText = (alvo.equipamento.efeito || "").toLowerCase();
+                        // Destrói mesmo se não estiver revelado, a não ser que a carta secreta seja Indestrutível!
                         if (eqText.includes('indestrutível') || eqText.includes('indestrutivel')) {
                             window.mostrarMensagemScanner("🛡️ O equipamento resistiu ao Ácido (Indestrutível)!");
                         } else {
-                            let nomeEq = alvo.equipamento.nome;
-                            alvo.equipamento = null;
-                            alvo.equipamentoRevelado = false;
-                            window.cemiterioOponente.push(nomeEq); // Manda pro lixo do inimigo
-                            window.mostrarMensagemScanner(`🧪 Ácido derreteu o equipamento: ${nomeEq}!`);
+                            // 🔥 CHAMA O MOTOR CENTRAL: A Sabedoria vai cair sozinha se for o Bastão!
+                            let nomeEqRemovido = window.removerEquipamentoMesa(idMonstroInimigo, true); 
+                            
+                            window.mostrarMensagemScanner(`🧪 Ácido derreteu o equipamento: ${nomeEqRemovido}!`);
                             if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                                window.enviarAcaoRede({ tipo: 'destruir_equipamento', alvo: idMonstroInimigo, nomeEquip: nomeEq });
+                                window.enviarAcaoRede({ tipo: 'destruir_equipamento', alvo: idMonstroInimigo, nomeEquip: nomeEqRemovido });
                             }
                         }
                     }
                 }
-
                 // ==========================================
                 // 🌑 EFEITO: Mão Negra (ID 102)
                 // ==========================================
@@ -5109,7 +5108,45 @@ window.revelarEquipamento = function(fullId) {
     }
 };
 
-// 🔥 NOVO: DESCARTAR EQUIPAMENTO E ATIVAR A ARPA MÁGICA!
+// ==========================================
+// ⚙️ MOTOR CENTRAL: REMOVER EQUIPAMENTO (UNIVERSAL)
+// ==========================================
+window.removerEquipamentoMesa = function(fullId, enviarCemiterio = true) {
+    let criatura = obterCriaturaNoSlot(fullId);
+    if (!criatura || !criatura.equipamento) return null;
+
+    let eqNomeOriginal = criatura.equipamento.nome;
+    let eqNome = eqNomeOriginal.toLowerCase();
+    let estavaRevelado = criatura.equipamentoRevelado;
+
+    // 1. REVERTE EFEITOS PASSIVOS (Se a carta estava ativada/revelada)
+    if (estavaRevelado) {
+        if (eqNome === "bastão da sabedoria" || eqNome === "bastao da sabedoria") {
+            if (criatura.statsMax) criatura.statsMax.sabedoria = Number(criatura.statsMax.sabedoria) - 40;
+            setTimeout(() => window.mostrarMensagemScanner(`📉 Sem o Bastão, a Sabedoria de ${criatura.nome} voltou ao normal.`), 1500);
+            if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                window.enviarAcaoRede({ tipo: 'sincronizar_stats', alvo: fullId, statsMax: criatura.statsMax });
+            }
+        }
+    }
+
+    // 2. MANDA PRO LIXO
+    if (enviarCemiterio) {
+        let alvoCemiterio = criatura.dono === 'jogador' ? window.cemiterio : window.cemiterioOponente;
+        if (!alvoCemiterio) alvoCemiterio = [];
+        alvoCemiterio.push(eqNomeOriginal);
+        if (criatura.dono === 'jogador') window.cemiterio = alvoCemiterio;
+        else window.cemiterioOponente = alvoCemiterio;
+    }
+
+    // 3. APAGA A CARTA DA MESA
+    criatura.equipamento = null;
+    criatura.equipamentoRevelado = false;
+
+    return eqNomeOriginal;
+};
+
+// 🔥 DESCARTAR EQUIPAMENTO (AÇÃO MANUAL NO BURST)
 window.descartarEquipamentoMesa = function(fullId) {
     window.fecharModalAcoes();
     let criatura = obterCriaturaNoSlot(fullId);
@@ -5120,34 +5157,20 @@ window.descartarEquipamentoMesa = function(fullId) {
         nomeAcao: `Descartar Equipamento (${criatura.equipamento.nome})`,
         tipo: 'equipamento',
         executar: function() {
-            let eqNome = criatura.equipamento.nome.toLowerCase();
-            let eqNomeOriginal = criatura.equipamento.nome;
+            let eqNomeParaEfeito = criatura.equipamento.nome.toLowerCase();
             
-            // Manda pro Lixo permanentemente
-            if (!window.cemiterio) window.cemiterio = [];
-            window.cemiterio.push(eqNomeOriginal);
-
-            criatura.equipamento = null;
-            criatura.equipamentoRevelado = false;
+            // Usa o Motor Central que criamos para limpar os status e jogar no lixo com segurança!
+            let eqNomeOriginal = window.removerEquipamentoMesa(fullId, true);
 
             window.mostrarMensagemScanner(`🗑️ ${criatura.nome} descartou o equipamento ${eqNomeOriginal}.`);
             if(window.tocarSFX) window.tocarSFX('notificacao');
 
-            // 🔥 O GATILHO DA ARPA MÁGICA
-            if (eqNome === "arpa mágica" || eqNome === "arpa magica") {
+            // 🔥 O GATILHO DA ARPA MÁGICA CONTINUA FUNCIONANDO AQUI!
+            if (eqNomeParaEfeito === "arpa mágica" || eqNomeParaEfeito === "arpa magica") {
                 criatura.fichasHabilidade = Number(criatura.fichasHabilidade) + 1;
                 setTimeout(() => window.mostrarMensagemScanner(`🎵 A Arpa Mágica tocou ao ser descartada! ${criatura.nome} ganhou +1 Ficha!`), 1500);
                 if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
                     window.enviarAcaoRede({ tipo: 'sincronizar_fichas', alvo: fullId, qtd: criatura.fichasHabilidade });
-                }
-            }
-
-            // 🔥 SE JOGOU O BASTÃO FORA, PERDE A SABEDORIA!
-            if (eqNome === "bastão da sabedoria" || eqNome === "bastao da sabedoria") {
-                if(criatura.statsMax) criatura.statsMax.sabedoria = Number(criatura.statsMax.sabedoria) - 40;
-                setTimeout(() => window.mostrarMensagemScanner(`📉 Sem o Bastão, a Sabedoria de ${criatura.nome} voltou ao normal.`), 1500);
-                if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
-                    window.enviarAcaoRede({ tipo: 'sincronizar_stats', alvo: fullId, statsMax: criatura.statsMax });
                 }
             }
 
@@ -5661,15 +5684,23 @@ window.processarAcaoInimiga = function(acao) {
             }
         }
     }
-       // 🧪 RECEPTOR: Ácido Gástrico (Inimigo derreteu nosso item)
+      // 🧪 RECEPTOR: Ácido Gástrico (Inimigo derreteu nosso item)
     else if (acao.tipo === 'destruir_equipamento') {
         let alvoReal = inverterId(acao.alvo);
         let def = obterCriaturaNoSlot(alvoReal);
         if (def && def.equipamento) {
-            def.equipamento = null;
-            def.equipamentoRevelado = false;
-            window.cemiterio.push(acao.nomeEquip); // Vai pro nosso lixo real
+            window.removerEquipamentoMesa(alvoReal, true); // O Motor Central limpa a Sabedoria aqui também!
             window.mostrarMensagemScanner(`🧪 O Ácido inimigo derreteu seu equipamento: ${acao.nomeEquip}!`);
+            atualizarTelaBatalha();
+        }
+    }
+    // 🗑️ RECEPTOR: O inimigo jogou o equipamento dele no lixo de propósito!
+    else if (acao.tipo === 'descarte_equipamento_mesa') {
+        let alvoReal = inverterId(acao.alvo); 
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura && criatura.equipamento) {
+            window.removerEquipamentoMesa(alvoReal, true); // O Motor Central limpa a Sabedoria e põe no lixo!
+            window.mostrarMensagemScanner(`🗑️ O Inimigo descartou o equipamento: ${acao.nomeEquip}!`);
             atualizarTelaBatalha();
         }
     }
