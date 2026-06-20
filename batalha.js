@@ -3553,8 +3553,24 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
             if (criatura && criatura.tribo === "Azul" && !criatura.buffKiruAplicado) {
                 criatura.hpMax = Number(criatura.hpMax || criatura.statsMax.energia) + 10;
                 criatura.hpAtual = Number(criatura.hpAtual) + 10;
-                criatura.buffKiruAplicado = true; // Trava para o bônus não acumular se a rede piscar
+                criatura.buffKiruAplicado = true; 
                 setTimeout(() => window.mostrarMensagemScanner(`🏰 Cidade de Kiru: ${criatura.nome} ganhou +10 de Energia!`), 1000);
+            }
+        });
+    }
+
+    if (locDB && locDB.nome === "A Barragem de Magma") {
+        [atacante, defensor].forEach(criatura => {
+            if (criatura) {
+                // Garante que o array de elementos exista de forma isolada
+                if (!criatura.elementos) criatura.elementos = [];
+                else criatura.elementos = [...criatura.elementos]; 
+                
+                // Se a criatura NÃO tem o elemento Fogo, ela ganha!
+                if (!criatura.elementos.includes('Fogo')) {
+                    criatura.elementos.push('Fogo');
+                    setTimeout(() => window.mostrarMensagemScanner(`🌋 A Barragem de Magma: ${criatura.nome} ganhou o elemento 🔥 Fogo!`), 1500);
+                }
             }
         });
     }
