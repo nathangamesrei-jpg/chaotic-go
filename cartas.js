@@ -88,10 +88,8 @@ const ATAQUES = [
 // 3. BANCO DE DADOS: EQUIPAMENTOS (Neutros)
 // ==========================================
 const EQUIPAMENTOS = [
-    {
-        id: 201, nome: "Anel Precioso", tipoCarta: "Equipamento", img: "cartas/equips/anel_precioso.png", efeito: "O campeão equipado perde 15 de energia, mas ignora danos elementais. Indestrutível.", raridade: 0.3
-    }
-    
+    { id: 201, nome: "Anel Precioso", tipoCarta: "Equipamento", img: "cartas/equips/anel_precioso.png", efeito: "O campeão equipado perde 15 de energia, mas ignora danos elementais. Indestrutível.", raridade: 0.3 },
+    { id: 202, nome: "Amuleto do Vácuo", tipoCarta: "Equipamento", img: "cartas/equips/amuleto_do_vacuo.jpg", efeito: "O campeão equipado não sofre danos que envolvam o elemento ar.", raridade: 0.4 }
 ];
 
 // ==========================================
