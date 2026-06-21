@@ -1262,6 +1262,37 @@ window.lidarComCliqueTabuleiro = function(fullId) {
 
         let alvo = obterCriaturaNoSlot(fullId);
         if (!alvo) { window.modoAlvo = null; window.mostrarMensagemScanner("Mira desativada."); return; }
+        // ==========================================
+        // 💣 INTERCEPTADOR DA BOMBA DE FOGO
+        // ==========================================
+        if (window.modoAlvo.tipo === 'bomba_fogo') {
+            window.modoAlvo = null; // Desliga a mira
+            
+            let danoBomba = 25;
+            alvo.hpAtual -= danoBomba;
+            if (alvo.hpAtual < 0) alvo.hpAtual = 0;
+
+            window.mostrarMensagemScanner(`💥 KABOOM! A Bomba de Fogo explodiu em ${alvo.nome}, causando ${danoBomba} de dano!`);
+            
+            // O truque de Arquitetura: Reutilizamos a rede de "Dano" normal para o oponente processar o impacto sozinho!
+            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                window.enviarAcaoRede({ tipo: 'dano', alvo: fullId, valor: danoBomba }); 
+            }
+
+            let elAlvo = document.getElementById(fullId);
+            if(elAlvo) {
+                elAlvo.style.animation = "shake 0.5s";
+                setTimeout(() => { elAlvo.style.animation = ""; }, 500);
+            }
+
+            atualizarTelaBatalha();
+            
+            // Depois que o dano for causado, checamos se matou alguém e liberamos o jogo para continuar!
+            if (alvo.hpAtual === 0) setTimeout(() => window.encerrarCombateMorte(fullId), 1000);
+            else if (typeof window.checarFimDeJogo === 'function') window.checarFimDeJogo();
+            
+            return; 
+        }
         
         let ctx = window.modoAlvo;
         window.modoAlvo = null; 
@@ -2874,92 +2905,82 @@ window.encerrarCombateMorte = function(idMorto) {
     if (!window.cemiterioOponente) window.cemiterioOponente = [];
 
     let morto = obterCriaturaNoSlot(idMorto);
-    if(!morto || morto.morrendo) return; // 🔥 TRAVA DA CLONAGEM: Se já está morrendo, ignora o eco da rede!
+    if(!morto || morto.morrendo) return; 
     morto.morrendo = true;
+
+    // 🔥 DETETIVE DE BOMBA: Verifica se ele morreu com a bomba nas mãos!
+    let donoBombaMortal = null;
+    if (morto.equipamento && morto.equipamentoRevelado && morto.equipamento.nome === "Bomba de Fogo") {
+        donoBombaMortal = morto.dono; // Salva de quem é a bomba para dar o direito de mira!
+    }
 
     window.mostrarMensagemScanner(`💀 ${morto.nome} FOI DESTRUÍDO! O tabuleiro será redefinido.`);
     
-    // 🌐 AVISA A NUVEM PARA MATAR O MONSTRO NA TELA DO INIMIGO TAMBÉM!
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
         if (window.estadoTurno.jogadorAtual === 'jogador') {
             window.enviarAcaoRede({ tipo: 'morte', alvo: idMorto });
         }
     }
 
-    // 🔥 1. GUARDA O MORTO E O EQUIPAMENTO NO CEMITÉRIO PERMANENTE 🔥
     if (morto) {
         let isPlayer = morto.dono === 'jogador';
         let arrayCemiterio = isPlayer ? window.cemiterio : window.cemiterioOponente;
-        
         arrayCemiterio.push(morto.nome);
-        
-        if (morto.equipamento) {
-            arrayCemiterio.push(morto.equipamento.nome);
-        }
+        if (morto.equipamento) arrayCemiterio.push(morto.equipamento.nome);
     }
 
-    // 2. CHAMA A ANIMAÇÃO DE CÓDIGOS ANTES DE APAGAR DA TELA!
     window.animarExplosaoCodigo(idMorto, () => {
-        
-        // Apaga a criatura da mesa
         setarCriaturaNoSlot(idMorto, null);
-        
-        // Verifica se a batalha estava ativa antes de resetar os estados
         let estavamosEmCombateReal = window.estadoCombate && window.estadoCombate.ativo;
 
-        // Destrava a mesa de combate
         window.estadoCombate.ativo = false;
         window.estadoCombate.atacante = null;
         window.estadoCombate.defensor = null;
         
-       // ==========================================
-        // 🔥 ESCUDO PROTETOR: SÓ ENTRA NA MANUTENÇÃO SE FOI MORTE EM COMBATE! 🔥
-        // ==========================================
         if (estavamosEmCombateReal) {
-            // 1. Os Pontos de Ataque voltam para a base de 3
             window.pontosAtaque = { jogador: 3, oponente: 3 };
             
-            // 🌑 O EXTRATOR DA MÃO NEGRA (Devolve a carta roubada se não foi usada)
             if (window.cartaRoubadaMaoNegra) {
-                // Tenta achar a carta roubada na nossa mão e retira
                 let indexRoubada = window.maoAtaques.findIndex(a => (typeof a === 'object' ? a.id : a) == window.cartaRoubadaMaoNegra);
                 if (indexRoubada !== -1) {
                     window.maoAtaques.splice(indexRoubada, 1);
                     window.mostrarMensagemScanner("A carta roubada (Mão Negra) fugiu e voltou para o oponente!");
-                    
-                    // Avisa a rede para colocar de volta no baralho do inimigo!
                     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
                         window.enviarAcaoRede({ tipo: 'devolver_carta_roubada', idCarta: window.cartaRoubadaMaoNegra });
                     } else {
-                        window.qtdBaralhoOponente++; // Simula a devolução offline
+                        window.qtdBaralhoOponente++; 
                     }
                 }
-                window.cartaRoubadaMaoNegra = null; // Apaga a memória do roubo
+                window.cartaRoubadaMaoNegra = null; 
             }
             
-            // 2. O SEU BARALHO: Junta Mão + Lixo + Deck, embaralha e saca 3 novas
             let todasMinhasCartas = [...(window.baralhoAtaques || []), ...(window.maoAtaques || []), ...(window.lixoAtaques || [])];
             if (todasMinhasCartas.length > 0) {
                 window.baralhoAtaques = embaralharArray(todasMinhasCartas);
                 window.maoAtaques = window.baralhoAtaques.splice(0, 3);
             }
-            window.lixoAtaques = []; // Zera o seu Lixo
+            window.lixoAtaques = []; 
             
-            // 3. O BARALHO DO BOT/ONLINE: Reseta a matemática
             window.qtdBaralhoOponente = 17;
             window.qtdMaoOponente = 3;
             window.lixoAtaquesOponente = 0;
             
-            // Avisa o jogo que o combate acabou para liberar o sorteio de Local
             window.combateFinalizadoNesteTurno = true;
         }
         
-        // Atualiza a tela para refletir tudo instantaneamente
         atualizarTelaBatalha();
-        
         if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
-        // 🔥 2. CHECA SE ALGUÉM GANHOU O JOGO APÓS A REDEFINIÇÃO!
+        // 🔥 GATILHO DA EXPLOSÃO (Acontece APÓS o monstro sumir da tela)
+        if (donoBombaMortal === 'jogador') {
+            window.mostrarMensagemScanner("💣 A CRIATURA MORREU E A BOMBA VAI EXPLODIR! Clique em QUALQUER criatura para causar 25 de dano!");
+            window.modoAlvo = { tipo: 'bomba_fogo', origem: idMorto };
+            // Pausa o jogo até você escolher o alvo!
+            return; 
+        } else if (donoBombaMortal === 'oponente') {
+            window.mostrarMensagemScanner("💣 Oponente está mirando a Bomba de Fogo...");
+        }
+
         if (typeof window.checarFimDeJogo === 'function') window.checarFimDeJogo();
     });
 };
@@ -5101,6 +5122,18 @@ window.revelarEquipamento = function(fullId) {
                     }
                 }
 
+                // 🔥 EFEITO: BOMBA DE FOGO
+                if (eqNome === "bomba de fogo") {
+                    criatura.hpMax = Number(criatura.hpMax || criatura.statsMax.energia) + 5;
+                    criatura.hpAtual = Number(criatura.hpAtual) + 5;
+                    window.mostrarMensagemScanner(`💣 Bomba de Fogo armada! ${criatura.nome} ganhou +5 de Energia.`);
+                    
+                    if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                        window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: fullId, novoHp: criatura.hpAtual, novoMax: criatura.hpMax });
+                    }
+                }
+
+                
                 if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
                     window.enviarAcaoRede({ tipo: 'revelar_equipamento_direto', alvo: fullId });
                 }
@@ -5132,7 +5165,17 @@ window.removerEquipamentoMesa = function(fullId, enviarCemiterio = true) {
             }
         }
     }
-
+        if (eqNome === "bomba de fogo") {
+            criatura.hpMax = Number(criatura.hpMax || criatura.statsMax.energia) - 5;
+            criatura.hpAtual = Number(criatura.hpAtual) - 5;
+            if (criatura.hpAtual < 0) criatura.hpAtual = 0; // Evita bugar a barra de HP
+            
+            setTimeout(() => window.mostrarMensagemScanner(`💣 A Bomba de Fogo foi removida. A energia extra de ${criatura.nome} foi dissipada.`), 1500);
+            
+            if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: fullId, novoHp: criatura.hpAtual, novoMax: criatura.hpMax });
+            }
+        }
     // 2. MANDA PRO LIXO
     if (enviarCemiterio) {
         let alvoCemiterio = criatura.dono === 'jogador' ? window.cemiterio : window.cemiterioOponente;
