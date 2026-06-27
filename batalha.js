@@ -5514,7 +5514,7 @@ window.iniciarEscutaAcoesOnline = function() {
     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
     
     // 🔥 O MARCADOR DE TEMPO: Anota a hora exata que você conectou na sala!
-    window.tempoEntradaNaSala = Date.now();
+    window.tempoEntradaNaSala = Date.now() - 300000;
 
     // Rádio 1: Escuta as ações pesadas (Movimento final, combate, magias)
     window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao', (snap) => {
@@ -5685,12 +5685,14 @@ window.processarAcaoInimiga = function(acao) {
         }
     }
        else if (acao.tipo === 'sincronizar_hp') {
-        let alvoReal = inverterId(acao.alvo); // Transforma o slot para a perspectiva dele
+        let alvoReal = inverterId(acao.alvo); 
         let criatura = obterCriaturaNoSlot(alvoReal);
-        if (criatura) {
-            criatura.hpAtual = acao.novoHp; // Copia o HP exato que você calculou
-            if (acao.novoMax) criatura.hpMax = acao.novoMax; // 🔥 Lion Upgrade: Aumenta o limite da barra!
-            atualizarTelaBatalha(); // Redesenha o campo dele
+        
+        // 🧟 TRAVA ZUMBI: Se ela já levou o golpe fatal na nossa tela, ignora a cura atrasada da rede!
+        if (criatura && !criatura.morrendo) {
+            criatura.hpAtual = acao.novoHp; 
+            if (acao.novoMax) criatura.hpMax = acao.novoMax; 
+            atualizarTelaBatalha(); 
         }
     }
 
