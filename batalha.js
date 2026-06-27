@@ -5149,7 +5149,7 @@ window.revelarEquipamento = function(fullId) {
 // ==========================================
 // ⚙️ MOTOR CENTRAL: REMOVER EQUIPAMENTO (UNIVERSAL v2.0)
 // ==========================================
-window.removerEquipamentoMesa = function(fullId, enviarCemiterio = true, motivo = 'descarte') {
+window.removerEquipamentoMesa = function(fullId, enviarCemiterio = true) {
     let criatura = obterCriaturaNoSlot(fullId);
     if (!criatura || !criatura.equipamento) return null;
 
@@ -5166,50 +5166,15 @@ window.removerEquipamentoMesa = function(fullId, enviarCemiterio = true, motivo 
             }
         }
         
-        // 🔥 REGRA OFICIAL TCG: Equipamentos de Vida não causam dano ao quebrar, apenas abaixam o Limite Máximo!
+        // 🔥 A CORREÇÃO DE OURO: A BOMBA NÃO ROUBA SANGUE AO QUEBRAR!
         if (eqNome === "bomba de fogo") {
             criatura.hpMax = Number(criatura.hpMax || criatura.statsMax.energia) - 5;
             
-            // Só abaixa a vida atual se ela estiver vazando para fora do novo limite máximo!
+            // Só abaixa o HP atual se ele estiver vazando para fora do novo limite máximo!
             if (Number(criatura.hpAtual) > criatura.hpMax) {
                 criatura.hpAtual = criatura.hpMax;
             }
-            
-            if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
-                window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: fullId, novoHp: criatura.hpAtual, novoMax: criatura.hpMax });
-            }
-        }
-
-        // ==========================================
-        // 💥 GATILHO: EFEITOS "AO SER DESTRUÍDO"
-        // ==========================================
-        if (motivo === 'destruição' && eqNome === "bomba de fogo") {
-            setTimeout(() => { 
-                window.mostrarMensagemScanner(`💥💥💥 A BOMBA DE FOGO EXPLODIU EM ${criatura.nome.toUpperCase()}!`);
-                if(window.tocarSFX) window.tocarSFX('notificacao'); 
-
-                let slotsVizinhos = window.obterSlotsAdjacentesSameLine(fullId);
-                slotsVizinhos.forEach(slotAlvoId => {
-                    let vitima = obterCriaturaNoSlot(slotAlvoId);
-                    if (vitima) {
-                        vitima.hpAtual = Number(vitima.hpAtual) - 15;
-                        window.mostrarMensagemScanner(`🔥 Dano em Área: ${vitima.nome} recebeu 15 de dano da explosão!`);
-
-                        if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
-                            window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: slotAlvoId, novoHp: vitima.hpAtual });
-                        }
-
-                        if (vitima.hpAtual <= 0) {
-                            vitima.hpAtual = 0;
-                            setTimeout(() => {
-                                window.mostrarMensagemScanner(`💀 ${vitima.nome} sucumbiu às queimaduras!`);
-                                window.encerrarCombateMorte(slotAlvoId);
-                            }, 1000);
-                        }
-                    }
-                });
-                atualizarTelaBatalha();
-            }, 800);
+            // (Removemos o sincronizador de rede daqui para o Ácido Gástrico poder causar o dano em paz sem colisão!)
         }
     }
 
@@ -5550,20 +5515,23 @@ window.enviarAcaoRede = function(acaoData) {
 window.iniciarEscutaAcoesOnline = function() {
     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
     
-    // 🔥 O MARCADOR DE TEMPO: Anota a hora exata que você conectou na sala!
-    window.tempoEntradaNaSala = Date.now() - 300000;
+    // 👻 O VERDADEIRO EXORCISTA: Ignora o lixo da partida passada!
+    let isPrimeiraLeituraAcao = true; 
 
     // Rádio 1: Escuta as ações pesadas (Movimento final, combate, magias)
     window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao', (snap) => {
         if (!snap.exists()) return;
-        let acao = snap.val();
         
-        if (acao.remetente === (window.souP1Batalha ? 'p1' : 'p2')) return;
-        
-        // 👻 O EXORCISTA: Se a mensagem da nuvem for mais velha que a sua conexão, IGNORA!
-        if (acao.timestamp && acao.timestamp < window.tempoEntradaNaSala) return;
+        // Se for o fantasma da partida anterior conectando agora, ignora!
+        if (isPrimeiraLeituraAcao) { 
+            isPrimeiraLeituraAcao = false; 
+            return; 
+        }
 
+        let acao = snap.val();
+        if (acao.remetente === (window.souP1Batalha ? 'p1' : 'p2')) return;
         if (window.ultimaAcaoProcessada === acao.timestamp) return;
+
         window.ultimaAcaoProcessada = acao.timestamp;
         window.processarAcaoInimiga(acao);
     });
