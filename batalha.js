@@ -4407,83 +4407,89 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         }
     }
 
-    let acaoDoAtaque = {
+   let acaoDoAtaque = {
         dono: 'jogador',
         nomeAcao: nomeAtaque,
         tipo: 'ataque',
         executar: function() {
             if (!idMonstroInimigo) return;
             let alvo = obterCriaturaNoSlot(idMonstroInimigo);
+            
             if (alvo) {
+                // ==========================================
+                // 1º PASSO: APLICAR O DANO BRUTO IMEDIATAMENTE
+                // ==========================================
                 alvo.hpAtual -= danoTotal; 
+                if (alvo.hpAtual < 0) alvo.hpAtual = 0; // Trava o negativo
                 if(window.tocarSFX) window.tocarSFX('notificacao'); 
                 
                 let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
                 if (danoExtra > 0) msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
-                // 🔥 MENSAGEM ÉPICA DO REX!
-                if (danoTotal === 0 && alvo.nome === "Rex") {
-                    msgScanner = `🛡️ REX IMUNE! O ataque de Vento se dissipou nas escamas dele (0 de dano)!`;
-                }
+                if (danoTotal === 0 && alvo.nome === "Rex") msgScanner = `🛡️ REX IMUNE! O ataque de Vento se dissipou nas escamas dele (0 de dano)!`;
                 
                 window.mostrarMensagemScanner(msgScanner);
 
-                // ==========================================
-                // 🧪 EFEITO: Ácido Gástrico (ID 101)
-                // ==========================================
-                if (ataqueDB && ataqueDB.id === 101) {
-                    if (alvo.equipamento) {
-                        let eqText = (alvo.equipamento.efeito || "").toLowerCase();
-                        // Destrói mesmo se não estiver revelado, a não ser que a carta secreta seja Indestrutível!
-                        if (eqText.includes('indestrutível') || eqText.includes('indestrutivel')) {
-                            window.mostrarMensagemScanner("🛡️ O equipamento resistiu ao Ácido (Indestrutível)!");
-                        } else {
-                            // 🔥 CHAMA O MOTOR CENTRAL: A Sabedoria vai cair sozinha se for o Bastão!
-                            let nomeEqRemovido = window.removerEquipamentoMesa(idMonstroInimigo, true); 
-                            
-                            window.mostrarMensagemScanner(`🧪 Ácido derreteu o equipamento: ${nomeEqRemovido}!`);
-                            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                                window.enviarAcaoRede({ tipo: 'destruir_equipamento', alvo: idMonstroInimigo, nomeEquip: nomeEqRemovido });
-                            }
-                        }
-                    }
+                // 🌐 O TRANSMISSOR IMEDIATO: O Dano viaja na frente!
+                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                    window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
                 }
-                // ==========================================
-                // 🌑 EFEITO: Mão Negra (ID 102)
-                // ==========================================
-                if (ataqueDB && ataqueDB.id === 102) {
-                    window.mostrarMensagemScanner("🌑 Mão Negra ativada! Roubando carta da mente do inimigo...");
-                    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                        window.enviarAcaoRede({ tipo: 'mao_negra_roubar' });
-                    } else {
-                        // CORREÇÃO: No Modo offline (Bot), diminui a mão dele visualmente e sorteia um ataque válido
-                        if (window.qtdMaoOponente > 0) {
-                            window.qtdMaoOponente--; 
-                            let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
-                            let cartaSimulada = todosAtaques[Math.floor(Math.random() * todosAtaques.length)];
-                            window.receberCartaRoubada(cartaSimulada.id || cartaSimulada.nome); // Manda um ID válido!
-                        } else {
-                            window.mostrarMensagemScanner("O oponente tentou roubar, mas não há cartas!");
-                        }
-                    }
-                }
-
-              // 🌐 O TRANSMISSOR VITAL QUE FALTAVA (COM ATRASO ANTI-COLISÃO)
-                    setTimeout(() => {
-                        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                            window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
-                        }
-                    }, 150);
-                    
-                    let elAlvo = document.getElementById(idMonstroInimigo);
-                    if(elAlvo) {
+                
+                let elAlvo = document.getElementById(idMonstroInimigo);
+                if(elAlvo) {
                     elAlvo.style.animation = "shake 0.5s";
                     setTimeout(() => { elAlvo.style.animation = ""; }, 500);
                 }
-                if (alvo.hpAtual <= 0) {
-                    alvo.hpAtual = 0;
+                atualizarTelaBatalha();
+
+                let morreuPeloDanoBruto = (alvo.hpAtual === 0);
+                if (morreuPeloDanoBruto) {
                     setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
                 }
-                atualizarTelaBatalha();
+
+                // ==========================================
+                // 2º PASSO: EFEITOS SECUNDÁRIOS DO ATAQUE 
+                // (Com atraso de 200ms para a Nuvem entregar o Dano primeiro!)
+                // ==========================================
+                setTimeout(() => {
+                    // 🧪 EFEITO: Ácido Gástrico (ID 101)
+                    if (ataqueDB && ataqueDB.id === 101) {
+                        if (alvo.equipamento) {
+                            let eqText = (alvo.equipamento.efeito || "").toLowerCase();
+                            // Destrói mesmo se não estiver revelado, a não ser que seja Indestrutível!
+                            if (eqText.includes('indestrutível') || eqText.includes('indestrutivel')) {
+                                window.mostrarMensagemScanner("🛡️ O equipamento resistiu ao Ácido (Indestrutível)!");
+                            } else {
+                                let nomeEqRemovido = window.removerEquipamentoMesa(idMonstroInimigo, true); 
+                                window.mostrarMensagemScanner(`🧪 Ácido derreteu o equipamento: ${nomeEqRemovido}!`);
+                                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                    window.enviarAcaoRede({ tipo: 'destruir_equipamento', alvo: idMonstroInimigo, nomeEquip: nomeEqRemovido });
+                                }
+                            }
+                        }
+                    }
+                    
+                    // 🌑 EFEITO: Mão Negra (ID 102)
+                    if (ataqueDB && ataqueDB.id === 102) {
+                        window.mostrarMensagemScanner("🌑 Mão Negra ativada! Roubando carta da mente do inimigo...");
+                        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                            window.enviarAcaoRede({ tipo: 'mao_negra_roubar' });
+                        } else {
+                            if (window.qtdMaoOponente > 0) {
+                                window.qtdMaoOponente--; 
+                                let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
+                                let cartaSimulada = todosAtaques[Math.floor(Math.random() * todosAtaques.length)];
+                                window.receberCartaRoubada(cartaSimulada.id || cartaSimulada.nome); 
+                            } else {
+                                window.mostrarMensagemScanner("O oponente tentou roubar, mas não há cartas!");
+                            }
+                        }
+                    }
+
+                    // Se a remoção de um equipamento causou a morte (Ex: Anel Precioso)
+                    if (!morreuPeloDanoBruto && alvo.hpAtual === 0) {
+                        setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
+                    }
+                }, 200); // <-- O delay de 200ms que põe ordem no caos!
             }
         }
     };
