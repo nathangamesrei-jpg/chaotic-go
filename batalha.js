@@ -4467,13 +4467,15 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                     }
                 }
 
-                // 🌐 O TRANSMISSOR VITAL QUE FALTAVA
-                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                    window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
-                }
-                
-                let elAlvo = document.getElementById(idMonstroInimigo);
-                if(elAlvo) {
+              // 🌐 O TRANSMISSOR VITAL QUE FALTAVA (COM ATRASO ANTI-COLISÃO)
+                    setTimeout(() => {
+                        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                            window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
+                        }
+                    }, 150);
+                    
+                    let elAlvo = document.getElementById(idMonstroInimigo);
+                    if(elAlvo) {
                     elAlvo.style.animation = "shake 0.5s";
                     setTimeout(() => { elAlvo.style.animation = ""; }, 500);
                 }
@@ -5145,9 +5147,9 @@ window.revelarEquipamento = function(fullId) {
 };
 
 // ==========================================
-// ⚙️ MOTOR CENTRAL: REMOVER EQUIPAMENTO (UNIVERSAL)
+// ⚙️ MOTOR CENTRAL: REMOVER EQUIPAMENTO (UNIVERSAL v2.0)
 // ==========================================
-window.removerEquipamentoMesa = function(fullId, enviarCemiterio = true) {
+window.removerEquipamentoMesa = function(fullId, enviarCemiterio = true, motivo = 'descarte') {
     let criatura = obterCriaturaNoSlot(fullId);
     if (!criatura || !criatura.equipamento) return null;
 
@@ -5159,23 +5161,58 @@ window.removerEquipamentoMesa = function(fullId, enviarCemiterio = true) {
     if (estavaRevelado) {
         if (eqNome === "bastão da sabedoria" || eqNome === "bastao da sabedoria") {
             if (criatura.statsMax) criatura.statsMax.sabedoria = Number(criatura.statsMax.sabedoria) - 40;
-            setTimeout(() => window.mostrarMensagemScanner(`📉 Sem o Bastão, a Sabedoria de ${criatura.nome} voltou ao normal.`), 1500);
             if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
                 window.enviarAcaoRede({ tipo: 'sincronizar_stats', alvo: fullId, statsMax: criatura.statsMax });
             }
         }
-    }
+        
+        // 🔥 REGRA OFICIAL TCG: Equipamentos de Vida não causam dano ao quebrar, apenas abaixam o Limite Máximo!
         if (eqNome === "bomba de fogo") {
             criatura.hpMax = Number(criatura.hpMax || criatura.statsMax.energia) - 5;
-            criatura.hpAtual = Number(criatura.hpAtual) - 5;
-            if (criatura.hpAtual < 0) criatura.hpAtual = 0; // Evita bugar a barra de HP
             
-            setTimeout(() => window.mostrarMensagemScanner(`💣 A Bomba de Fogo foi removida. A energia extra de ${criatura.nome} foi dissipada.`), 1500);
+            // Só abaixa a vida atual se ela estiver vazando para fora do novo limite máximo!
+            if (Number(criatura.hpAtual) > criatura.hpMax) {
+                criatura.hpAtual = criatura.hpMax;
+            }
             
             if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
                 window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: fullId, novoHp: criatura.hpAtual, novoMax: criatura.hpMax });
             }
         }
+
+        // ==========================================
+        // 💥 GATILHO: EFEITOS "AO SER DESTRUÍDO"
+        // ==========================================
+        if (motivo === 'destruição' && eqNome === "bomba de fogo") {
+            setTimeout(() => { 
+                window.mostrarMensagemScanner(`💥💥💥 A BOMBA DE FOGO EXPLODIU EM ${criatura.nome.toUpperCase()}!`);
+                if(window.tocarSFX) window.tocarSFX('notificacao'); 
+
+                let slotsVizinhos = window.obterSlotsAdjacentesSameLine(fullId);
+                slotsVizinhos.forEach(slotAlvoId => {
+                    let vitima = obterCriaturaNoSlot(slotAlvoId);
+                    if (vitima) {
+                        vitima.hpAtual = Number(vitima.hpAtual) - 15;
+                        window.mostrarMensagemScanner(`🔥 Dano em Área: ${vitima.nome} recebeu 15 de dano da explosão!`);
+
+                        if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                            window.enviarAcaoRede({ tipo: 'sincronizar_hp', alvo: slotAlvoId, novoHp: vitima.hpAtual });
+                        }
+
+                        if (vitima.hpAtual <= 0) {
+                            vitima.hpAtual = 0;
+                            setTimeout(() => {
+                                window.mostrarMensagemScanner(`💀 ${vitima.nome} sucumbiu às queimaduras!`);
+                                window.encerrarCombateMorte(slotAlvoId);
+                            }, 1000);
+                        }
+                    }
+                });
+                atualizarTelaBatalha();
+            }, 800);
+        }
+    }
+
     // 2. MANDA PRO LIXO
     if (enviarCemiterio) {
         let alvoCemiterio = criatura.dono === 'jogador' ? window.cemiterio : window.cemiterioOponente;
