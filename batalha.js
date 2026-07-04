@@ -4,7 +4,7 @@
 const URL_FUNDO_CARTA = 'cartas/verso.jpg'; 
 
 // ==========================================
-// MOTOR DA MINI-CARTA
+// MOTOR DA MINI-CARTA (AGORA COM FOG OF WAR!)
 // ==========================================
 function desenharMiniCarta(criaturaObj) {
     let img = "", hpAtual = 0, c = 0, p = 0, s = 0, v = 0, pct = 0;
@@ -15,7 +15,12 @@ function desenharMiniCarta(criaturaObj) {
         return `<div class="mini-card-wrapper" style="opacity:0.3; display:flex; justify-content:center; align-items:center;">🛡️</div>`; 
     }
 
-    img = criaturaObj.cartaBlank; 
+    // 🔥 DETETIVE DO BLEFE: A carta está virada para baixo?
+    let isOculta = criaturaObj.revelada === false;
+
+    // Se estiver oculta, mostra o verso. Se revelada, mostra a arte real!
+    img = isOculta ? URL_FUNDO_CARTA : criaturaObj.cartaBlank; 
+    
     let hpMax = criaturaObj.hpMax || criaturaObj.statsMax?.energia || 0;
     hpAtual = criaturaObj.hpAtual !== undefined ? criaturaObj.hpAtual : hpMax;
     c = criaturaObj.coragem || criaturaObj.statsMax?.coragem || 0;
@@ -36,13 +41,14 @@ function desenharMiniCarta(criaturaObj) {
     temAr = textoElementos.includes('ar');
     
     const triboMap = {'Azul': 'tribo-azul', 'Vermelho': 'tribo-vermelho', 'Amarelo': 'tribo-amarelo', 'Verde': 'tribo-verde', 'Ciano': 'tribo-ciano', 'Cinza': 'tribo-cinza'};
-    triboClass = triboMap[criaturaObj.tribo] || 'tribo-cinza';
+    // Se oculta, não mostra a tribo (fica cinza). Se revelada, mostra a cor real.
+    triboClass = isOculta ? 'tribo-cinza' : (triboMap[criaturaObj.tribo] || 'tribo-cinza');
     pct = Math.max(0, Math.min(100, (hpAtual / hpMax) * 100));
     corHp = pct <= 20 ? 'red' : (pct <= 50 ? 'orange' : 'lime');
 
-    if (criaturaObj.equipamento) {
+    // Equipamentos SÓ aparecem se a criatura estiver revelada!
+    if (criaturaObj.equipamento && !isOculta) {
         if (criaturaObj.equipamentoRevelado) {
-            // CORREÇÃO: CSS embutido com !important para blindar a exibição
             htmlEquipamento = `<div class="mini-equip-icon revelado" style="background-image: url('${criaturaObj.equipamento.img}'); background-color: #ffd700; display: block !important; width: 26px !important; height: 26px !important; border: 2px solid #ffd700 !important; border-radius: 50%; background-size: cover; background-position: center;" onpointerdown="event.stopPropagation()" ontouchstart="event.stopPropagation()" onclick="event.stopPropagation(); window.ampliarCartaClicada('${criaturaObj.equipamento.img}')"></div>`;
         } else {
             let msgOculto = criaturaObj.dono === 'jogador' ? 'Seu equipamento secreto.' : 'Equipamento inimigo oculto.';
@@ -50,20 +56,25 @@ function desenharMiniCarta(criaturaObj) {
         }
     }
 
+    // 🔥 BLINDAGEM DE DADOS: Troca todos os números por "?" se estiver oculta!
+    let displayHP = isOculta ? '???' : (hpAtual > 0 ? hpAtual : '');
+    let displayCorHp = isOculta ? '#222' : corHp;
+    let displayPct = isOculta ? 100 : pct;
+
     return `
         <div class="mini-card-wrapper ${criaturaObj.moveuNesteTurno ? 'esgotado' : ''}">
             ${htmlEquipamento}
             <div class="mini-card-body ${triboClass}">
                 <div class="mini-top-row"><div class="mini-art" style="${img ? `background-image: url('${img}');` : ''}">${!img ? '🛡️' : ''}</div></div>
-                <div class="mini-hp-row"><div class="mini-hp-fill" style="width: ${pct}%; background-color: ${corHp};"></div><span class="mini-hp-text">${hpAtual > 0 ? hpAtual : ''}</span></div>
+                <div class="mini-hp-row"><div class="mini-hp-fill" style="width: ${displayPct}%; background-color: ${displayCorHp};"></div><span class="mini-hp-text">${displayHP}</span></div>
                 <div class="mini-stats-container">
                     <div class="mini-stats-band">
-                        <div class="mini-stat-item"><span>❤️</span><b>${c}</b></div><div class="mini-stat-item"><span>⚡</span><b>${p}</b></div>
-                        <div class="mini-stat-item"><span>👁️</span><b>${s}</b></div><div class="mini-stat-item"><span>💨</span><b>${v}</b></div>
+                        <div class="mini-stat-item"><span>❤️</span><b>${isOculta ? '?' : c}</b></div><div class="mini-stat-item"><span>⚡</span><b>${isOculta ? '?' : p}</b></div>
+                        <div class="mini-stat-item"><span>👁️</span><b>${isOculta ? '?' : s}</b></div><div class="mini-stat-item"><span>💨</span><b>${isOculta ? '?' : v}</b></div>
                     </div>
                     <div class="mini-elements-band">
-                        <div class="mini-el fogo ${temFogo ? 'ativo' : ''}">🔥</div><div class="mini-el ar ${temAr ? 'ativo' : ''}">☁️</div>
-                        <div class="mini-el terra ${temTerra ? 'ativo' : ''}">⛰️</div><div class="mini-el agua ${temAgua ? 'ativo' : ''}">🌊</div>
+                        <div class="mini-el fogo ${!isOculta && temFogo ? 'ativo' : ''}">🔥</div><div class="mini-el ar ${!isOculta && temAr ? 'ativo' : ''}">☁️</div>
+                        <div class="mini-el terra ${!isOculta && temTerra ? 'ativo' : ''}">⛰️</div><div class="mini-el agua ${!isOculta && temAgua ? 'ativo' : ''}">🌊</div>
                     </div>
                 </div>
             </div>
@@ -199,7 +210,8 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
                     temEfeito: temEfeitoReal,
                     textoCarta: textoCartaReal,
                     equipamento: equipOriginal ? { nome: equipOriginal.nome, img: equipOriginal.img, efeito: equipOriginal.efeito } : null,
-                    equipamentoRevelado: false
+                    equipamentoRevelado: false,
+                    revelada: false
                 };
             }
         }
@@ -279,7 +291,8 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
                     temEfeito: temEfeitoReal,
                     textoCarta: textoCartaReal,
                     equipamento: equipOp ? { nome: equipOp.nome, img: equipOp.img, efeito: equipOp.efeito } : null,
-                    equipamentoRevelado: false
+                    equipamentoRevelado: false,
+                    revelada: false
                 };
             }
         });
@@ -659,66 +672,87 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
     let botoesHTML = "";
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-    if (!emCombate && !criatura.moveuNesteTurno) {
-        botoesHTML += `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
-    } else if (!emCombate && criatura.moveuNesteTurno) {
-        botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Esta criatura já se moveu neste turno.</p>`;
-    } else if (emCombate) {
-        botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Movimento bloqueado durante o Combate!</p>`;
-    }
-
-    let textoMinusculo = (criatura.textoCarta || "").toLowerCase();
-    let habilidadeAtiva = textoMinusculo.includes('descarte') || textoMinusculo.includes('gaste') || textoMinusculo.includes('ficha');
-    
-    // 🔥 NOVO: Checa o custo real da habilidade no banco de dados!
-    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === criatura.nome) : null;
-    let custoHab = (dbCarta && dbCarta.custoHabilidade !== undefined) ? dbCarta.custoHabilidade : 1;
-
-    if (criatura.temEfeito && habilidadeAtiva) {
-        if (criatura.fichasHabilidade >= custoHab) {
-            botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff9800; color: #ff9800;" onclick="window.usarHabilidade('${fullId}')">Usar Habilidade</button>`;
-        } else {
-            // Mostra o botão cinza e bloqueado avisando quantas fichas faltam!
-            botoesHTML += `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>Usar Habilidade (${custoHab} Fichas)</button>`;
+    // ==========================================
+    // 👁️ SE A CRIATURA ESTIVER OCULTA (VIRADA PARA BAIXO)
+    // ==========================================
+    if (criatura.revelada === false) {
+        botoesHTML += `<p style="font-size: 11px; color: #aaa; margin-bottom: 10px;">Esta criatura está oculta. Revele-a para usar habilidades, magias e equipamentos.</p>`;
+        
+        // Pode colocar no Burst para revelar!
+        if (!window.aguardandoResposta) {
+            botoesHTML += `<button class="btn-acao-modal" style="border-color: #ffd700; color: #ffd700; font-size: 16px; margin-bottom: 10px;" onclick="window.acionarRevelarCriatura('${fullId}')">👁️ Revelar Campeão</button>`;
         }
-    }
 
-    if (criatura.fichasHabilidade > 0) {
-        botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4;" onclick="window.prepararMugic('${fullId}')">Usar Mugic</button>`;
-    }
+        // Criaturas ocultas podem se mover!
+        if (!emCombate && !criatura.moveuNesteTurno) {
+            botoesHTML += `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
+        } else if (!emCombate && criatura.moveuNesteTurno) {
+            botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Esta criatura já se moveu neste turno.</p>`;
+        } else if (emCombate) {
+            botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Movimento bloqueado durante o Combate!</p>`;
+        }
+    } 
+    // ==========================================
+    // 🌟 SE A CRIATURA ESTIVER REVELADA (FACE PARA CIMA)
+    // ==========================================
+    else {
+        if (!emCombate && !criatura.moveuNesteTurno) {
+            botoesHTML += `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
+        } else if (!emCombate && criatura.moveuNesteTurno) {
+            botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Esta criatura já se moveu neste turno.</p>`;
+        } else if (emCombate) {
+            botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Movimento bloqueado durante o Combate!</p>`;
+        }
 
-    // ==========================================
-    // ⚙️ MENU DE EQUIPAMENTOS (CORRIGIDO)
-    // ==========================================
-    if (criatura.equipamento) {
-        if (!criatura.equipamentoRevelado) {
-            botoesHTML += `<button class="btn-acao-modal btn-revelar" onclick="window.revelarEquipamento('${fullId}')">Revelar Equipamento</button>`;
-        } else {
-            botoesHTML += `<button class="btn-acao-modal btn-ver" onclick="window.verEquipamentoModal('${fullId}')">Ver Equipamento</button>`;
-            botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff5555; color: #ff5555; margin-top: 10px;" onclick="window.descartarEquipamentoMesa('${fullId}')">Descartar Equipamento</button>`;
-            
-            // 🔥 BOTÃO DE CURA DO BRACELETE DE CRISTAL
-            if (criatura.equipamento.nome === "Bracelete de cristal" || criatura.equipamento.nome === "Bracelete de Cristal") {
-                botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4; margin-top: 5px;" onclick="window.iniciarMiraCuraVeneno('${fullId}')">🤝 Curar Veneno</button>`;
+        let textoMinusculo = (criatura.textoCarta || "").toLowerCase();
+        let habilidadeAtiva = textoMinusculo.includes('descarte') || textoMinusculo.includes('gaste') || textoMinusculo.includes('ficha');
+        let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === criatura.nome) : null;
+        let custoHab = (dbCarta && dbCarta.custoHabilidade !== undefined) ? dbCarta.custoHabilidade : 1;
+
+        if (criatura.temEfeito && habilidadeAtiva) {
+            if (criatura.fichasHabilidade >= custoHab) {
+                botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff9800; color: #ff9800;" onclick="window.usarHabilidade('${fullId}')">Usar Habilidade</button>`;
+            } else {
+                botoesHTML += `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>Usar Habilidade (${custoHab} Fichas)</button>`;
+            }
+        }
+
+        if (criatura.fichasHabilidade > 0) {
+            botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4;" onclick="window.prepararMugic('${fullId}')">Usar Mugic</button>`;
+        }
+
+        if (criatura.equipamento) {
+            if (!criatura.equipamentoRevelado) {
+                botoesHTML += `<button class="btn-acao-modal btn-revelar" onclick="window.revelarEquipamento('${fullId}')">Revelar Equipamento</button>`;
+            } else {
+                botoesHTML += `<button class="btn-acao-modal btn-ver" onclick="window.verEquipamentoModal('${fullId}')">Ver Equipamento</button>`;
+                botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff5555; color: #ff5555; margin-top: 10px;" onclick="window.descartarEquipamentoMesa('${fullId}')">Descartar Equipamento</button>`;
+                if (criatura.equipamento.nome === "Bracelete de cristal" || criatura.equipamento.nome === "Bracelete de Cristal") {
+                    botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4; margin-top: 5px;" onclick="window.iniciarMiraCuraVeneno('${fullId}')">🤝 Curar Veneno</button>`;
+                }
             }
         }
     }
 
     botoesHTML += `<button class="btn-acao-modal btn-cancelar" onclick="fecharModalAcoes()">Cancelar</button>`;
 
+    // Imagem do modal: se oculta, mostra o verso.
+    let imgModal = criatura.revelada === false ? URL_FUNDO_CARTA : criatura.cartaBlank;
+    let nomeModal = criatura.revelada === false ? "Campeão Oculto" : criatura.nome;
+
     const modalHTML = `
         <div class="modal-overlay" id="overlay-acoes">
             <div class="modal-content-fichas" style="text-align:center; max-height: 90vh; overflow-y: auto;">
-                <h3 style="color:#4CAF50;margin-bottom:5px;">${criatura.nome}</h3>
+                <h3 style="color:#4CAF50;margin-bottom:5px;">${nomeModal}</h3>
                 
-                <div onclick="window.ampliarCartaClicada('${criatura.cartaBlank}', '${fullId}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${criatura.cartaBlank}');background-size:cover;background-position:center;border:2px solid #4CAF50;border-radius:10px;box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); cursor: pointer;">
+                <div onclick="window.ampliarCartaClicada('${imgModal}', '${fullId}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${imgModal}');background-size:cover;background-position:center;border:2px solid #4CAF50;border-radius:10px;box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); cursor: pointer;">
                     <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); border-radius: 8px; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
                         <span style="color: white; font-weight: bold; font-size: 12px;">🔍 AMPLIAR</span>
                     </div>
                 </div>
                 
                 <p style="font-size:14px; color:#ffd700; margin-bottom:5px;">Fichas Atuais: <b style="font-size:18px;">${criatura.fichasHabilidade}</b></p>
-                <p style="font-size:10px;color:#aaa;margin-bottom:15px;line-height:1.3;">${criatura.textoCarta || 'Sem efeito especial.'}</p>
+                <p style="font-size:10px;color:#aaa;margin-bottom:15px;line-height:1.3;">${criatura.revelada === false ? 'Revele o campeão para ler suas habilidades.' : (criatura.textoCarta || 'Sem efeito especial.')}</p>
                 
                 <div style="display:flex;flex-direction:column;gap:10px;">
                     ${botoesHTML}
@@ -729,13 +763,11 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
 
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
     
-    // 🔥 CORREÇÃO DO "CLIQUE FANTASMA" NO CELULAR 🔥
     let modalOpcoes = document.getElementById('overlay-acoes');
     if (modalOpcoes) {
         modalOpcoes.style.pointerEvents = 'none';
         setTimeout(() => { modalOpcoes.style.pointerEvents = 'auto'; }, 350);
     }
-    
     document.getElementById('overlay-acoes').addEventListener('click', function(e) { if(e.target === this) fecharModalAcoes(); });
 };
 
@@ -6382,4 +6414,36 @@ window.rolarDadoAnimado = function(resultadoFinal, callback) {
         }
     }
     girar();
+};
+
+// ==========================================
+// 👁️ AÇÃO NO BURST: REVELAR CAMPEÃO OCULTO
+// ==========================================
+window.acionarRevelarCriatura = function(fullId) {
+    window.fecharModalAcoes();
+    let criatura = obterCriaturaNoSlot(fullId);
+    if (!criatura || criatura.revelada) return;
+
+    let acaoRevelar = {
+        dono: criatura.dono,
+        nomeAcao: `Revelar Campeão (${criatura.nome})`,
+        tipo: 'revelar_criatura',
+        executar: function() {
+            criatura.revelada = true;
+            window.mostrarMensagemScanner(`👁️ O campeão ${criatura.nome} saiu das sombras e se revelou!`);
+            if(window.tocarSFX) window.tocarSFX('notificacao');
+            
+            let elAlvo = document.getElementById(fullId);
+            if(elAlvo) {
+                elAlvo.style.animation = "pulse 0.5s";
+                setTimeout(() => { elAlvo.style.animation = ""; }, 500);
+            }
+
+            if (criatura.dono === 'jogador' && window.salaBatalhaAtual && window.salaBatalhaAtual !== 'sala_simulada') {
+                window.enviarAcaoRede({ tipo: 'revelar_criatura_direto', alvo: fullId });
+            }
+            atualizarTelaBatalha();
+        }
+    };
+    window.adicionarAoBurst(acaoRevelar);
 };
