@@ -4316,62 +4316,75 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
     
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
-    // 🔥 LÓGICA DO DANO (ELEMENTAL + CHECAGEM DE ATRIBUTOS) 🔥
-    let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === nomeAtaque) : null;
-    let danoExtra = 0;
-    let msgBonus = "";
+    // ==========================================
+    // 🧠 MOTOR DE CONTINUAÇÃO (Roda APÓS os dados ou imediatamente)
+    // ==========================================
+    let processarAtaqueFinal = function(dadoSorteado) {
+        let nomeAcaoBurst = nomeAtaque;
+        let msgBonus = "";
 
-    let idMeuMonstro = null;
-    let idMonstroInimigo = null;
+        // 🔥 SE TEVE DADO, MULTIPLICA O DANO E MUDA O NOME DA AÇÃO!
+        if (dadoSorteado !== null) {
+            danoBase = danoBase * dadoSorteado;
+            nomeAcaoBurst = `${nomeAtaque} [🎲 x${dadoSorteado}]`;
+            msgBonus += `[🎲 x${dadoSorteado}] `;
+        }
 
-    if (window.estadoCombate && window.estadoCombate.ativo) {
-        let p1Card = obterCriaturaNoSlot(window.estadoCombate.atacante);
-        let p2Card = obterCriaturaNoSlot(window.estadoCombate.defensor);
+        // 🔥 LÓGICA DO DANO (ELEMENTAL + CHECAGEM DE ATRIBUTOS) 🔥
+        let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === nomeAtaque) : null;
+        let danoExtra = 0;
 
-        if (p1Card && p1Card.dono === 'jogador') { idMeuMonstro = window.estadoCombate.atacante; } 
-        else { idMonstroInimigo = window.estadoCombate.atacante; }
+        let idMeuMonstro = null;
+        let idMonstroInimigo = null;
 
-        if (p2Card && p2Card.dono === 'jogador') { idMeuMonstro = window.estadoCombate.defensor; } 
-        else { idMonstroInimigo = window.estadoCombate.defensor; }
-    }
+        if (window.estadoCombate && window.estadoCombate.ativo) {
+            let p1Card = obterCriaturaNoSlot(window.estadoCombate.atacante);
+            let p2Card = obterCriaturaNoSlot(window.estadoCombate.defensor);
 
-    if (ataqueDB && idMeuMonstro && idMonstroInimigo) {
-        let minhaCriatura = obterCriaturaNoSlot(idMeuMonstro);
-        let criaturaInimiga = obterCriaturaNoSlot(idMonstroInimigo); 
-        
-        if (minhaCriatura) {
-            let dFogo = ataqueDB.fogo || ataqueDB.danoElemental?.fogo || 0;
-            let dAgua = ataqueDB.agua || ataqueDB.danoElemental?.agua || 0;
-            let dTerra = ataqueDB.terra || ataqueDB.danoElemental?.terra || 0;
-            let dAr = ataqueDB.ar || ataqueDB.vento || ataqueDB.danoElemental?.ar || ataqueDB.danoElemental?.vento || 0;
+            if (p1Card && p1Card.dono === 'jogador') { idMeuMonstro = window.estadoCombate.atacante; } 
+            else { idMonstroInimigo = window.estadoCombate.atacante; }
 
-            if (dFogo > 0 || dAgua > 0 || dTerra > 0 || dAr > 0) {
-                // ==========================================
-                // ⚙️ MOTOR DE EQUIPAMENTOS: IMUNIDADE ELEMENTAL
-                // ==========================================
-                let imunidadeElemental = false;
-                if (criaturaInimiga && criaturaInimiga.equipamento && criaturaInimiga.equipamentoRevelado) {
-                    if (criaturaInimiga.equipamento.nome === "Anel Precioso") {
-                        imunidadeElemental = true;
-                        msgBonus += "[💍 IMUNE A ELEMENTOS] ";
+            if (p2Card && p2Card.dono === 'jogador') { idMeuMonstro = window.estadoCombate.defensor; } 
+            else { idMonstroInimigo = window.estadoCombate.defensor; }
+        }
+
+        if (ataqueDB && idMeuMonstro && idMonstroInimigo) {
+            let minhaCriatura = obterCriaturaNoSlot(idMeuMonstro);
+            let criaturaInimiga = obterCriaturaNoSlot(idMonstroInimigo); 
+            
+            if (minhaCriatura) {
+                let dFogo = ataqueDB.fogo || ataqueDB.danoElemental?.fogo || 0;
+                let dAgua = ataqueDB.agua || ataqueDB.danoElemental?.agua || 0;
+                let dTerra = ataqueDB.terra || ataqueDB.danoElemental?.terra || 0;
+                let dAr = ataqueDB.ar || ataqueDB.vento || ataqueDB.danoElemental?.ar || ataqueDB.danoElemental?.vento || 0;
+
+                if (dFogo > 0 || dAgua > 0 || dTerra > 0 || dAr > 0) {
+                    // ==========================================
+                    // ⚙️ MOTOR DE EQUIPAMENTOS: IMUNIDADE ELEMENTAL
+                    // ==========================================
+                    let imunidadeElemental = false;
+                    if (criaturaInimiga && criaturaInimiga.equipamento && criaturaInimiga.equipamentoRevelado) {
+                        if (criaturaInimiga.equipamento.nome === "Anel Precioso") {
+                            imunidadeElemental = true;
+                            msgBonus += "[💍 IMUNE A ELEMENTOS] ";
+                        }
+                    }
+
+                    if (!imunidadeElemental) {
+                        let elemsBrutos = minhaCriatura.elementos;
+                        if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
+                            let dbCarta = MONSTROS.find(m => m.nome === minhaCriatura.nome);
+                            if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
+                        }
+                        let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+
+                        if (textoElementos.includes('fogo') && dFogo > 0) { danoExtra += parseInt(dFogo); msgBonus += `[+${dFogo} 🔥] `; }
+                        if (textoElementos.includes('agua') && dAgua > 0) { danoExtra += parseInt(dAgua); msgBonus += `[+${dAgua} 🌊] `; }
+                        if (textoElementos.includes('terra') && dTerra > 0) { danoExtra += parseInt(dTerra); msgBonus += `[+${dTerra} ⛰️] `; }
+                        if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && dAr > 0) { danoExtra += parseInt(dAr); msgBonus += `[+${dAr} ☁️] `; }
                     }
                 }
-
-                if (!imunidadeElemental) {
-                    let elemsBrutos = minhaCriatura.elementos;
-                    if ((!elemsBrutos || elemsBrutos.length === 0) && typeof MONSTROS !== 'undefined') {
-                        let dbCarta = MONSTROS.find(m => m.nome === minhaCriatura.nome);
-                        if (dbCarta && dbCarta.elementos) elemsBrutos = dbCarta.elementos;
-                    }
-                    let textoElementos = JSON.stringify(elemsBrutos || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
-
-                    if (textoElementos.includes('fogo') && dFogo > 0) { danoExtra += parseInt(dFogo); msgBonus += `[+${dFogo} 🔥] `; }
-                    if (textoElementos.includes('agua') && dAgua > 0) { danoExtra += parseInt(dAgua); msgBonus += `[+${dAgua} 🌊] `; }
-                    if (textoElementos.includes('terra') && dTerra > 0) { danoExtra += parseInt(dTerra); msgBonus += `[+${dTerra} ⛰️] `; }
-                    if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && dAr > 0) { danoExtra += parseInt(dAr); msgBonus += `[+${dAr} ☁️] `; }
-                }
-            }
-            // ==========================================
+                // ==========================================
                 // ⚔️ MOTOR DE EQUIPAMENTOS: BÔNUS DE DANO (Braceletes)
                 // ==========================================
                 if (minhaCriatura.equipamento && minhaCriatura.equipamentoRevelado) {
@@ -4389,197 +4402,218 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                         msgBonus += "[🌊 +5 Bracelete] ";
                     }
                 }
-            if (ataqueDB.checkAtributo && criaturaInimiga) {
-                let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); 
-                let bonus = ataqueDB.checkAtributo.danoExtra;
-                let valAta = minhaCriatura.statsMax ? (minhaCriatura.statsMax[attr] || 0) : 0;
-                let valDef = criaturaInimiga.statsMax ? (criaturaInimiga.statsMax[attr] || 0) : 0;
-                if (valAta > valDef) {
-                    danoExtra += bonus;
-                    let iconesAttr = { 'coragem': '❤️', 'poder': '⚡', 'sabedoria': '👁️', 'velocidade': '💨' };
-                    msgBonus += `[+${bonus} Check ${iconesAttr[attr] || ''}] `;
+
+                if (ataqueDB.checkAtributo && criaturaInimiga) {
+                    let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); 
+                    let bonus = ataqueDB.checkAtributo.danoExtra;
+                    let valAta = minhaCriatura.statsMax ? (minhaCriatura.statsMax[attr] || 0) : 0;
+                    let valDef = criaturaInimiga.statsMax ? (criaturaInimiga.statsMax[attr] || 0) : 0;
+                    if (valAta > valDef) {
+                        danoExtra += bonus;
+                        let iconesAttr = { 'coragem': '❤️', 'poder': '⚡', 'sabedoria': '👁️', 'velocidade': '💨' };
+                        msgBonus += `[+${bonus} Check ${iconesAttr[attr] || ''}] `;
+                    }
                 }
             }
         }
-    }
-// ==========================================
-    // ⚡ GATILHO: Inimigo ativou o Spedman lá!
-    // ==========================================
-    if (window.spedmanProtecaoAtivaInimiga) {
-        window.spedmanProtecaoAtivaInimiga = false;
-        danoBase = 0;
-        danoExtra = 0;
-        msgBonus = "[⚡ ANULADO POR SPEDMAN] ";
-    }
 
-    // ==========================================
-    // 🗺️ MOTOR DE LOCAIS: MODIFICADORES DE DANO
-    // ==========================================
-    let locDBAtual = null;
-    if (window.localAtivoAtual) {
-        if (typeof LOCAIS_DB !== 'undefined') locDBAtual = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
-        if (!locDBAtual && window.inventario) locDBAtual = window.inventario.find(l => l.img === window.localAtivoAtual);
-    }
-
-    if (locDBAtual && locDBAtual.nome === "O Túnel da Tempestade") {
-        let ataqueTemVento = (ataqueDB && (ataqueDB.ar > 0 || ataqueDB.vento > 0 || (ataqueDB.danoElemental && (ataqueDB.danoElemental.ar > 0 || ataqueDB.danoElemental.vento > 0))));
-        let ataqueTemAgua = (ataqueDB && (ataqueDB.agua > 0 || (ataqueDB.danoElemental && ataqueDB.danoElemental.agua > 0)));
-
-        if (ataqueTemVento) {
-            danoExtra += 5;
-            msgBonus += "[🌪️ +5 Dano Aéreo] ";
+        // ==========================================
+        // ⚡ GATILHO: Inimigo ativou o Spedman lá!
+        // ==========================================
+        if (window.spedmanProtecaoAtivaInimiga) {
+            window.spedmanProtecaoAtivaInimiga = false;
+            danoBase = 0;
+            danoExtra = 0;
+            msgBonus = "[⚡ ANULADO POR SPEDMAN] ";
         }
-        if (ataqueTemAgua) {
-            danoExtra -= 5;
-            msgBonus += "[💧 -5 Dano Aquático] ";
+
+        // ==========================================
+        // 🗺️ MOTOR DE LOCAIS: MODIFICADORES DE DANO
+        // ==========================================
+        let locDBAtual = null;
+        if (window.localAtivoAtual) {
+            if (typeof LOCAIS_DB !== 'undefined') locDBAtual = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
+            if (!locDBAtual && window.inventario) locDBAtual = window.inventario.find(l => l.img === window.localAtivoAtual);
         }
-    }
-// 🔥 BÔNUS DO BRACELETE DE CRISTAL (Terra +5)
-if (minhaCriatura.equipamento && minhaCriatura.equipamentoRevelado && minhaCriatura.equipamento.nome === "Bracelete de cristal") {
-    let ehTerra = (ataqueDB.terra > 0 || (ataqueDB.danoElemental && ataqueDB.danoElemental.terra > 0));
-    if (ehTerra) {
-        danoExtra += 5;
-        msgBonus += "[🌍 +5 Dano de Terra] ";
-    }
-}
-    // 🔥 CORREÇÃO MATEMÁTICA: Garante que o dano não fique negativo e cure o inimigo por acidente!
-    let danoTotal = Math.max(0, danoBase + danoExtra);
 
+        if (locDBAtual && locDBAtual.nome === "O Túnel da Tempestade") {
+            let ataqueTemVento = (ataqueDB && (ataqueDB.ar > 0 || ataqueDB.vento > 0 || (ataqueDB.danoElemental && (ataqueDB.danoElemental.ar > 0 || ataqueDB.danoElemental.vento > 0))));
+            let ataqueTemAgua = (ataqueDB && (ataqueDB.agua > 0 || (ataqueDB.danoElemental && ataqueDB.danoElemental.agua > 0)));
 
-    // ==========================================
-    // 🛡️ GATILHOS PASSIVOS: Imunidades (Rex, Amuleto do Vácuo, etc)
-    // ==========================================
-    if (ataqueDB && idMonstroInimigo) {
-        let defensorAtual = obterCriaturaNoSlot(idMonstroInimigo);
-        // Descobre se o ataque possui elemento Vento/Ar na raiz dele
-        let ataqueTemVento = (ataqueDB.ar > 0 || ataqueDB.vento > 0 || (ataqueDB.danoElemental && (ataqueDB.danoElemental.ar > 0 || ataqueDB.danoElemental.vento > 0)));
-        
-        if (defensorAtual && ataqueTemVento) {
-            // Checa se o equipamento está equipado e revelado (virado para cima)
-            let temAmuleto = (defensorAtual.equipamento && defensorAtual.equipamentoRevelado && defensorAtual.equipamento.nome === "Amuleto do Vácuo");
-            
-            // Se for o Rex OU se estiver usando o Amuleto... anula o dano!
-            if (defensorAtual.nome === "Rex" || temAmuleto) {
-                danoTotal = 0; 
-                msgBonus = "[🛡️ IMUNE A VENTO] ";
+            if (ataqueTemVento) {
+                danoExtra += 5;
+                msgBonus += "[🌪️ +5 Dano Aéreo] ";
+            }
+            if (ataqueTemAgua) {
+                danoExtra -= 5;
+                msgBonus += "[💧 -5 Dano Aquático] ";
             }
         }
-    }
 
-   let acaoDoAtaque = {
-        dono: 'jogador',
-        nomeAcao: nomeAtaque,
-        tipo: 'ataque',
-        executar: function() {
-            if (!idMonstroInimigo) return;
-            let alvo = obterCriaturaNoSlot(idMonstroInimigo);
+        // 🔥 CORREÇÃO MATEMÁTICA: Garante que o dano não fique negativo e cure o inimigo por acidente!
+        let danoTotal = Math.max(0, danoBase + danoExtra);
+
+        // ==========================================
+        // 🛡️ GATILHOS PASSIVOS: Imunidades (Rex, Amuleto do Vácuo, etc)
+        // ==========================================
+        if (ataqueDB && idMonstroInimigo) {
+            let defensorAtual = obterCriaturaNoSlot(idMonstroInimigo);
+            // Descobre se o ataque possui elemento Vento/Ar na raiz dele
+            let ataqueTemVento = (ataqueDB.ar > 0 || ataqueDB.vento > 0 || (ataqueDB.danoElemental && (ataqueDB.danoElemental.ar > 0 || ataqueDB.danoElemental.vento > 0)));
             
-            if (alvo) {
-                // ==========================================
-                // 1º PASSO: APLICAR O DANO BRUTO IMEDIATAMENTE
-                // ==========================================
-                alvo.hpAtual -= danoTotal; 
-                if (alvo.hpAtual < 0) alvo.hpAtual = 0; // Trava o negativo
-                if(window.tocarSFX) window.tocarSFX('notificacao'); 
+            if (defensorAtual && ataqueTemVento) {
+                // Checa se o equipamento está equipado e revelado (virado para cima)
+                let temAmuleto = (defensorAtual.equipamento && defensorAtual.equipamentoRevelado && defensorAtual.equipamento.nome === "Amuleto do Vácuo");
                 
-                let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
-                if (danoExtra > 0) msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
-                if (danoTotal === 0 && alvo.nome === "Rex") msgScanner = `🛡️ REX IMUNE! O ataque de Vento se dissipou nas escamas dele (0 de dano)!`;
+                // Se for o Rex OU se estiver usando o Amuleto... anula o dano!
+                if (defensorAtual.nome === "Rex" || temAmuleto) {
+                    danoTotal = 0; 
+                    msgBonus = "[🛡️ IMUNE A VENTO] ";
+                }
+            }
+        }
+
+        let acaoDoAtaque = {
+            dono: 'jogador',
+            nomeAcao: nomeAcaoBurst,
+            tipo: 'ataque',
+            executar: function() {
+                if (!idMonstroInimigo) return;
+                let alvo = obterCriaturaNoSlot(idMonstroInimigo);
                 
-                window.mostrarMensagemScanner(msgScanner);
+                if (alvo) {
+                    // ==========================================
+                    // 1º PASSO: APLICAR O DANO BRUTO IMEDIATAMENTE
+                    // ==========================================
+                    alvo.hpAtual -= danoTotal; 
+                    if (alvo.hpAtual < 0) alvo.hpAtual = 0; // Trava o negativo
+                    if(window.tocarSFX) window.tocarSFX('notificacao'); 
+                    
+                    let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
+                    if (danoExtra > 0 || dadoSorteado !== null) msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
+                    if (danoTotal === 0 && alvo.nome === "Rex") msgScanner = `🛡️ REX IMUNE! O ataque de Vento se dissipou nas escamas dele (0 de dano)!`;
+                    
+                    window.mostrarMensagemScanner(msgScanner);
 
-                // 🌐 O TRANSMISSOR IMEDIATO: O Dano viaja na frente!
-                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                    window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
-                }
-                
-                let elAlvo = document.getElementById(idMonstroInimigo);
-                if(elAlvo) {
-                    elAlvo.style.animation = "shake 0.5s";
-                    setTimeout(() => { elAlvo.style.animation = ""; }, 500);
-                }
-                atualizarTelaBatalha();
+                    // 🌐 O TRANSMISSOR IMEDIATO: O Dano viaja na frente!
+                    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                        window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
+                    }
+                    
+                    let elAlvo = document.getElementById(idMonstroInimigo);
+                    if(elAlvo) {
+                        elAlvo.style.animation = "shake 0.5s";
+                        setTimeout(() => { elAlvo.style.animation = ""; }, 500);
+                    }
+                    atualizarTelaBatalha();
 
-                let morreuPeloDanoBruto = (alvo.hpAtual === 0);
-                if (morreuPeloDanoBruto) {
-                    setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
-                }
+                    let morreuPeloDanoBruto = (alvo.hpAtual === 0);
+                    if (morreuPeloDanoBruto) {
+                        setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
+                    }
 
-                // ==========================================
-                // 2º PASSO: EFEITOS SECUNDÁRIOS DO ATAQUE 
-                // (Com atraso de 200ms para a Nuvem entregar o Dano primeiro!)
-                // ==========================================
-                setTimeout(() => {
-                    // 🧪 EFEITO: Ácido Gástrico (ID 101)
-                    if (ataqueDB && ataqueDB.id === 101) {
-                        if (alvo.equipamento) {
-                            let eqText = (alvo.equipamento.efeito || "").toLowerCase();
-                            // Destrói mesmo se não estiver revelado, a não ser que seja Indestrutível!
-                            if (eqText.includes('indestrutível') || eqText.includes('indestrutivel')) {
-                                window.mostrarMensagemScanner("🛡️ O equipamento resistiu ao Ácido (Indestrutível)!");
-                            } else {
-                                let nomeEqRemovido = window.removerEquipamentoMesa(idMonstroInimigo, true); 
-                                window.mostrarMensagemScanner(`🧪 Ácido derreteu o equipamento: ${nomeEqRemovido}!`);
-                                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                                    window.enviarAcaoRede({ tipo: 'destruir_equipamento', alvo: idMonstroInimigo, nomeEquip: nomeEqRemovido });
+                    // ==========================================
+                    // 2º PASSO: EFEITOS SECUNDÁRIOS DO ATAQUE 
+                    // (Com atraso de 200ms para a Nuvem entregar o Dano primeiro!)
+                    // ==========================================
+                    setTimeout(() => {
+                        // 🧪 EFEITO: Ácido Gástrico (ID 101)
+                        if (ataqueDB && ataqueDB.id === 101) {
+                            if (alvo.equipamento) {
+                                let eqText = (alvo.equipamento.efeito || "").toLowerCase();
+                                // Destrói mesmo se não estiver revelado, a não ser que seja Indestrutível!
+                                if (eqText.includes('indestrutível') || eqText.includes('indestrutivel')) {
+                                    window.mostrarMensagemScanner("🛡️ O equipamento resistiu ao Ácido (Indestrutível)!");
+                                } else {
+                                    let nomeEqRemovido = window.removerEquipamentoMesa(idMonstroInimigo, true); 
+                                    window.mostrarMensagemScanner(`🧪 Ácido derreteu o equipamento: ${nomeEqRemovido}!`);
+                                    if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                        window.enviarAcaoRede({ tipo: 'destruir_equipamento', alvo: idMonstroInimigo, nomeEquip: nomeEqRemovido });
+                                    }
                                 }
                             }
                         }
-                    }
-                    
-                    // 🌑 EFEITO: Mão Negra (ID 102)
-                    if (ataqueDB && ataqueDB.id === 102) {
-                        window.mostrarMensagemScanner("🌑 Mão Negra ativada! Roubando carta da mente do inimigo...");
-                        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                            window.enviarAcaoRede({ tipo: 'mao_negra_roubar' });
-                        } else {
-                            if (window.qtdMaoOponente > 0) {
-                                window.qtdMaoOponente--; 
-                                let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
-                                let cartaSimulada = todosAtaques[Math.floor(Math.random() * todosAtaques.length)];
-                                window.receberCartaRoubada(cartaSimulada.id || cartaSimulada.nome); 
+                        
+                        // 🌑 EFEITO: Mão Negra (ID 102)
+                        if (ataqueDB && ataqueDB.id === 102) {
+                            window.mostrarMensagemScanner("🌑 Mão Negra ativada! Roubando carta da mente do inimigo...");
+                            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                window.enviarAcaoRede({ tipo: 'mao_negra_roubar' });
                             } else {
-                                window.mostrarMensagemScanner("O oponente tentou roubar, mas não há cartas!");
+                                if (window.qtdMaoOponente > 0) {
+                                    window.qtdMaoOponente--; 
+                                    let todosAtaques = typeof ATAQUES !== 'undefined' ? ATAQUES : window.inventario.filter(c => c.tipoCarta === 'Ataque');
+                                    let cartaSimulada = todosAtaques[Math.floor(Math.random() * todosAtaques.length)];
+                                    window.receberCartaRoubada(cartaSimulada.id || cartaSimulada.nome); 
+                                } else {
+                                    window.mostrarMensagemScanner("O oponente tentou roubar, mas não há cartas!");
+                                }
                             }
                         }
-                    }
 
-                    // Se a remoção de um equipamento causou a morte (Ex: Anel Precioso)
-                    if (!morreuPeloDanoBruto && alvo.hpAtual === 0) {
-                        setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
-                    }
-                }, 200); // <-- O delay de 200ms que põe ordem no caos!
+                        // Se a remoção de um equipamento causou a morte (Ex: Anel Precioso)
+                        if (!morreuPeloDanoBruto && alvo.hpAtual === 0) {
+                            setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
+                        }
+                    }, 200); // <-- O delay de 200ms que põe ordem no caos!
+                }
             }
-        }
-    };
-
-    window.adicionarAoBurst(acaoDoAtaque);
-
-   // ==========================================
-    // 🦁 GATILHO PASSIVO: A Fúria Sniper da Leona!
-    // ==========================================
-    let atacanteAtual = idMeuMonstro ? obterCriaturaNoSlot(idMeuMonstro) : null;
-    
-    if (atacanteAtual && atacanteAtual.nome === "Leona") {
-        window.modoAlvo = {
-            tipo: 'passiva_leona',
-            origem: idMeuMonstro
         };
-        window.pausarCronometro();
+
+        window.adicionarAoBurst(acaoDoAtaque);
+
+        // ==========================================
+        // 🦁 GATILHO PASSIVO: A Fúria Sniper da Leona!
+        // ==========================================
+        let atacanteAtual = idMeuMonstro ? obterCriaturaNoSlot(idMeuMonstro) : null;
         
-        // 🔥 ANIMAÇÃO ÉPICA PARA CHAMAR ATENÇÃO DO JOGADOR
-        if(typeof window.mostrarBannerTCG === 'function') {
-            window.mostrarBannerTCG('PASSIVA DA LEONA', 'rgba(229, 57, 53, 0.8)', '#ffd700');
+        if (atacanteAtual && atacanteAtual.nome === "Leona") {
+            window.modoAlvo = {
+                tipo: 'passiva_leona',
+                origem: idMeuMonstro
+            };
+            window.pausarCronometro();
+            
+            // 🔥 ANIMAÇÃO ÉPICA PARA CHAMAR ATENÇÃO DO JOGADOR
+            if(typeof window.mostrarBannerTCG === 'function') {
+                window.mostrarBannerTCG('PASSIVA DA LEONA', 'rgba(229, 57, 53, 0.8)', '#ffd700');
+            }
+            
+            // Atraso de 300 milissegundos para garantir que a mensagem não seja engolida pelo Burst!
+            setTimeout(() => {
+                window.mostrarMensagemScanner("🎯 MIRA DA LEONA ATIVA: Selecione o alvo para o efeito passivo de 5 de dano!");
+            }, 300);
+            
+            if (window.tocarSFX) window.tocarSFX('notificacao');
+        }
+    }; // FECHA A FUNÇÃO processarAtaqueFinal
+
+
+    // ==========================================
+    // 🎲 O GATILHO DA ANIMAÇÃO (Antes do Burst)
+    // ==========================================
+    if (nomeAtaque === "Fogo Primordial 2.0") {
+        let dadoSorteado = Math.floor(Math.random() * 6) + 1; // Rola de 1 a 6
+        
+        // Manda o sinal de rádio para o oponente rodar a animação na tela dele também!
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'animacao_dado', valor: dadoSorteado, nomeCarta: nomeAtaque });
         }
         
-        // Atraso de 300 milissegundos para garantir que a mensagem não seja engolida pelo Burst!
-        setTimeout(() => {
-            window.mostrarMensagemScanner("🎯 MIRA DA LEONA ATIVA: Selecione o alvo para o efeito passivo de 5 de dano!");
-        }, 300);
-        
-        if (window.tocarSFX) window.tocarSFX('notificacao');
+        // Abre o Dado em 3D na sua tela, e quando ele parar, continua o ataque!
+        if (typeof window.rolarDadoAnimado === 'function') {
+            window.rolarDadoAnimado(dadoSorteado, () => {
+                processarAtaqueFinal(dadoSorteado);
+            });
+        } else {
+            // Fallback caso a animação do dado não tenha sido colada no final do arquivo ainda
+            processarAtaqueFinal(dadoSorteado);
+        }
+    } else {
+        // Se não for o Fogo Primordial, ataca direto sem pausar e sem dado
+        processarAtaqueFinal(null);
     }
-}; // <-- Aqui fecha a função usarCartaAtaque
+};
 
 window.abrirModalAlianca = function(indexMao, idAtaque, custo, nomeAtaque) {
     document.getElementById('overlay-ataque').remove();
@@ -4756,7 +4790,7 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
     let cor = jogadorAlvo === 'jogador' ? '#4CAF50' : '#e53935';
     let nomeJogador = jogadorAlvo === 'jogador' ? 'VOCÊ' : 'OPONENTE';
 
-    // 🔍 DETETIVE DE CARTAS: Extrai o nome da carta da mensagem da rede!
+   // 🔍 DETETIVE DE CARTAS: Extrai o nome da carta da mensagem da rede!
     let nomeBusca = acaoAnterior.nomeAcao;
     if (nomeBusca.includes('Mugic:')) {
         nomeBusca = nomeBusca.split('Mugic: ')[1].split(' ➔')[0].trim();
@@ -4764,6 +4798,9 @@ window.perguntarResposta = function(jogadorAlvo, acaoAnterior) {
         nomeBusca = nomeBusca.split('Habilidade de ')[1].split(' ➔')[0].trim();
     } else if (nomeBusca.includes('Revelar Equipamento')) {
         nomeBusca = nomeBusca.replace('Revelar Equipamento (', '').replace(')', '').trim();
+    } else if (nomeBusca.includes(' [🎲')) {
+        // 🔥 NOVO: Corta a tag do dado fora para achar a foto do ataque certinho!
+        nomeBusca = nomeBusca.split(' [🎲')[0].trim(); 
     }
 
     // 📚 Procura a carta em todos os bancos de dados para mostrar a foto!
@@ -5774,8 +5811,15 @@ window.processarAcaoInimiga = function(acao) {
             atualizarTelaBatalha(); 
         }
     }
-
-                                  ///
+// 🎲 RECEPTOR: O inimigo ativou uma carta de sorte, roda o dado na nossa tela!
+    else if (acao.tipo === 'animacao_dado') {
+        window.mostrarMensagemScanner(`Oponente está rolando os dados para ${acao.nomeCarta}...`);
+        if (typeof window.rolarDadoAnimado === 'function') {
+            // Roda a animação. O callback é vazio porque o Dano Oficial vai chegar pelo Burst logo depois!
+            window.rolarDadoAnimado(acao.valor, () => {});
+        }
+    }
+                             
    else if (acao.tipo === 'dano') {
         let alvoReal = inverterId(acao.alvo);
         let valorDanoFinal = acao.valor;
@@ -6337,3 +6381,63 @@ styleSuperFix.innerHTML = `
 `;
 document.head.appendChild(styleSuperFix);
 
+
+// ==========================================
+// 🎲 MOTOR DE ANIMAÇÃO: DADO 6 LADOS
+// ==========================================
+window.rolarDadoAnimado = function(resultadoFinal, callback) {
+    window.pausarCronometro();
+    if(window.tocarSFX) window.tocarSFX('notificacao');
+
+    const faces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    const faceFinal = faces[resultadoFinal - 1];
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-dado" style="z-index: 10000000; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <h2 style="color: #ff9800; font-family: 'Arial Black', sans-serif; letter-spacing: 3px; text-shadow: 0 0 15px #ff9800; margin-bottom: 20px; animation: pulse 0.5s infinite alternate;">ROLANDO OS DADOS...</h2>
+            <div id="dado-animacao" style="font-size: 100px; color: #fff; text-shadow: 0 0 20px #fff; background: #222; border: 4px solid #ff9800; border-radius: 20px; width: 150px; height: 150px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 40px #ff9800; transition: transform 0.1s;">
+                ⚅
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    let divDado = document.getElementById('dado-animacao');
+    let giros = 0;
+    let tempo = 50;
+
+    function girar() {
+        divDado.innerText = faces[Math.floor(Math.random() * 6)];
+        divDado.style.transform = `rotate(${Math.random() * 360}deg) scale(${1 + Math.random() * 0.5})`;
+        giros++;
+        tempo += 5;
+
+        if (giros < 30) {
+            setTimeout(girar, tempo);
+        } else {
+            // Parada dramática no resultado
+            divDado.innerText = faceFinal;
+            divDado.style.transform = "rotate(0deg) scale(1.5)";
+            divDado.style.borderColor = "#4CAF50";
+            divDado.style.boxShadow = "0 0 60px #4CAF50";
+            divDado.style.color = "#4CAF50";
+            
+            let titulo = document.querySelector('#overlay-dado h2');
+            if(titulo) {
+                titulo.innerText = `RESULTADO: ${resultadoFinal}!`;
+                titulo.style.color = "#4CAF50";
+                titulo.style.textShadow = "0 0 20px #4CAF50";
+                titulo.style.animation = "none";
+            }
+
+            // Espera 2 segundos para o jogador ver o resultado e continua o ataque!
+            setTimeout(() => {
+                let modal = document.getElementById('overlay-dado');
+                if (modal) modal.remove();
+                window.retomarCronometro();
+                if (callback) callback();
+            }, 2000);
+        }
+    }
+    girar();
+};
