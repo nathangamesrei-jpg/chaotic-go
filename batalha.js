@@ -654,32 +654,18 @@ function fecharModalFichas() {
 
 
 window.abrirModalAcoesCriatura = function(fullId, criatura) {
-
     if (document.getElementById('overlay-acoes')) return;
 
-
-
     let botoesHTML = "";
-
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
-
-
     if (!emCombate && !criatura.moveuNesteTurno) {
-
         botoesHTML += `<button class="btn-acao-modal btn-mover" onclick="window.selecionarParaMovimento('${fullId}')">Prepara para Mover</button>`;
-
     } else if (!emCombate && criatura.moveuNesteTurno) {
-
         botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Esta criatura já se moveu neste turno.</p>`;
-
     } else if (emCombate) {
-
         botoesHTML += `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Movimento bloqueado durante o Combate!</p>`;
-
     }
-
-
 
     let textoMinusculo = (criatura.textoCarta || "").toLowerCase();
     let habilidadeAtiva = textoMinusculo.includes('descarte') || textoMinusculo.includes('gaste') || textoMinusculo.includes('ficha');
@@ -698,104 +684,60 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
     }
 
     if (criatura.fichasHabilidade > 0) {
-
         botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4;" onclick="window.prepararMugic('${fullId}')">Usar Mugic</button>`;
-
     }
 
-
-
-  if (criatura.equipamento) {
+    // ==========================================
+    // ⚙️ MENU DE EQUIPAMENTOS (CORRIGIDO)
+    // ==========================================
+    if (criatura.equipamento) {
         if (!criatura.equipamentoRevelado) {
             botoesHTML += `<button class="btn-acao-modal btn-revelar" onclick="window.revelarEquipamento('${fullId}')">Revelar Equipamento</button>`;
         } else {
             botoesHTML += `<button class="btn-acao-modal btn-ver" onclick="window.verEquipamentoModal('${fullId}')">Ver Equipamento</button>`;
-            // 🔥 NOVO: BOTÃO DE DESCARTAR EQUIPAMENTO!
-            botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff5555; color: #ff5555; margin-top: 10px;" onclick="window.descartarEquipamentoMesa('${fullId}')">Descartar Equipamento</button>`;
-        }
-      } else {
-            botoesHTML += `<button class="btn-acao-modal btn-ver" onclick="window.verEquipamentoModal('${fullId}')">Ver Equipamento</button>`;
             botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff5555; color: #ff5555; margin-top: 10px;" onclick="window.descartarEquipamentoMesa('${fullId}')">Descartar Equipamento</button>`;
             
-            // 🔥 BOTÃO DE CURA DO BRACELETE
-            if (criatura.equipamento.nome === "Bracelete de cristal") {
+            // 🔥 BOTÃO DE CURA DO BRACELETE DE CRISTAL
+            if (criatura.equipamento.nome === "Bracelete de cristal" || criatura.equipamento.nome === "Bracelete de Cristal") {
                 botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4; margin-top: 5px;" onclick="window.iniciarMiraCuraVeneno('${fullId}')">🤝 Curar Veneno</button>`;
             }
         }
     }
 
-
-
     botoesHTML += `<button class="btn-acao-modal btn-cancelar" onclick="fecharModalAcoes()">Cancelar</button>`;
 
-
-
     const modalHTML = `
-
         <div class="modal-overlay" id="overlay-acoes">
-
             <div class="modal-content-fichas" style="text-align:center; max-height: 90vh; overflow-y: auto;">
-
                 <h3 style="color:#4CAF50;margin-bottom:5px;">${criatura.nome}</h3>
-
                 
-
                 <div onclick="window.ampliarCartaClicada('${criatura.cartaBlank}', '${fullId}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${criatura.cartaBlank}');background-size:cover;background-position:center;border:2px solid #4CAF50;border-radius:10px;box-shadow: 0 0 15px rgba(76, 175, 80, 0.4); cursor: pointer;">
-
                     <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); border-radius: 8px; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
-
                         <span style="color: white; font-weight: bold; font-size: 12px;">🔍 AMPLIAR</span>
-
                     </div>
-
                 </div>
-
                 
-
                 <p style="font-size:14px; color:#ffd700; margin-bottom:5px;">Fichas Atuais: <b style="font-size:18px;">${criatura.fichasHabilidade}</b></p>
-
                 <p style="font-size:10px;color:#aaa;margin-bottom:15px;line-height:1.3;">${criatura.textoCarta || 'Sem efeito especial.'}</p>
-
                 
-
                 <div style="display:flex;flex-direction:column;gap:10px;">
-
                     ${botoesHTML}
-
                 </div>
-
             </div>
-
         </div>
-
     `;
 
-
-
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
-
     
-
     // 🔥 CORREÇÃO DO "CLIQUE FANTASMA" NO CELULAR 🔥
-
-    // Deixa a janela intocável por 350ms para ignorar o "rastro" do toque na tela
-
     let modalOpcoes = document.getElementById('overlay-acoes');
-
     if (modalOpcoes) {
-
         modalOpcoes.style.pointerEvents = 'none';
-
         setTimeout(() => { modalOpcoes.style.pointerEvents = 'auto'; }, 350);
-
     }
-
     
-
     document.getElementById('overlay-acoes').addEventListener('click', function(e) { if(e.target === this) fecharModalAcoes(); });
-
 };
-
 
 
 // 🔥 FUNÇÃO NOVA E TURBINADA: Amplia a carta com HUD de Batalha e Modo Detetive!
