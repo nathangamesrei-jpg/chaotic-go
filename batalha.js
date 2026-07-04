@@ -4346,6 +4346,24 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                     if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && dAr > 0) { danoExtra += parseInt(dAr); msgBonus += `[+${dAr} ☁️] `; }
                 }
             }
+            // ==========================================
+                // ⚔️ MOTOR DE EQUIPAMENTOS: BÔNUS DE DANO (Braceletes)
+                // ==========================================
+                if (minhaCriatura.equipamento && minhaCriatura.equipamentoRevelado) {
+                    let eqNome = minhaCriatura.equipamento.nome.toLowerCase();
+                    
+                    // Buff: Bracelete de Cristal (Terra +5)
+                    if ((eqNome === "bracelete de cristal" || eqNome === "bracelete da terra") && dTerra > 0) {
+                        danoExtra += 5;
+                        msgBonus += "[⛰️ +5 Bracelete] ";
+                    }
+                    
+                    // Buff: Bracelete de Água (Água +5)
+                    if ((eqNome === "bracelete de água" || eqNome === "bracelete de agua") && dAgua > 0) {
+                        danoExtra += 5;
+                        msgBonus += "[🌊 +5 Bracelete] ";
+                    }
+                }
             if (ataqueDB.checkAtributo && criaturaInimiga) {
                 let attr = ataqueDB.checkAtributo.atributo.toLowerCase(); 
                 let bonus = ataqueDB.checkAtributo.danoExtra;
