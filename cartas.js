@@ -92,7 +92,8 @@ const EQUIPAMENTOS = [
     { id: 202, nome: "Amuleto do Vácuo", tipoCarta: "Equipamento", img: "cartas/equips/amuleto_do_vacuo.jpg", efeito: "O campeão equipado não sofre danos que envolvam o elemento ar.", raridade: 0.4 },
     { id: 203, nome: "Arpa Mágica", tipoCarta: "Equipamento", img: "cartas/equips/arpa_magica.jpg", efeito: "Descarte este equipamento e adicione 1 ficha de habilidade no campeão equipado.", raridade: 0.4 },
     { id: 204, nome: "Bastão da Sabedoria", tipoCarta: "Equipamento", img: "cartas/equips/bastao_da_sabedoria.jpg", efeito: "Este equipamento aumenta em 40 pontos o atributo da sabedoria.", raridade: 0.5 },
-    { id: 205, nome: "Bomba de Fogo", tipoCarta: "Equipamento", img: "cartas/equips/bomba_de_fogo.jpg", efeito: "Aumenta a energia em 5. Se a criatura for destruída com o equipamento revelado, cause 25 de dano a qualquer criatura.", raridade: 0.6 }
+    { id: 205, nome: "Bomba de Fogo", tipoCarta: "Equipamento", img: "cartas/equips/bomba_de_fogo.jpg", efeito: "Aumenta a energia em 5. Se a criatura for destruída com o equipamento revelado, cause 25 de dano a qualquer criatura.", raridade: 0.6 },
+    { id: 206, nome: "Bracelete de cristal", tipoCarta: "Equipamento", img: "cartas/equips/bracelete_de_cristal.jpg", efeito: "Aumenta em +5 o dano de ataques de terra. Sacrifique este equipamento para curar envenenamento de qualquer criatura.", raridade: 0.5 },
 ];
 
 // ==========================================
