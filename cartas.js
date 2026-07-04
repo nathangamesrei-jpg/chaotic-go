@@ -64,7 +64,18 @@ const ATAQUES = [
         img: "cartas/ataques/alianca.jpg", 
         efeito: "Escolha um campeão derrotado seu, o valor da metade da energia dele é recuperado no seu campeão ativo.", 
         raridade: 0.7
-    }
+    },
+    { 
+        id: 104, 
+        nome: "Fogo Primordial 2.0", 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/fogo_primordial_2_0.jpg", 
+        custo: 2, 
+        danoBase: 5, 
+        fogo: 5, agua: 0, terra: 0, ar: 0, 
+        efeito: "Rode um dado de 6 lados. O valor será multiplicado com o dano base desta carta e passa a ser o dano total.",
+        raridade: 0.7
+    },
     
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
