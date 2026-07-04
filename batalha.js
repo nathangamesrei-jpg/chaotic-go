@@ -2756,8 +2756,14 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
             }
             
             window.localAtivoAtual = resultadoFinal;
+            
+            // 🔥 FORÇA O REFRESH DO LOCAL NA MESA E GUARDA NO SAVE!
             if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
-
+            
+            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                // Atualiza também no Firebase como variável fixa da sala para reconexão funcionar
+                window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { localDaBatalha: resultadoFinal });
+            }
             setTimeout(() => {
                 let modal = document.getElementById('overlay-roleta-local');
                 if (modal) modal.remove();
@@ -5926,13 +5932,15 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
         setTimeout(() => window.resolverBurst(), 1000);
     }
-    else if (acao.tipo === 'girar_roleta_local') {
+    eelse if (acao.tipo === 'girar_roleta_local') {
         // 🔥 A NUVEM AVISOU: O Inimigo iniciou a roleta dele lá, faça a mesma coisa aqui com a carta que ele escolheu!
         window.mostrarMensagemScanner("O Oponente está sorteando o Local...");
         
         window.sortearLocalAnimado('oponente', () => {
+            window.localAtivoAtual = acao.img; // Força a gravar a variável do local que a nuvem enviou!
+            if (typeof atualizarLocaisAtivosNaMesa === 'function') atualizarLocaisAtivosNaMesa();
             window.mostrarMensagemScanner("Local revelado! Aguarde a jogada do oponente.");
-        }, acao.img); // A variável acao.img entra como o 'localForcado' na função!
+        }, acao.img); // A variável acao.img entra como o 'localForcado' na animação
     }
         else if (acao.tipo === 'naty_escolha_pronta') {
         let alvoReal = inverterId(acao.alvo); 
@@ -5983,6 +5991,16 @@ window.processarAcaoInimiga = function(acao) {
         // 🔥 NUVEM AVISOU: O tempo do inimigo estourou e o juiz declarou WO!
         window.mostrarMensagemScanner("Conexão perdida ou inatividade prolongada!");
         window.declararVitoria('oponente', 'Você foi desconectado ou ficou inativo por tempo demais (W.O.).');
+    }
+        else if (acao.tipo === 'revelar_criatura_direto') {
+        // 🔥 NUVEM AVISOU: O Oponente virou a carta de monstro dele para cima!
+        let alvoReal = inverterId(acao.alvo);
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura.revelada = true;
+            window.mostrarMensagemScanner(`👁️ O inimigo revelou o campeão: ${criatura.nome}!`);
+            atualizarTelaBatalha();
+        }
     }
     else if (acao.tipo === 'revelar_equipamento_direto') {
         // 🔥 NUVEM AVISOU: O Oponente revelou um equipamento no lado dele!
