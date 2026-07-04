@@ -94,7 +94,9 @@ const EQUIPAMENTOS = [
     { id: 204, nome: "Bastão da Sabedoria", tipoCarta: "Equipamento", img: "cartas/equips/bastao_da_sabedoria.jpg", efeito: "Este equipamento aumenta em 40 pontos o atributo da sabedoria.", raridade: 0.5 },
     { id: 205, nome: "Bomba de Fogo", tipoCarta: "Equipamento", img: "cartas/equips/bomba_de_fogo.jpg", efeito: "Aumenta a energia em 5. Se a criatura for destruída com o equipamento revelado, cause 25 de dano a qualquer criatura.", raridade: 0.6 },
     { id: 206, nome: "Bracelete de cristal", tipoCarta: "Equipamento", img: "cartas/equips/bracelete_de_cristal.jpg", efeito: "Aumenta em +5 o dano de ataques de terra. Sacrifique este equipamento para curar envenenamento de qualquer criatura.", raridade: 0.5 },
+    { id: 207, nome: "Bracelete de Água", tipoCarta: "Equipamento", img: "cartas/equips/bracelete_de_agua.jpg", efeito: "Os ataques que envolvam o elemento água causam mais 5 de dano, este equipamento não dá o elemento água.", raridade: 0.5 },
 ];
+
 
 // ==========================================
 // 4. BANCO DE DADOS: MAGIAS (MUGIC)
