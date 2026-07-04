@@ -713,6 +713,15 @@ window.abrirModalAcoesCriatura = function(fullId, criatura) {
             // 🔥 NOVO: BOTÃO DE DESCARTAR EQUIPAMENTO!
             botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff5555; color: #ff5555; margin-top: 10px;" onclick="window.descartarEquipamentoMesa('${fullId}')">Descartar Equipamento</button>`;
         }
+      } else {
+            botoesHTML += `<button class="btn-acao-modal btn-ver" onclick="window.verEquipamentoModal('${fullId}')">Ver Equipamento</button>`;
+            botoesHTML += `<button class="btn-acao-modal" style="border-color: #ff5555; color: #ff5555; margin-top: 10px;" onclick="window.descartarEquipamentoMesa('${fullId}')">Descartar Equipamento</button>`;
+            
+            // 🔥 BOTÃO DE CURA DO BRACELETE
+            if (criatura.equipamento.nome === "Bracelete de cristal") {
+                botoesHTML += `<button class="btn-acao-modal" style="border-color: #00bcd4; color: #00bcd4; margin-top: 5px;" onclick="window.iniciarMiraCuraVeneno('${fullId}')">🤝 Curar Veneno</button>`;
+            }
+        }
     }
 
 
@@ -4382,7 +4391,14 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             msgBonus += "[💧 -5 Dano Aquático] ";
         }
     }
-
+// 🔥 BÔNUS DO BRACELETE DE CRISTAL (Terra +5)
+if (minhaCriatura.equipamento && minhaCriatura.equipamentoRevelado && minhaCriatura.equipamento.nome === "Bracelete de cristal") {
+    let ehTerra = (ataqueDB.terra > 0 || (ataqueDB.danoElemental && ataqueDB.danoElemental.terra > 0));
+    if (ehTerra) {
+        danoExtra += 5;
+        msgBonus += "[🌍 +5 Dano de Terra] ";
+    }
+}
     // 🔥 CORREÇÃO MATEMÁTICA: Garante que o dano não fique negativo e cure o inimigo por acidente!
     let danoTotal = Math.max(0, danoBase + danoExtra);
 
@@ -5757,6 +5773,15 @@ window.processarAcaoInimiga = function(acao) {
             atualizarTelaBatalha();
         }
     }
+        else if (acao.tipo === 'curar_veneno') {
+        let alvoReal = inverterId(acao.alvo);
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura.envenenado = false;
+            window.mostrarMensagemScanner(`✨ ${criatura.nome} foi curado do veneno!`);
+            atualizarTelaBatalha();
+        }
+    }
     // 🌑 RECEPTOR: Mão Negra (Inimigo está pedindo uma carta nossa)
     else if (acao.tipo === 'mao_negra_roubar') {
         if (window.maoAtaques && window.maoAtaques.length > 0) {
@@ -6259,3 +6284,34 @@ styleSuperFix.innerHTML = `
     #overlay-acoes { display: flex !important; align-items: center !important; justify-content: center !important; background: rgba(0,0,0,0.85) !important; }
 `;
 document.head.appendChild(styleSuperFix);
+
+// 1. Inicia a mira para escolher quem será curado
+window.iniciarMiraCuraVeneno = function(fullId) {
+    window.fecharModalAcoes();
+    window.modoAlvo = {
+        tipo: 'cura_veneno',
+        origem: fullId // O campeão que vai sacrificar o bracelete
+    };
+    window.mostrarMensagemScanner("🎯 MIRA DE CURA: Clique na criatura que deseja curar do veneno.");
+};
+
+// 2. Resolver o clique da mira de cura (dentro de lidarComCliqueTabuleiro)
+// Procure a função lidarComCliqueTabuleiro e, logo abaixo do "if (window.modoAlvo.tipo === 'bomba_fogo')", adicione:
+        
+        if (window.modoAlvo.tipo === 'cura_veneno') {
+            let oradorFullId = window.modoAlvo.origem; // Quem tem o bracelete
+            window.modoAlvo = null; 
+            
+            // Usamos o nosso Motor Central de remoção para quebrar o item
+            let nomeEq = window.removerEquipamentoMesa(oradorFullId, true, 'descarte'); 
+            
+            // Cura o veneno
+            alvo.envenenado = false;
+            window.mostrarMensagemScanner(`✨ Cura! ${alvo.nome} foi curado de envenenamento pelo poder do ${nomeEq}!`);
+            
+            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                window.enviarAcaoRede({ tipo: 'curar_veneno', alvo: fullId });
+            }
+            atualizarTelaBatalha();
+            return;
+        }
