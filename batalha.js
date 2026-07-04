@@ -1296,15 +1296,40 @@ window.lidarComCliqueTabuleiro = function(fullId) {
 
             atualizarTelaBatalha();
             
-            // Depois que o dano for causado, checamos se matou alguém e liberamos o jogo para continuar!
+           // Depois que o dano for causado, checamos se matou alguém e liberamos o jogo para continuar!
             if (alvo.hpAtual === 0) setTimeout(() => window.encerrarCombateMorte(fullId), 1000);
             else if (typeof window.checarFimDeJogo === 'function') window.checarFimDeJogo();
             
             return; 
         }
-        
+
+        // ==========================================
+        // 🤝 INTERCEPTADOR DA CURA DE VENENO (BRACELETE)
+        // ==========================================
+        if (window.modoAlvo.tipo === 'cura_veneno') {
+            let oradorFullId = window.modoAlvo.origem; // Quem tem o bracelete
+            window.modoAlvo = null; 
+            
+            // Usamos o nosso Motor Central de remoção para quebrar o item
+            let nomeEq = window.removerEquipamentoMesa(oradorFullId, true, 'descarte'); 
+            
+            // Cura o veneno do alvo clicado
+            alvo.envenenado = false;
+            window.mostrarMensagemScanner(`✨ Cura! ${alvo.nome} foi curado de envenenamento pelo poder do ${nomeEq}!`);
+            if(window.tocarSFX) window.tocarSFX('notificacao');
+            
+            // 🌐 AVISA A REDE! (Lembre-se de mandar o ID do alvo clicado, não da origem!)
+            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                window.enviarAcaoRede({ tipo: 'curar_veneno', alvo: fullId });
+            }
+            atualizarTelaBatalha();
+            return;
+        }
+
         let ctx = window.modoAlvo;
-        window.modoAlvo = null; 
+        window.modoAlvo = null;
+        
+    
         
         let conjurador = obterCriaturaNoSlot(ctx.origem);
         let custo = ctx.custo || 1; // Puxa o custo salvo da habilidade (ou 1 se for Magia)
@@ -5272,6 +5297,15 @@ window.descartarEquipamentoMesa = function(fullId) {
     };
     window.adicionarAoBurst(acaoDescarte);
 };
+
+window.iniciarMiraCuraVeneno = function(fullId) {
+    window.fecharModalAcoes();
+    window.modoAlvo = {
+        tipo: 'cura_veneno',
+        origem: fullId // O campeão que vai sacrificar o bracelete
+    };
+    window.mostrarMensagemScanner("🎯 MIRA DE CURA: Clique na criatura que deseja curar do veneno.");
+};
 ////////////
     
 // 2. USAR HABILIDADE (AGORA INTELIGENTE: COM OU SEM MIRA)
@@ -6303,33 +6337,3 @@ styleSuperFix.innerHTML = `
 `;
 document.head.appendChild(styleSuperFix);
 
-// 1. Inicia a mira para escolher quem será curado
-window.iniciarMiraCuraVeneno = function(fullId) {
-    window.fecharModalAcoes();
-    window.modoAlvo = {
-        tipo: 'cura_veneno',
-        origem: fullId // O campeão que vai sacrificar o bracelete
-    };
-    window.mostrarMensagemScanner("🎯 MIRA DE CURA: Clique na criatura que deseja curar do veneno.");
-};
-
-// 2. Resolver o clique da mira de cura (dentro de lidarComCliqueTabuleiro)
-// Procure a função lidarComCliqueTabuleiro e, logo abaixo do "if (window.modoAlvo.tipo === 'bomba_fogo')", adicione:
-        
-        if (window.modoAlvo.tipo === 'cura_veneno') {
-            let oradorFullId = window.modoAlvo.origem; // Quem tem o bracelete
-            window.modoAlvo = null; 
-            
-            // Usamos o nosso Motor Central de remoção para quebrar o item
-            let nomeEq = window.removerEquipamentoMesa(oradorFullId, true, 'descarte'); 
-            
-            // Cura o veneno
-            alvo.envenenado = false;
-            window.mostrarMensagemScanner(`✨ Cura! ${alvo.nome} foi curado de envenenamento pelo poder do ${nomeEq}!`);
-            
-            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                window.enviarAcaoRede({ tipo: 'curar_veneno', alvo: fullId });
-            }
-            atualizarTelaBatalha();
-            return;
-        }
