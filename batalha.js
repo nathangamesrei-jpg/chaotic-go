@@ -5932,7 +5932,7 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
         setTimeout(() => window.resolverBurst(), 1000);
     }
-    eelse if (acao.tipo === 'girar_roleta_local') {
+    else if (acao.tipo === 'girar_roleta_local') {
         // 🔥 A NUVEM AVISOU: O Inimigo iniciou a roleta dele lá, faça a mesma coisa aqui com a carta que ele escolheu!
         window.mostrarMensagemScanner("O Oponente está sorteando o Local...");
         
