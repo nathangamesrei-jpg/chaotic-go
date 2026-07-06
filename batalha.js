@@ -5932,12 +5932,14 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
         setTimeout(() => window.resolverBurst(), 1000);
     }
-    else if (acao.tipo === 'girar_roleta_local') {
+   else if (acao.tipo === 'girar_roleta_local') {
         // 🔥 A NUVEM AVISOU: O Inimigo iniciou a roleta dele lá, faça a mesma coisa aqui com a carta que ele escolheu!
         window.mostrarMensagemScanner("O Oponente está sorteando o Local...");
         
+        // Trava o local no sistema IMEDIATAMENTE para ele não se perder!
+        window.localAtivoAtual = acao.img; 
+
         window.sortearLocalAnimado('oponente', () => {
-            window.localAtivoAtual = acao.img; // Força a gravar a variável do local que a nuvem enviou!
             if (typeof atualizarLocaisAtivosNaMesa === 'function') atualizarLocaisAtivosNaMesa();
             window.mostrarMensagemScanner("Local revelado! Aguarde a jogada do oponente.");
         }, acao.img); // A variável acao.img entra como o 'localForcado' na animação
