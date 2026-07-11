@@ -1244,7 +1244,7 @@ window.lidarComCliqueTabuleiro = function(fullId) {
     if (window.modoAlvo) {
 
         let alvo = obterCriaturaNoSlot(fullId);
-        if (!alvo) { window.modoAlvo = null; window.mostrarMensagemScanner("Mira desativada."); return; }
+        if (!alvo) { window.modoAlvo = null; window.retomarCronometro(); window.mostrarMensagemScanner("Mira desativada."); return; }
         // ==========================================
         // 💣 INTERCEPTADOR DA BOMBA DE FOGO
         // ==========================================
@@ -1299,7 +1299,37 @@ window.lidarComCliqueTabuleiro = function(fullId) {
             atualizarTelaBatalha();
             return;
         }
+// ==========================================
+        // 🌪️ INTERCEPTADOR DO VENTO FORTE (REVELAR INIMIGO)
+        // ==========================================
+        if (window.modoAlvo.tipo === 'revelar_inimigo') {
+            if (alvo.dono === 'oponente' && alvo.revelada === false) {
+                window.modoAlvo = null; // Desliga a mira
+                
+                // Revela a carta no nosso banco de dados local
+                alvo.revelada = true;
+                window.mostrarMensagemScanner(`👁️ A névoa dissipou! ${alvo.nome} foi revelado pelo Vento Forte!`);
+                if(window.tocarSFX) window.tocarSFX('notificacao');
+                
+                // Treme a carta para dar impacto
+                let elAlvo = document.getElementById(fullId);
+                if(elAlvo) {
+                    elAlvo.style.animation = "pulse 0.5s";
+                    setTimeout(() => { elAlvo.style.animation = ""; }, 500);
+                }
 
+                // 🌐 O pulo do gato: já temos um sinal de rede perfeito para isso!
+                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                    window.enviarAcaoRede({ tipo: 'revelar_criatura_direto', alvo: fullId });
+                }
+                
+                atualizarTelaBatalha();
+                window.retomarCronometro();
+            } else {
+                window.mostrarMensagemScanner("❌ Alvo inválido! Selecione uma criatura do oponente que esteja virada para baixo.");
+            }
+            return; 
+        }
         let ctx = window.modoAlvo;
         window.modoAlvo = null;
         
@@ -4532,7 +4562,23 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                 }
                             }
                         }
-
+                        // 🌪️ EFEITO: Vento Forte (ID 105)
+                        if (ataqueDB && ataqueDB.id === 105 && danoTotal > 0) {
+                            let temOculta = false;
+                            if (window.campoOponente) {
+                                Object.values(window.campoOponente).forEach(c => {
+                                    if (c && c.hpAtual > 0 && c.revelada === false) temOculta = true;
+                                });
+                            }
+                            
+                            if (temOculta) {
+                                window.mostrarMensagemScanner("🌪️ Vento Forte! Clique em um campeão inimigo oculto para revelá-lo.");
+                                window.modoAlvo = { tipo: 'revelar_inimigo' };
+                                window.pausarCronometro(); // Para o relógio para você pensar!
+                            } else {
+                                window.mostrarMensagemScanner("🌪️ Vento Forte teve sucesso, mas não há campeões ocultos para revelar.");
+                            }
+                        }
                         // Se a remoção de um equipamento causou a morte (Ex: Anel Precioso)
                         if (!morreuPeloDanoBruto && alvo.hpAtual === 0) {
                             setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
