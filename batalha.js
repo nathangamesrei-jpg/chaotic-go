@@ -396,11 +396,7 @@ function atualizarTelaBatalha() {
                 if (!carta.elementos.includes('Fogo')) {
                     carta.elementos.push('Fogo');
                 }
-            } else {
-                // Se a Aura sumiu E o monstro não é de fogo de nascença, arranca fora!
-                if (!temFogoNatural && carta.elementos && carta.elementos.includes('Fogo')) {
-                    carta.elementos = carta.elementos.filter(el => el !== 'Fogo');
-                }
+            } 
             }
         }
         if(el) el.innerHTML = desenharMiniCarta(carta);
@@ -446,11 +442,7 @@ function atualizarTelaBatalha() {
                 if (!cartaOp.elementos.includes('Fogo')) {
                     cartaOp.elementos.push('Fogo');
                 }
-            } else {
-                // Se a Aura sumiu E o monstro inimigo não é de fogo de nascença, arranca fora!
-                if (!temFogoNaturalOp && cartaOp.elementos && cartaOp.elementos.includes('Fogo')) {
-                    cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Fogo');
-                }
+            } 
             }
             
         }
@@ -2854,6 +2846,23 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
             if(titulo) {
                 titulo.innerText = "LOCAL DEFINIDO!";
                 titulo.style.color = "#ffd700";
+            }
+
+            // 🔥 A MÁGICA DA LIMPEZA: Desliga o Fogo da Barragem antes de aplicar o novo local!
+            let locAntigo = null;
+            if (window.localAtivoAtual && typeof LOCAIS_DB !== 'undefined') {
+                locAntigo = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
+                if (!locAntigo && window.inventario) locAntigo = window.inventario.find(l => l.img === window.localAtivoAtual);
+            }
+            if (locAntigo && locAntigo.nome === "A Barragem de Magma") {
+                let todasAsCartas = [...Object.values(campoJogador), ...(window.campoOponente ? Object.values(window.campoOponente) : [])];
+                todasAsCartas.forEach(c => {
+                    if (c && c.auraMagma) {
+                        c.elementos = c.elementos.filter(el => el !== 'Fogo');
+                        c.auraMagma = false;
+                    }
+                });
+                window.mostrarMensagemScanner("A fumaça da Barragem de Magma se dissipou!");
             }
             
             // Grava o estado do local ativo
