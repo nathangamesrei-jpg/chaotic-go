@@ -1281,21 +1281,25 @@ window.lidarComCliqueTabuleiro = function(fullId) {
         // 🤝 INTERCEPTADOR DA CURA DE VENENO (BRACELETE)
         // ==========================================
         if (window.modoAlvo.tipo === 'cura_veneno') {
-            let oradorFullId = window.modoAlvo.origem; // Quem tem o bracelete
+            let oradorFullId = window.modoAlvo.origem; 
             window.modoAlvo = null; 
             
-            // Usamos o nosso Motor Central de remoção para quebrar o item
             let nomeEq = window.removerEquipamentoMesa(oradorFullId, true, 'descarte'); 
             
-            // Cura o veneno do alvo clicado
-            alvo.envenenado = false;
-            window.mostrarMensagemScanner(`✨ Cura! ${alvo.nome} foi curado de envenenamento pelo poder do ${nomeEq}!`);
+            // 🐍 TRAVA DE INCURÁVEL
+            if (alvo.envenenadoLetal) {
+                window.mostrarMensagemScanner(`❌ O ${nomeEq} quebrou, mas o Veneno de Víbora em ${alvo.nome} é INCURÁVEL!`);
+            } else {
+                alvo.envenenado = false;
+                window.mostrarMensagemScanner(`✨ Cura! ${alvo.nome} foi curado de envenenamento pelo poder do ${nomeEq}!`);
+            }
+            
             if(window.tocarSFX) window.tocarSFX('notificacao');
             
-            // 🌐 AVISA A REDE! (Lembre-se de mandar o ID do alvo clicado, não da origem!)
             if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
                 window.enviarAcaoRede({ tipo: 'curar_veneno', alvo: fullId });
             }
+            window.retomarCronometro(); // Destrava o relógio
             atualizarTelaBatalha();
             return;
         }
@@ -4150,7 +4154,40 @@ window.executarPassagemDeTurnoLocal = function() {
             }
         });
     }
+        // ==========================================
+    // 🐍 GATILHO PASSIVO: Dano de Veneno Letal no Início do Turno
+    // ==========================================
+    let ladoParaSofrerDano = window.estadoTurno.jogadorAtual === 'jogador' ? campoJogador : window.campoOponente;
+    let prefixoLado = window.estadoTurno.jogadorAtual === 'jogador' ? 'jog-' : 'op-';
 
+    if (ladoParaSofrerDano) {
+        Object.keys(ladoParaSofrerDano).forEach(chave => {
+            let monstro = ladoParaSofrerDano[chave];
+            if (monstro && monstro.hpAtual > 0 && monstro.envenenadoLetal) {
+                // Arranca 5 de HP direto!
+                monstro.hpAtual -= 5;
+                if (monstro.hpAtual < 0) monstro.hpAtual = 0;
+                
+                let nomeDono = window.estadoTurno.jogadorAtual === 'jogador' ? "Seu" : "O";
+                window.mostrarMensagemScanner(`🐍 ${nomeDono} campeão ${monstro.nome} sofreu 5 de dano do Veneno Letal!`);
+                if(window.tocarSFX) window.tocarSFX('notificacao');
+                
+                // Efeito visual de veneno (Pisca Roxo/Verde)
+                let elCard = document.getElementById(prefixoLado + chave);
+                if(elCard) {
+                    elCard.style.filter = "hue-rotate(270deg) saturate(200%)";
+                    elCard.style.animation = "shake 0.5s";
+                    setTimeout(() => { elCard.style.filter = ""; elCard.style.animation = ""; }, 600);
+                }
+
+                if (monstro.hpAtual === 0) {
+                    setTimeout(() => window.encerrarCombateMorte(prefixoLado + chave), 1000);
+                }
+            }
+        });
+    }
+
+    
     atualizarTelaBatalha(); 
     if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
@@ -4591,6 +4628,16 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                 window.pausarCronometro(); 
                             } else {
                                 window.mostrarMensagemScanner("🌪️ Vento Forte teve sucesso, mas não há campeões ocultos para revelar.");
+                            }
+                        }
+                        // 🐍 EFEITO: Armadilha de Víbora (ID 106)
+                        if (ataqueDB && ataqueDB.id === 106 && danoFinalAposBurst > 0) {
+                            alvo.envenenadoLetal = true; // Cria a flag de Incurável!
+                            
+                            window.mostrarMensagemScanner(`🐍 TSSSS! ${alvo.nome} foi infectado pela Armadilha de Víbora (Veneno Letal Incurável)!`);
+                            
+                            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                 window.enviarAcaoRede({ tipo: 'aplicar_status', alvo: alvoAtualId, status: 'envenenadoLetal', valor: true });
                             }
                         }
 
@@ -5965,7 +6012,15 @@ window.processarAcaoInimiga = function(acao) {
         let alvoReal = inverterId(acao.alvo);
         window.encerrarCombateMorte(alvoReal);
     }
-        
+        else if (acao.tipo === 'aplicar_status') {
+        // 🔥 RECEPTOR: O inimigo aplicou um status especial (como Veneno Letal) numa carta nossa!
+        let alvoReal = inverterId(acao.alvo);
+        let criatura = obterCriaturaNoSlot(alvoReal);
+        if (criatura) {
+            criatura[acao.status] = acao.valor;
+            atualizarTelaBatalha();
+        }
+    }
     else if (acao.tipo === 'abrir_burst') {
         let acaoInimiga = {
             dono: 'oponente',
