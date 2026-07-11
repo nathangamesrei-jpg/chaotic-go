@@ -2745,13 +2745,18 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
             }).filter(Boolean);
         }
     } else {
-        // Puxa da memória da nuvem que criamos no Passo 1!
-        let locaisOp = window.locaisOponente;
+        // 🔥 CORREÇÃO PAYLOAD: Trata os locais do oponente tanto se forem IDs brutos quanto objetos do Handshake!
+        let locaisOp = window.locaisOponente || [];
         if (locaisOp && locaisOp.length > 0) {
-            imagensDoDeck = locaisOp.map(id => {
+            imagensDoDeck = locaisOp.map(item => {
+                if (!item) return null;
+                // Se já for um objeto vindo do Handshake expandido, extrai a imagem direto!
+                if (typeof item === 'object') return item.img || item.cartaBlank || null;
+                
+                // Se for ID ou Nome string/numérico, procura nos bancos globais
                 let loc = null;
-                if (typeof LOCAIS_DB !== 'undefined') loc = LOCAIS_DB.find(x => x.id == id || x.nome == id);
-                if (!loc && window.inventario) loc = window.inventario.find(x => x.id == id || x.nome == id);
+                if (typeof LOCAIS_DB !== 'undefined') loc = LOCAIS_DB.find(x => x.id == item || x.nome == item);
+                if (!loc && window.inventario) loc = window.inventario.find(x => x.id == item || x.nome == item);
                 return loc ? (loc.img || loc.cartaBlank) : null;
             }).filter(Boolean);
         }
@@ -2763,10 +2768,11 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     window.donoDaRoletaLocal = (donoDesteLocal === 'jogador') ? 'oponente' : 'jogador';
 
     // 2. CARREGA O EFEITO VISUAL DE CASSINO (Pisca todas as cartas do jogo)
-    let imagensParaPiscar = [...imagensDoDeck];
+    let imagensParaPiscar = [];
     if (typeof LOCAIS_DB !== 'undefined' && LOCAIS_DB.length > 0) {
         imagensParaPiscar = LOCAIS_DB.map(loc => loc.img || loc.cartaBlank).filter(Boolean);
     }
+    if (imagensParaPiscar.length === 0) imagensParaPiscar = [...imagensDoDeck];
 
     // 3. DECIDE A CARTA VENCEDORA ANTES DA ANIMAÇÃO (Previsão do Futuro)
     let resultadoFinal = localForcado;
@@ -4087,6 +4093,36 @@ window.executarPassagemDeTurnoLocal = function() {
 
     window.combateIniciadoNesteTurno = false;
 
+    // 🔥 TIMING REVOLUCIONÁRIO (End of Turn): O Veneno pune o jogador que está TERMINANDO o turno!
+    let jogadorSaindo = window.estadoTurno.jogadorAtual;
+    let ladoParaSofrerDano = jogadorSaindo === 'jogador' ? campoJogador : window.campoOponente;
+    let prefixoLado = jogadorSaindo === 'jogador' ? 'jog-' : 'op-';
+
+    if (ladoParaSofrerDano) {
+        Object.keys(ladoParaSofrerDano).forEach(chave => {
+            let monstro = ladoParaSofrerDano[chave];
+            if (monstro && monstro.hpAtual > 0 && monstro.envenenadoLetal) {
+                monstro.hpAtual -= 5;
+                if (monstro.hpAtual < 0) monstro.hpAtual = 0;
+                
+                let nomeDono = jogadorSaindo === 'jogador' ? "Seu" : "O";
+                window.mostrarMensagemScanner(`🐍 FIM DE TURNO: ${nomeDono} campeão ${monstro.nome} sofreu 5 de dano do Veneno Letal!`);
+                if(window.tocarSFX) window.tocarSFX('notificacao');
+                
+                let elCard = document.getElementById(prefixoLado + chave);
+                if(elCard) {
+                    elCard.style.filter = "hue-rotate(270deg) saturate(200%)";
+                    elCard.style.animation = "shake 0.5s";
+                    setTimeout(() => { elCard.style.filter = ""; elCard.style.animation = ""; }, 600);
+                }
+
+                if (monstro.hpAtual === 0) {
+                    setTimeout(() => window.encerrarCombateMorte(prefixoLado + chave), 500);
+                }
+            }
+        });
+    }
+
     if (window.estadoTurno.jogadorAtual === 'jogador') {
         window.estadoTurno.jogadorAtual = 'oponente';
         window.estadoTurno.turnoNumero++;
@@ -4131,7 +4167,7 @@ window.executarPassagemDeTurnoLocal = function() {
                     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") setTimeout(() => { window.passarTurno(); }, 4000);
                 }
             }
-            setTimeout(window.aplicarDanoVenenoLetalSeguro, 300);
+            
         });
     } else {
         if (emCombate && window.qtdMaoOponente > 5) {
@@ -4177,7 +4213,7 @@ window.executarPassagemDeTurnoLocal = function() {
                     window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
                 }
             }
-           setTimeout(window.aplicarDanoVenenoLetalSeguro, 300);
+          
         });
     }
 
