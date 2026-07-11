@@ -2687,6 +2687,8 @@ window.localAtivoAtual = null;
 
 
 
+window.localAtivoAtual = null;
+
 window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = null) {
     window.pausarCronometro();
     let deck = window.estadoDrome.deckSelecionado;
@@ -2703,7 +2705,7 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     }
     if (imagensDoDeck.length === 0) imagensDoDeck = [URL_FUNDO_CARTA];
 
-    // 2. 🔥 NOVO: CARREGA O EFEITO VISUAL DE CASSINO (Pisca todas as cartas do jogo para ficar bonito pra ambos)
+    // 2. 🔥 CARREGA O EFEITO VISUAL DE CASSINO (Pisca todas as cartas do jogo)
     let imagensParaPiscar = [...imagensDoDeck];
     if (typeof LOCAIS_DB !== 'undefined' && LOCAIS_DB.length > 0) {
         imagensParaPiscar = LOCAIS_DB.map(loc => loc.img || loc.cartaBlank).filter(Boolean);
@@ -2714,8 +2716,9 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     if (!resultadoFinal) {
         resultadoFinal = imagensDoDeck[Math.floor(Math.random() * imagensDoDeck.length)];
         
-        // 📡 Se for você sorteando no online, avisa a Nuvem IMEDIATAMENTE onde a roleta vai parar
-        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && jogadorDaVez === 'jogador') {
+        // 🔥 CORREÇÃO DA REDE: O Jogador Atual dita o local para o Inimigo sem checar de quem é a vez visualmente!
+        // Se eu iniciei a roleta sem ser forçado pela nuvem, eu mando a resposta pra nuvem.
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
             window.enviarAcaoRede({ tipo: 'girar_roleta_local', img: resultadoFinal });
         }
     }
@@ -2735,16 +2738,14 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     if(window.tocarSFX) window.tocarSFX('notificacao');
 
     function girar() {
-        // 🔥 CORREÇÃO VISUAL: Usa a piscina global de imagens para piscar maravilhosamente nas DUAS telas
         divImagem.style.backgroundImage = `url('${imagensParaPiscar[Math.floor(Math.random() * imagensParaPiscar.length)]}')`;
-        
         giros++;
         tempo += 10; 
 
         if (giros < 25) {
             setTimeout(girar, tempo);
         } else {
-            // FREIO OBRIGATÓRIO: A roleta para cravada na carta prevista pela lógica/nuvem
+            // FREIO OBRIGATÓRIO: A roleta para cravada na carta
             divImagem.style.backgroundImage = `url('${resultadoFinal}')`;
             divImagem.style.borderColor = "#ffd700";
             divImagem.style.boxShadow = "0 0 50px #ffd700";
@@ -2755,15 +2756,15 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
                 titulo.style.color = "#ffd700";
             }
             
+            // 🔥 FORÇA O REFRESH DO LOCAL NA MESA E GRAVA!
             window.localAtivoAtual = resultadoFinal;
             
-            // 🔥 FORÇA O REFRESH DO LOCAL NA MESA E GUARDA NO SAVE!
             if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
             
             if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                // Atualiza também no Firebase como variável fixa da sala para reconexão funcionar
                 window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { localDaBatalha: resultadoFinal });
             }
+
             setTimeout(() => {
                 let modal = document.getElementById('overlay-roleta-local');
                 if (modal) modal.remove();
