@@ -89,6 +89,18 @@ const ATAQUES = [
         efeito: "Se este ataque for bem sucedido você pode revelar 1 campeão que esteja virado para baixo do seu oponente.", 
         raridade: 0.5
     },
+    {
+        id: 106, 
+        nome: "Armadilha de Víbora", 
+        custo: 3, 
+        danoBase: 15, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, ar: 0 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/armadilha_vibora.jpg", 
+        efeito: "Causa envenenamento. A cada turno do seu oponente, a criatura atingida perde 5 de energia. Este efeito não pode ser curado.", 
+        raridade: 0.6
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
