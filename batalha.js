@@ -387,18 +387,20 @@ function atualizarTelaBatalha() {
                 carta.auraVento = false;
             }
             // 🔥 AURA DO LOCAL: Barragem de Magma (FOGO)
+           // 🔥 AURA DO LOCAL: Barragem de Magma (FOGO)
+            let dbCartaOriginal = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === carta.nome) : null;
+            let temFogoNatural = dbCartaOriginal && dbCartaOriginal.elementos && dbCartaOriginal.elementos.includes('Fogo');
+
             if (temAuraMagma) {
-                if (!carta.elementos || carta.elementos.length === 0) {
-                    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === carta.nome) : null;
-                    carta.elementos = (dbCarta && dbCarta.elementos) ? [...dbCarta.elementos] : [];
-                }
+                if (!carta.elementos) carta.elementos = [];
                 if (!carta.elementos.includes('Fogo')) {
-                    carta.auraMagma = true; 
                     carta.elementos.push('Fogo');
                 }
-            } else if (!temAuraMagma && carta.auraMagma) {
-                carta.elementos = carta.elementos.filter(el => el !== 'Fogo');
-                carta.auraMagma = false;
+            } else {
+                // Se a Aura sumiu E o monstro não é de fogo de nascença, arranca fora!
+                if (!temFogoNatural && carta.elementos && carta.elementos.includes('Fogo')) {
+                    carta.elementos = carta.elementos.filter(el => el !== 'Fogo');
+                }
             }
         }
         if(el) el.innerHTML = desenharMiniCarta(carta);
@@ -436,18 +438,19 @@ function atualizarTelaBatalha() {
                 cartaOp.auraVento = false;
             }
 // 🔥 AURA DO LOCAL: Barragem de Magma (FOGO)
+            let dbCartaOpOriginal = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === cartaOp.nome) : null;
+            let temFogoNaturalOp = dbCartaOpOriginal && dbCartaOpOriginal.elementos && dbCartaOpOriginal.elementos.includes('Fogo');
+
             if (temAuraMagma) {
-                if (!cartaOp.elementos || cartaOp.elementos.length === 0) {
-                    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === cartaOp.nome) : null;
-                    cartaOp.elementos = (dbCarta && dbCarta.elementos) ? [...dbCarta.elementos] : [];
-                }
+                if (!cartaOp.elementos) cartaOp.elementos = [];
                 if (!cartaOp.elementos.includes('Fogo')) {
-                    cartaOp.auraMagma = true; 
                     cartaOp.elementos.push('Fogo');
                 }
-            } else if (!temAuraMagma && cartaOp.auraMagma) {
-                cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Fogo');
-                cartaOp.auraMagma = false;
+            } else {
+                // Se a Aura sumiu E o monstro inimigo não é de fogo de nascença, arranca fora!
+                if (!temFogoNaturalOp && cartaOp.elementos && cartaOp.elementos.includes('Fogo')) {
+                    cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Fogo');
+                }
             }
             
         }
