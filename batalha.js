@@ -3015,11 +3015,9 @@ window.encerrarCombateMorte = function(idMorto) {
         atualizarTelaBatalha();
         if (typeof window.atualizarSeusContadoresDeAtaque === 'function') window.atualizarSeusContadoresDeAtaque();
 
-        // 🔥 GATILHO DA EXPLOSÃO (Acontece APÓS o monstro sumir da tela)
         if (donoBombaMortal === 'jogador') {
-            window.mostrarMensagemScanner("💣 A CRIATURA MORREU E A BOMBA VAI EXPLODIR! Clique em QUALQUER criatura para causar 25 de dano!");
             window.modoAlvo = { tipo: 'bomba_fogo', origem: idMorto };
-            // Pausa o jogo até você escolher o alvo!
+            window.atualizarInterfaceMira("A Bomba de Fogo vai explodir! Clique em QUALQUER criatura para causar 25 de dano.");
             return; 
         } else if (donoBombaMortal === 'oponente') {
             window.mostrarMensagemScanner("💣 Oponente está mirando a Bomba de Fogo...");
@@ -4588,9 +4586,9 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                             }
                             
                             if (temOculta) {
-                                window.mostrarMensagemScanner("🌪️ Vento Forte! Clique em um campeão inimigo oculto para revelá-lo.");
                                 window.modoAlvo = { tipo: 'revelar_inimigo' };
-                                window.pausarCronometro(); // Para o relógio para você pensar!
+                                window.atualizarInterfaceMira("Vento Forte ativado! Clique em um campeão inimigo oculto para revelá-lo.");
+                                window.pausarCronometro(); 
                             } else {
                                 window.mostrarMensagemScanner("🌪️ Vento Forte teve sucesso, mas não há campeões ocultos para revelar.");
                             }
@@ -4623,9 +4621,8 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                 window.mostrarBannerTCG('PASSIVA DA LEONA', 'rgba(229, 57, 53, 0.8)', '#ffd700');
             }
             
-            // Atraso de 300 milissegundos para garantir que a mensagem não seja engolida pelo Burst!
-            setTimeout(() => {
-                window.mostrarMensagemScanner("🎯 MIRA DA LEONA ATIVA: Selecione o alvo para o efeito passivo de 5 de dano!");
+           setTimeout(() => {
+                window.atualizarInterfaceMira("Selecione o alvo para o efeito passivo de 5 de dano da Leona!");
             }, 300);
             
             if (window.tocarSFX) window.tocarSFX('notificacao');
@@ -5381,12 +5378,10 @@ window.descartarEquipamentoMesa = function(fullId) {
 
 window.iniciarMiraCuraVeneno = function(fullId) {
     window.fecharModalAcoes();
-    window.modoAlvo = {
-        tipo: 'cura_veneno',
-        origem: fullId // O campeão que vai sacrificar o bracelete
-    };
-    window.mostrarMensagemScanner("🎯 MIRA DE CURA: Clique na criatura que deseja curar do veneno.");
+    window.modoAlvo = { tipo: 'cura_veneno', origem: fullId };
+    window.atualizarInterfaceMira("Clique na criatura que deseja curar do veneno.");
 };
+   
 ////////////
     
 // 2. USAR HABILIDADE (AGORA INTELIGENTE: COM OU SEM MIRA)
@@ -5438,13 +5433,8 @@ window.usarHabilidade = function(fullId) {
                 return; 
             }
 
-            window.modoAlvo = {
-                tipo: 'habilidade',
-                origem: fullId,
-                custo: custoHab // SALVA O CUSTO PARA COBRAR NA HORA DO TIRO
-            };
-            window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para usar a habilidade de ${criatura.nome} (Ou num espaço vazio para cancelar).`);
-            if(window.tocarSFX) window.tocarSFX('notificacao');
+           window.modoAlvo = { tipo: 'habilidade', origem: fullId, custo: custoHab };
+            window.atualizarInterfaceMira(`Clique na criatura alvo para usar a habilidade de ${criatura.nome}.`);
         }
 
     } else {
@@ -5477,12 +5467,8 @@ window.confirmarElemento = function(fullId, elementoEscolhido) {
     window.retomarCronometro(); // Retoma o relógio
 
     // Liga a mira guardando a escolha secreta no "elementoExtra"
-    window.modoAlvo = {
-        tipo: 'habilidade',
-        origem: fullId,
-        elementoExtra: elementoEscolhido
-    };
-    window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Você escolheu ${elementoEscolhido}. Clique no monstro que vai recebê-lo!`);
+   window.modoAlvo = { tipo: 'habilidade', origem: fullId, elementoExtra: elementoEscolhido };
+    window.atualizarInterfaceMira(`Você escolheu ${elementoEscolhido}. Clique no monstro que vai recebê-lo!`);
 };
 
 
@@ -5547,16 +5533,8 @@ window.descartarMugic = function(index) {
     }
 
     // Magias normais de alvo continuam usando a mira no tabuleiro
-    window.modoAlvo = {
-        tipo: 'mugic',
-        origem: conjuradorId,
-        mugicIndex: index,
-        mugicObj: mugic,
-        custo: custoReal 
-    };
-
-    window.mostrarMensagemScanner(`🎯 MIRA ATIVA: Clique na criatura alvo para o ${mugic.nome}...`);
-    if(window.tocarSFX) window.tocarSFX('notificacao');
+   window.modoAlvo = { tipo: 'mugic', origem: conjuradorId, mugicIndex: index, mugicObj: mugic, custo: custoReal };
+    window.atualizarInterfaceMira(`Clique na criatura alvo para conjurar o Mugic ${mugic.nome}.`);
 };
 
 // ==========================================
@@ -6542,3 +6520,62 @@ window.acionarRevelarCriatura = function(fullId) {
     };
     window.adicionarAoBurst(acaoRevelar);
 };
+
+
+// ==========================================
+// 🎯 NOVO MOTOR DE HUD: MIRA HOLOGRÁFICA
+// ==========================================
+window.atualizarInterfaceMira = function(mensagem) {
+    let banner = document.getElementById('aviso-mira-fixa');
+    
+    // Se a mensagem for nula, deleta a interface
+    if (!mensagem) {
+        if (banner) banner.remove();
+        return;
+    }
+
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'aviso-mira-fixa';
+        // pointer-events: none é a mágica que deixa você clicar NAS CARTAS mesmo com o aviso na frente delas!
+        banner.style.cssText = "position:fixed; top:12%; left:50%; transform:translateX(-50%); background:rgba(0, 5, 0, 0.95); color:white; padding:15px 30px; border-radius:15px; border:3px solid #00bcd4; z-index:9999999; font-family:'Arial Black', sans-serif; text-align:center; box-shadow:0 0 40px rgba(0, 188, 212, 0.8); pointer-events:none; animation: pulse 1.5s infinite alternate; width: 85%; max-width: 450px; display:flex; flex-direction:column; justify-content:center; align-items:center;";
+        document.body.appendChild(banner);
+    }
+    
+    let cor = "#00bcd4";
+    let icone = "🎯";
+    let msgMin = mensagem.toLowerCase();
+    
+    // Inteligência de Cores: Muda a cor do painel de acordo com o contexto
+    if (msgMin.includes("bomba") || msgMin.includes("dano") || msgMin.includes("vento") || msgMin.includes("leona")) {
+        cor = "#ff5555"; // Vermelho Perigo
+        icone = "⚔️";
+    } else if (msgMin.includes("cura") || msgMin.includes("veneno") || msgMin.includes("aliança")) {
+        cor = "#4CAF50"; // Verde Cura
+        icone = "✨";
+    }
+    
+    banner.style.borderColor = cor;
+    banner.style.boxShadow = `0 0 40px ${cor}`;
+
+    banner.innerHTML = `
+        <h2 style="color:${cor}; font-size:22px; margin-bottom:10px; text-shadow: 0 0 15px ${cor}; text-transform:uppercase;">${icone} MIRA ATIVADA</h2>
+        <p style="color:#fff; font-size:14px; font-weight:normal; font-family:monospace; line-height: 1.4; margin-bottom: 10px;">${mensagem}</p>
+        <div style="background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 5px; border: 1px dashed #777;">
+            <p style="color:#aaa; font-size:10px; text-transform: uppercase;">(Toque num espaço vazio da mesa para cancelar)</p>
+        </div>
+    `;
+};
+
+// 🔥 O TRUQUE DO ARQUITETO: Apaga o HUD sozinho!
+// Observamos a variável window.modoAlvo. Sempre que ela virar "null", a tela apaga automaticamente!
+let valorModoAlvoOriginal = window.modoAlvo;
+Object.defineProperty(window, 'modoAlvo', {
+    get: function() { return valorModoAlvoOriginal; },
+    set: function(novoValor) {
+        valorModoAlvoOriginal = novoValor;
+        if (novoValor === null) {
+            window.atualizarInterfaceMira(null); 
+        }
+    }
+});
