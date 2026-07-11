@@ -296,7 +296,8 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
                 };
             }
         });
-
+        // 🔥 MEMÓRIA DO OPONENTE: Salva os locais do inimigo na nossa máquina!
+        window.locaisOponente = deckOp.locais || deckOp.locais_objs || [];
         window.qtdBaralhoOponente = deckOp.ataques_objs ? deckOp.ataques_objs.length : 20;
         window.qtdMaoOponente = 3;
         window.qtdBaralhoOponente -= 3; 
@@ -448,7 +449,9 @@ function atualizarTelaBatalha() {
             modoAlvo: window.modoAlvo,
             conjuradorMugicAtual: window.conjuradorMugicAtual,
             slotSelecionadoMovimento: window.slotSelecionadoMovimento,
-            deckSelecionado: window.estadoDrome ? window.estadoDrome.deckSelecionado : null
+            deckSelecionado: window.estadoDrome ? window.estadoDrome.deckSelecionado : null, // <- VÍRGULA ADICIONADA AQUI!
+            locaisOponente: window.locaisOponente,
+            donoDaRoletaLocal: window.donoDaRoletaLocal
         };
         localStorage.setItem('drome_save_state', JSON.stringify(saveState));
     }
@@ -2725,19 +2728,39 @@ window.localAtivoAtual = null;
 
 window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = null) {
     window.pausarCronometro();
-    let deck = window.estadoDrome.deckSelecionado;
+    
+    // 🔥 O RELÓGIO DE ALTERNÂNCIA: Descobre de quem é o deck que fornecerá o Local agora!
+    let donoDesteLocal = window.donoDaRoletaLocal || 'jogador';
     let imagensDoDeck = [];
     
-    // 1. CARREGA OS POSSÍVEIS RESULTADOS REAIS (Do Deck de quem está jogando)
-    if (deck && deck.locais && deck.locais.length > 0) {
-        imagensDoDeck = deck.locais.map(id => {
-            let loc = null;
-            if (typeof LOCAIS_DB !== 'undefined') loc = LOCAIS_DB.find(x => x.id == id || x.nome == id);
-            if (!loc && window.inventario) loc = window.inventario.find(x => x.id == id || x.nome == id);
-            return loc ? (loc.img || loc.cartaBlank) : null;
-        }).filter(img => img !== null && img !== undefined);
+    // 1. CARREGA OS POSSÍVEIS RESULTADOS REAIS (Do Deck do dono da vez)
+    if (donoDesteLocal === 'jogador') {
+        let deck = window.estadoDrome.deckSelecionado;
+        if (deck && deck.locais && deck.locais.length > 0) {
+            imagensDoDeck = deck.locais.map(id => {
+                let loc = null;
+                if (typeof LOCAIS_DB !== 'undefined') loc = LOCAIS_DB.find(x => x.id == id || x.nome == id);
+                if (!loc && window.inventario) loc = window.inventario.find(x => x.id == id || x.nome == id);
+                return loc ? (loc.img || loc.cartaBlank) : null;
+            }).filter(Boolean);
+        }
+    } else {
+        // Puxa da memória da nuvem que criamos no Passo 1!
+        let locaisOp = window.locaisOponente;
+        if (locaisOp && locaisOp.length > 0) {
+            imagensDoDeck = locaisOp.map(id => {
+                let loc = null;
+                if (typeof LOCAIS_DB !== 'undefined') loc = LOCAIS_DB.find(x => x.id == id || x.nome == id);
+                if (!loc && window.inventario) loc = window.inventario.find(x => x.id == id || x.nome == id);
+                return loc ? (loc.img || loc.cartaBlank) : null;
+            }).filter(Boolean);
+        }
     }
+
     if (imagensDoDeck.length === 0) imagensDoDeck = [URL_FUNDO_CARTA];
+
+    // 🔥 GIRA O RELÓGIO: Inverte a posse do próximo local para a próxima vez que a roleta for chamada!
+    window.donoDaRoletaLocal = (donoDesteLocal === 'jogador') ? 'oponente' : 'jogador';
 
     // 2. CARREGA O EFEITO VISUAL DE CASSINO (Pisca todas as cartas do jogo)
     let imagensParaPiscar = [...imagensDoDeck];
@@ -2750,8 +2773,7 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     if (!resultadoFinal) {
         resultadoFinal = imagensDoDeck[Math.floor(Math.random() * imagensDoDeck.length)];
         
-        // 🔥 BLINDAGEM DA REDE: Só quem iniciou o sorteio (jogador) propaga o sinal para a nuvem.
-        // Isso impede que o oponente envie um pacote de volta e cancele a animação dele.
+        // 🔥 BLINDAGEM DA REDE: Só quem iniciou o sorteio (jogadorDaVez) propaga o sinal para a nuvem.
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && jogadorDaVez === 'jogador') {
             window.enviarAcaoRede({ tipo: 'girar_roleta_local', img: resultadoFinal });
         }
@@ -3319,6 +3341,8 @@ window.iniciarTurnoReal = function(primeiroJogador) {
     window.estadoTurno.jogadorAtual = primeiroJogador;
     window.estadoTurno.turnoNumero = 1;
     window.estadoTurno.fase = 'principal';
+    // 🔥 O RELÓGIO: O vencedor do Jokenpô fornece o 1º Local do jogo!
+    window.donoDaRoletaLocal = primeiroJogador;
 
     // 🔥 RESETA OS STRIKES PARA A NOVA PARTIDA 🔥
     window.strikesJogador = 0;
@@ -6369,7 +6393,10 @@ window.recuperarBatalhaSalva = function(salaId, souP1) {
        window.modoAlvo = s.modoAlvo || null;
         window.conjuradorMugicAtual = s.conjuradorMugicAtual || null;
         window.slotSelecionadoMovimento = s.slotSelecionadoMovimento || null;
+        window.locaisOponente = s.locaisOponente || [];
+        window.donoDaRoletaLocal = s.donoDaRoletaLocal || 'jogador';
 
+        
         if (!window.estadoDrome) window.estadoDrome = {};
         window.estadoDrome.modo = s.modo || "6x6"; // Recupera o formato do tabuleiro!
         // 🔥 RESTAURA O DECK ORIGINAL: A roleta de locais vai funcionar perfeitamente!
