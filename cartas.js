@@ -76,7 +76,19 @@ const ATAQUES = [
         efeito: "Rode um dado de 6 lados. O valor será multiplicado com o dano base desta carta e passa a ser o dano total.",
         raridade: 0.7
     },
-    
+
+    {
+        id: 105, 
+        nome: "Vento Forte", 
+        custo: 1, 
+        danoBase: 5, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, ar: 0 }, // Mantive neutro no base, o bônus vem de modificadores!
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/vento_forte.jpg", 
+        efeito: "Se este ataque for bem sucedido você pode revelar 1 campeão que esteja virado para baixo do seu oponente.", 
+        raridade: 0.5
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
