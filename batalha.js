@@ -4431,16 +4431,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             }
         }
 
-        // ==========================================
-        // ⚡ GATILHO: Inimigo ativou o Spedman lá!
-        // ==========================================
-        if (window.spedmanProtecaoAtivaInimiga) {
-            window.spedmanProtecaoAtivaInimiga = false;
-            danoBase = 0;
-            danoExtra = 0;
-            msgBonus = "[⚡ ANULADO POR SPEDMAN] ";
-        }
-
+        
         // ==========================================
         // 🗺️ MOTOR DE LOCAIS: MODIFICADORES DE DANO
         // ==========================================
@@ -4492,29 +4483,53 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             nomeAcao: nomeAcaoBurst,
             tipo: 'ataque',
             executar: function() {
-                if (!idMonstroInimigo) return;
-                let alvo = obterCriaturaNoSlot(idMonstroInimigo);
+                // 1. ATUALIZA A MIRA DINAMICAMENTE (Caso o Spedman tenha trocado de lugar com o alvo original)
+                let alvoAtualId = idMonstroInimigo;
+                if (window.estadoCombate && window.estadoCombate.ativo) {
+                    alvoAtualId = (window.estadoCombate.atacante === idMeuMonstro) ? window.estadoCombate.defensor : window.estadoCombate.atacante;
+                }
+                
+                if (!alvoAtualId) return;
+
+                // 2. APLICA A PROTEÇÃO DO SPEDMAN NO EXATO MOMENTO DO IMPACTO
+                let danoFinalAposBurst = danoTotal;
+                let mensagemFinalBonus = msgBonus;
+                
+                if (window.spedmanProtecaoAtivaInimiga) {
+                    window.spedmanProtecaoAtivaInimiga = false;
+                    danoFinalAposBurst = 0;
+                    mensagemFinalBonus = "[⚡ ANULADO POR SPEDMAN] ";
+                }
+
+                let alvo = obterCriaturaNoSlot(alvoAtualId);
                 
                 if (alvo) {
                     // ==========================================
                     // 1º PASSO: APLICAR O DANO BRUTO IMEDIATAMENTE
                     // ==========================================
-                    alvo.hpAtual -= danoTotal; 
+                    alvo.hpAtual -= danoFinalAposBurst; 
                     if (alvo.hpAtual < 0) alvo.hpAtual = 0; // Trava o negativo
                     if(window.tocarSFX) window.tocarSFX('notificacao'); 
                     
-                    let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoTotal} de energia!`;
-                    if (danoExtra > 0 || dadoSorteado !== null) msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoTotal} de energia! (${danoBase} Base + ${danoExtra} Bônus ${msgBonus})`;
-                    if (danoTotal === 0 && alvo.nome === "Rex") msgScanner = `🛡️ REX IMUNE! O ataque de Vento se dissipou nas escamas dele (0 de dano)!`;
+                    let msgScanner = `💥 Dano aplicado! ${alvo.nome} perdeu ${danoFinalAposBurst} de energia!`;
+                    
+                    if (danoFinalAposBurst === 0 && mensagemFinalBonus.includes("SPEDMAN")) {
+                        msgScanner = `⚡ SPEDMAN DEFENDEU! Ele assumiu a linha de frente e o dano foi reduzido a ZERO!`;
+                    } else if (danoExtra > 0 || dadoSorteado !== null) {
+                        msgScanner = `💥 DANO AUMENTADO! ${alvo.nome} perdeu ${danoFinalAposBurst} de energia! (${danoBase} Base + ${danoExtra} Bônus ${mensagemFinalBonus})`;
+                    }
+                    if (danoFinalAposBurst === 0 && alvo.nome === "Rex") {
+                        msgScanner = `🛡️ REX IMUNE! O ataque de Vento se dissipou nas escamas dele (0 de dano)!`;
+                    }
                     
                     window.mostrarMensagemScanner(msgScanner);
 
                     // 🌐 O TRANSMISSOR IMEDIATO: O Dano viaja na frente!
                     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                        window.enviarAcaoRede({ tipo: 'dano', alvo: idMonstroInimigo, valor: danoTotal });
+                        window.enviarAcaoRede({ tipo: 'dano', alvo: alvoAtualId, valor: danoFinalAposBurst });
                     }
                     
-                    let elAlvo = document.getElementById(idMonstroInimigo);
+                    let elAlvo = document.getElementById(alvoAtualId);
                     if(elAlvo) {
                         elAlvo.style.animation = "shake 0.5s";
                         setTimeout(() => { elAlvo.style.animation = ""; }, 500);
@@ -4523,26 +4538,24 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
 
                     let morreuPeloDanoBruto = (alvo.hpAtual === 0);
                     if (morreuPeloDanoBruto) {
-                        setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
+                        setTimeout(() => window.encerrarCombateMorte(alvoAtualId), 1000);
                     }
 
                     // ==========================================
                     // 2º PASSO: EFEITOS SECUNDÁRIOS DO ATAQUE 
-                    // (Com atraso de 200ms para a Nuvem entregar o Dano primeiro!)
                     // ==========================================
                     setTimeout(() => {
                         // 🧪 EFEITO: Ácido Gástrico (ID 101)
                         if (ataqueDB && ataqueDB.id === 101) {
                             if (alvo.equipamento) {
                                 let eqText = (alvo.equipamento.efeito || "").toLowerCase();
-                                // Destrói mesmo se não estiver revelado, a não ser que seja Indestrutível!
                                 if (eqText.includes('indestrutível') || eqText.includes('indestrutivel')) {
                                     window.mostrarMensagemScanner("🛡️ O equipamento resistiu ao Ácido (Indestrutível)!");
                                 } else {
-                                    let nomeEqRemovido = window.removerEquipamentoMesa(idMonstroInimigo, true); 
+                                    let nomeEqRemovido = window.removerEquipamentoMesa(alvoAtualId, true); 
                                     window.mostrarMensagemScanner(`🧪 Ácido derreteu o equipamento: ${nomeEqRemovido}!`);
                                     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                                        window.enviarAcaoRede({ tipo: 'destruir_equipamento', alvo: idMonstroInimigo, nomeEquip: nomeEqRemovido });
+                                        window.enviarAcaoRede({ tipo: 'destruir_equipamento', alvo: alvoAtualId, nomeEquip: nomeEqRemovido });
                                     }
                                 }
                             }
@@ -4564,8 +4577,9 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                 }
                             }
                         }
+
                         // 🌪️ EFEITO: Vento Forte (ID 105)
-                        if (ataqueDB && ataqueDB.id === 105 && danoTotal > 0) {
+                        if (ataqueDB && ataqueDB.id === 105 && danoFinalAposBurst > 0) {
                             let temOculta = false;
                             if (window.campoOponente) {
                                 Object.values(window.campoOponente).forEach(c => {
@@ -4581,11 +4595,11 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                 window.mostrarMensagemScanner("🌪️ Vento Forte teve sucesso, mas não há campeões ocultos para revelar.");
                             }
                         }
-                        // Se a remoção de um equipamento causou a morte (Ex: Anel Precioso)
+
                         if (!morreuPeloDanoBruto && alvo.hpAtual === 0) {
-                            setTimeout(() => window.encerrarCombateMorte(idMonstroInimigo), 1000);
+                            setTimeout(() => window.encerrarCombateMorte(alvoAtualId), 1000);
                         }
-                    }, 200); // <-- O delay de 200ms que põe ordem no caos!
+                    }, 200); 
                 }
             }
         };
