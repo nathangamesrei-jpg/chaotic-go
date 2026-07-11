@@ -3565,7 +3565,9 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
 
 
     window.estadoCombate = { ativo: true, atacante: idAtacante, defensor: idDefensor };
-
+// 🔥 REMOVENDO A NÉVOA DE GUERRA: Força as duas cartas a virarem para cima no momento que a briga começa!
+    if (atacante) atacante.revelada = true;
+    if (defensor) defensor.revelada = true;
 
 
    let nomeLocal = "Local Desconhecido";
