@@ -5605,19 +5605,20 @@ window.enviarAcaoRede = function(acaoData) {
 // 🎧 O RECEPTOR: Fica escutando a Nuvem o tempo todo
 window.iniciarEscutaAcoesOnline = function() {
     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") return;
-    
-    // 👻 O VERDADEIRO EXORCISTA: Ignora o lixo da partida passada!
-    let isPrimeiraLeituraAcao = true; 
+
+    // 👻 O NOVO EXORCISTA: Blindado contra salas vazias!
+    let escutaIniciada = false;
 
     // Rádio 1: Escuta as ações pesadas (Movimento final, combate, magias)
     window._dbOn('salas_drome/' + window.salaBatalhaAtual + '/ultima_acao', (snap) => {
-        if (!snap.exists()) return;
-        
-        // Se for o fantasma da partida anterior conectando agora, ignora!
-        if (isPrimeiraLeituraAcao) { 
-            isPrimeiraLeituraAcao = false; 
-            return; 
+        // O Firebase sempre dispara o evento na primeira leitura (trazendo dados velhos ou vazio).
+        // Nós ignoramos ESSE primeiro disparo do listener, para não engolir a primeira ação real!
+        if (!escutaIniciada) {
+            escutaIniciada = true;
+            return;
         }
+
+        if (!snap.exists()) return;
 
         let acao = snap.val();
         if (acao.remetente === (window.souP1Batalha ? 'p1' : 'p2')) return;
