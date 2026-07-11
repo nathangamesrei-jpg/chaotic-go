@@ -375,30 +375,29 @@ function atualizarTelaBatalha() {
         let carta = campoJogador[slotId];
         
         if (carta) {
-            // AURA GURU (VENTO)
+            let dbCartaOriginal = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === carta.nome) : null;
+            let temFogoNatural = dbCartaOriginal && dbCartaOriginal.elementos && dbCartaOriginal.elementos.includes('Fogo');
+            let ehNaty = carta.nome === "Naty"; // Naty é a única que ganha elementos para sempre
+
+            // 🌪️ AURA GURU (VENTO) - Blindada
             if (temGuruAuraJog && carta.nome !== "Guru") {
                 if (!carta.elementos) carta.elementos = [];
-                if (!carta.elementos.includes('Ar')) {
-                    carta.auraVento = true; 
-                    carta.elementos.push('Ar');
+                if (!carta.elementos.includes('Ar')) carta.elementos.push('Ar');
+            } else {
+                let temArNatural = dbCartaOriginal && dbCartaOriginal.elementos && dbCartaOriginal.elementos.includes('Ar');
+                if (!temArNatural && !ehNaty && carta.elementos && carta.elementos.includes('Ar')) {
+                    carta.elementos = carta.elementos.filter(el => el !== 'Ar');
                 }
-            } else if (!temGuruAuraJog && carta.auraVento) {
-                carta.elementos = carta.elementos.filter(el => el !== 'Ar');
-                carta.auraVento = false;
             }
 
-            // 🔥 AURA BARRAGEM DE MAGMA (FOGO)
+            // 🔥 AURA BARRAGEM DE MAGMA (FOGO) - Blindada
             if (temAuraMagma) {
                 if (!carta.elementos) carta.elementos = [];
-                if (!carta.elementos.includes('Fogo')) {
-                    carta.elementos.push('Fogo');
-                    carta.ganhouFogoPelaAura = true; // 🏷️ Etiqueta o fogo falso
-                }
+                if (!carta.elementos.includes('Fogo')) carta.elementos.push('Fogo');
             } else {
-                // Limpeza Segura: Se o local mudar, apaga só o fogo que foi dado pela Aura!
-                if (carta.ganhouFogoPelaAura) {
+                // LIMPEZA SUPREMA: Se a aura sumiu, não é Fogo de nascença e não é a Naty, deleta o Fogo na marra!
+                if (!temFogoNatural && !ehNaty && carta.elementos && carta.elementos.includes('Fogo')) {
                     carta.elementos = carta.elementos.filter(el => el !== 'Fogo');
-                    carta.ganhouFogoPelaAura = false;
                 }
             }
         }
@@ -423,30 +422,29 @@ function atualizarTelaBatalha() {
         let cartaOp = window.campoOponente ? window.campoOponente[slotId] : null;
 
         if (cartaOp) {
-            // AURA GURU (VENTO)
+            let dbCartaOpOriginal = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === cartaOp.nome) : null;
+            let temFogoNaturalOp = dbCartaOpOriginal && dbCartaOpOriginal.elementos && dbCartaOpOriginal.elementos.includes('Fogo');
+            let ehNatyOp = cartaOp.nome === "Naty";
+
+            // 🌪️ AURA GURU (VENTO) - Blindada
             if (temGuruAuraOp && cartaOp.nome !== "Guru") {
                 if (!cartaOp.elementos) cartaOp.elementos = [];
-                if (!cartaOp.elementos.includes('Ar')) {
-                    cartaOp.auraVento = true;
-                    cartaOp.elementos.push('Ar');
+                if (!cartaOp.elementos.includes('Ar')) cartaOp.elementos.push('Ar');
+            } else {
+                let temArNaturalOp = dbCartaOpOriginal && dbCartaOpOriginal.elementos && dbCartaOpOriginal.elementos.includes('Ar');
+                if (!temArNaturalOp && !ehNatyOp && cartaOp.elementos && cartaOp.elementos.includes('Ar')) {
+                    cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Ar');
                 }
-            } else if (!temGuruAuraOp && cartaOp.auraVento) {
-                cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Ar');
-                cartaOp.auraVento = false;
             }
 
-            // 🔥 AURA BARRAGEM DE MAGMA (FOGO)
+            // 🔥 AURA BARRAGEM DE MAGMA (FOGO) - Blindada
             if (temAuraMagma) {
                 if (!cartaOp.elementos) cartaOp.elementos = [];
-                if (!cartaOp.elementos.includes('Fogo')) {
-                    cartaOp.elementos.push('Fogo');
-                    cartaOp.ganhouFogoPelaAura = true; // 🏷️ Etiqueta o fogo falso
-                }
+                if (!cartaOp.elementos.includes('Fogo')) cartaOp.elementos.push('Fogo');
             } else {
-                // Limpeza Segura: Se o local mudar, apaga só o fogo que foi dado pela Aura!
-                if (cartaOp.ganhouFogoPelaAura) {
+                // LIMPEZA SUPREMA Oponente
+                if (!temFogoNaturalOp && !ehNatyOp && cartaOp.elementos && cartaOp.elementos.includes('Fogo')) {
                     cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Fogo');
-                    cartaOp.ganhouFogoPelaAura = false;
                 }
             }
         }
