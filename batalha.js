@@ -352,13 +352,15 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
 
 function atualizarTelaBatalha() {
     const slots = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
-// 🔥 NOVO: DETETIVE DE LOCAIS (Para Auras Globais da Mesa)
+
+    // 🔥 NOVO: DETETIVE DE LOCAIS (Para Auras Globais da Mesa)
     let locDBAtual = null;
     if (window.localAtivoAtual) {
         if (typeof LOCAIS_DB !== 'undefined') locDBAtual = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
         if (!locDBAtual && window.inventario) locDBAtual = window.inventario.find(l => l.img === window.localAtivoAtual);
     }
     let temAuraMagma = locDBAtual && locDBAtual.nome === "A Barragem de Magma";
+
     // ==========================================
     // 🕵️‍♂️ DETETIVE DE AURAS - SEU LADO DA MESA
     // ==========================================
@@ -373,11 +375,9 @@ function atualizarTelaBatalha() {
         let carta = campoJogador[slotId];
         
         if (carta) {
+            // AURA GURU (VENTO)
             if (temGuruAuraJog && carta.nome !== "Guru") {
-                if (!carta.elementos || carta.elementos.length === 0) {
-                    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === carta.nome) : null;
-                    carta.elementos = (dbCarta && dbCarta.elementos) ? [...dbCarta.elementos] : [];
-                }
+                if (!carta.elementos) carta.elementos = [];
                 if (!carta.elementos.includes('Ar')) {
                     carta.auraVento = true; 
                     carta.elementos.push('Ar');
@@ -386,17 +386,20 @@ function atualizarTelaBatalha() {
                 carta.elementos = carta.elementos.filter(el => el !== 'Ar');
                 carta.auraVento = false;
             }
-            // 🔥 AURA DO LOCAL: Barragem de Magma (FOGO)
-           // 🔥 AURA DO LOCAL: Barragem de Magma (FOGO)
-            let dbCartaOriginal = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === carta.nome) : null;
-            let temFogoNatural = dbCartaOriginal && dbCartaOriginal.elementos && dbCartaOriginal.elementos.includes('Fogo');
 
+            // 🔥 AURA BARRAGEM DE MAGMA (FOGO)
             if (temAuraMagma) {
                 if (!carta.elementos) carta.elementos = [];
                 if (!carta.elementos.includes('Fogo')) {
                     carta.elementos.push('Fogo');
+                    carta.ganhouFogoPelaAura = true; // 🏷️ Etiqueta o fogo falso
                 }
-             
+            } else {
+                // Limpeza Segura: Se o local mudar, apaga só o fogo que foi dado pela Aura!
+                if (carta.ganhouFogoPelaAura) {
+                    carta.elementos = carta.elementos.filter(el => el !== 'Fogo');
+                    carta.ganhouFogoPelaAura = false;
+                }
             }
         }
         if(el) el.innerHTML = desenharMiniCarta(carta);
@@ -420,11 +423,9 @@ function atualizarTelaBatalha() {
         let cartaOp = window.campoOponente ? window.campoOponente[slotId] : null;
 
         if (cartaOp) {
+            // AURA GURU (VENTO)
             if (temGuruAuraOp && cartaOp.nome !== "Guru") {
-                if (!cartaOp.elementos || cartaOp.elementos.length === 0) {
-                    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === cartaOp.nome) : null;
-                    cartaOp.elementos = (dbCarta && dbCarta.elementos) ? [...dbCarta.elementos] : [];
-                }
+                if (!cartaOp.elementos) cartaOp.elementos = [];
                 if (!cartaOp.elementos.includes('Ar')) {
                     cartaOp.auraVento = true;
                     cartaOp.elementos.push('Ar');
@@ -433,18 +434,21 @@ function atualizarTelaBatalha() {
                 cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Ar');
                 cartaOp.auraVento = false;
             }
-// 🔥 AURA DO LOCAL: Barragem de Magma (FOGO)
-            let dbCartaOpOriginal = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === cartaOp.nome) : null;
-            let temFogoNaturalOp = dbCartaOpOriginal && dbCartaOpOriginal.elementos && dbCartaOpOriginal.elementos.includes('Fogo');
 
+            // 🔥 AURA BARRAGEM DE MAGMA (FOGO)
             if (temAuraMagma) {
                 if (!cartaOp.elementos) cartaOp.elementos = [];
                 if (!cartaOp.elementos.includes('Fogo')) {
                     cartaOp.elementos.push('Fogo');
+                    cartaOp.ganhouFogoPelaAura = true; // 🏷️ Etiqueta o fogo falso
                 }
-            
+            } else {
+                // Limpeza Segura: Se o local mudar, apaga só o fogo que foi dado pela Aura!
+                if (cartaOp.ganhouFogoPelaAura) {
+                    cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Fogo');
+                    cartaOp.ganhouFogoPelaAura = false;
+                }
             }
-            
         }
         if(el) el.innerHTML = desenharMiniCarta(cartaOp); 
     });
@@ -453,7 +457,7 @@ function atualizarTelaBatalha() {
     atualizarDecksEMaoCards(); 
     atualizarMugicsDaTela(); 
     
-    // 🔥 AUTO-SAVE (CHECKPOINT): Tira uma foto da mesa inteira e salva no celular!
+    // 🔥 AUTO-SAVE (CHECKPOINT)
     if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
         let modoAtual = window.estadoDrome ? window.estadoDrome.modo : "6x6";
         let saveState = {
@@ -479,7 +483,7 @@ function atualizarTelaBatalha() {
             modoAlvo: window.modoAlvo,
             conjuradorMugicAtual: window.conjuradorMugicAtual,
             slotSelecionadoMovimento: window.slotSelecionadoMovimento,
-            deckSelecionado: window.estadoDrome ? window.estadoDrome.deckSelecionado : null, // <- VÍRGULA ADICIONADA AQUI!
+            deckSelecionado: window.estadoDrome ? window.estadoDrome.deckSelecionado : null,
             locaisOponente: window.locaisOponente,
             donoDaRoletaLocal: window.donoDaRoletaLocal
         };
