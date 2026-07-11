@@ -3140,8 +3140,10 @@ window.interceptarComSpedman = function(slotSpedman, slotDefensor) {
     
     spedman.fichasHabilidade -= 1;
     window.spedmanProtecaoAtiva = true; // Prepara a armadura para o dano que vai chegar
+    spedman.revelada = true; // 🔥 CORREÇÃO: Spedman se revela ao pular na frente!
     
     // 🔥 A GRANDE TROCA FÍSICA NA MESA!
+ 
     if (slotSpedman !== slotDefensor) {
         campoJogador[slotSpedman] = aliadoDefendendo;
         campoJogador[slotDefensor] = spedman;
@@ -5944,8 +5946,9 @@ window.processarAcaoInimiga = function(acao) {
         let spedmanInimigo = window.campoOponente[slotSpedman];
         let aliadoDefendendo = window.campoOponente[slotDefensor];
         
-        if (spedmanInimigo && aliadoDefendendo) {
+       if (spedmanInimigo && aliadoDefendendo) {
             spedmanInimigo.fichasHabilidade -= 1;
+            spedmanInimigo.revelada = true; // 🔥 CORREÇÃO: Revela o Spedman inimigo na nossa tela!
             
             // Troca as cartas de lugar no alto da sua tela!
             if (slotSpedman !== slotDefensor) {
@@ -5960,6 +5963,10 @@ window.processarAcaoInimiga = function(acao) {
             window.spedmanProtecaoAtivaInimiga = true; // Trava o seu ataque!
             window.mostrarMensagemScanner("⚡ TROCA INIMIGA: Spedman assumiu a defesa! O seu ataque causará 0 de dano.");
             atualizarTelaBatalha();
+            
+            // 🔥 CORREÇÃO DO TRAVAMENTO: Destrava o Burst do atacante!
+            window.aguardandoResposta = false;
+            window.resolverBurst();
         }
     }
     else if (acao.tipo === 'morte') {
