@@ -396,7 +396,7 @@ function atualizarTelaBatalha() {
                 if (!carta.elementos.includes('Fogo')) {
                     carta.elementos.push('Fogo');
                 }
-            } 
+             
             }
         }
         if(el) el.innerHTML = desenharMiniCarta(carta);
@@ -442,7 +442,7 @@ function atualizarTelaBatalha() {
                 if (!cartaOp.elementos.includes('Fogo')) {
                     cartaOp.elementos.push('Fogo');
                 }
-            } 
+            
             }
             
         }
