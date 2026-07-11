@@ -2705,7 +2705,7 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     }
     if (imagensDoDeck.length === 0) imagensDoDeck = [URL_FUNDO_CARTA];
 
-    // 2. 🔥 CARREGA O EFEITO VISUAL DE CASSINO (Pisca todas as cartas do jogo)
+    // 2. CARREGA O EFEITO VISUAL DE CASSINO (Pisca todas as cartas do jogo)
     let imagensParaPiscar = [...imagensDoDeck];
     if (typeof LOCAIS_DB !== 'undefined' && LOCAIS_DB.length > 0) {
         imagensParaPiscar = LOCAIS_DB.map(loc => loc.img || loc.cartaBlank).filter(Boolean);
@@ -2716,9 +2716,9 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     if (!resultadoFinal) {
         resultadoFinal = imagensDoDeck[Math.floor(Math.random() * imagensDoDeck.length)];
         
-        // 🔥 CORREÇÃO DA REDE: O Jogador Atual dita o local para o Inimigo sem checar de quem é a vez visualmente!
-        // Se eu iniciei a roleta sem ser forçado pela nuvem, eu mando a resposta pra nuvem.
-        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+        // 🔥 BLINDAGEM DA REDE: Só quem iniciou o sorteio (jogador) propaga o sinal para a nuvem.
+        // Isso impede que o oponente envie um pacote de volta e cancele a animação dele.
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && jogadorDaVez === 'jogador') {
             window.enviarAcaoRede({ tipo: 'girar_roleta_local', img: resultadoFinal });
         }
     }
@@ -2745,7 +2745,7 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
         if (giros < 25) {
             setTimeout(girar, tempo);
         } else {
-            // FREIO OBRIGATÓRIO: A roleta para cravada na carta
+            // FREIO OBRIGATÓRIO: A roleta para cravada na carta prevista pela lógica/nuvem
             divImagem.style.backgroundImage = `url('${resultadoFinal}')`;
             divImagem.style.borderColor = "#ffd700";
             divImagem.style.boxShadow = "0 0 50px #ffd700";
@@ -2756,7 +2756,7 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
                 titulo.style.color = "#ffd700";
             }
             
-            // 🔥 FORÇA O REFRESH DO LOCAL NA MESA E GRAVA!
+            // Grava o estado do local ativo
             window.localAtivoAtual = resultadoFinal;
             
             if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
@@ -2777,7 +2777,6 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     
     girar(); 
 };
-
 
 const scannerOriginal = window.mostrarMensagemScanner;
 
