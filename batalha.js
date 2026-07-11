@@ -352,7 +352,13 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
 
 function atualizarTelaBatalha() {
     const slots = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
-
+// 🔥 NOVO: DETETIVE DE LOCAIS (Para Auras Globais da Mesa)
+    let locDBAtual = null;
+    if (window.localAtivoAtual) {
+        if (typeof LOCAIS_DB !== 'undefined') locDBAtual = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
+        if (!locDBAtual && window.inventario) locDBAtual = window.inventario.find(l => l.img === window.localAtivoAtual);
+    }
+    let temAuraMagma = locDBAtual && locDBAtual.nome === "A Barragem de Magma";
     // ==========================================
     // 🕵️‍♂️ DETETIVE DE AURAS - SEU LADO DA MESA
     // ==========================================
@@ -379,6 +385,20 @@ function atualizarTelaBatalha() {
             } else if (!temGuruAuraJog && carta.auraVento) {
                 carta.elementos = carta.elementos.filter(el => el !== 'Ar');
                 carta.auraVento = false;
+            }
+            // 🔥 AURA DO LOCAL: Barragem de Magma (FOGO)
+            if (temAuraMagma) {
+                if (!carta.elementos || carta.elementos.length === 0) {
+                    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === carta.nome) : null;
+                    carta.elementos = (dbCarta && dbCarta.elementos) ? [...dbCarta.elementos] : [];
+                }
+                if (!carta.elementos.includes('Fogo')) {
+                    carta.auraMagma = true; 
+                    carta.elementos.push('Fogo');
+                }
+            } else if (!temAuraMagma && carta.auraMagma) {
+                carta.elementos = carta.elementos.filter(el => el !== 'Fogo');
+                carta.auraMagma = false;
             }
         }
         if(el) el.innerHTML = desenharMiniCarta(carta);
@@ -415,6 +435,21 @@ function atualizarTelaBatalha() {
                 cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Ar');
                 cartaOp.auraVento = false;
             }
+// 🔥 AURA DO LOCAL: Barragem de Magma (FOGO)
+            if (temAuraMagma) {
+                if (!cartaOp.elementos || cartaOp.elementos.length === 0) {
+                    let dbCarta = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === cartaOp.nome) : null;
+                    cartaOp.elementos = (dbCarta && dbCarta.elementos) ? [...dbCarta.elementos] : [];
+                }
+                if (!cartaOp.elementos.includes('Fogo')) {
+                    cartaOp.auraMagma = true; 
+                    cartaOp.elementos.push('Fogo');
+                }
+            } else if (!temAuraMagma && cartaOp.auraMagma) {
+                cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Fogo');
+                cartaOp.auraMagma = false;
+            }
+            
         }
         if(el) el.innerHTML = desenharMiniCarta(cartaOp); 
     });
@@ -3656,21 +3691,7 @@ window.iniciarCombate = function(idAtacante, idDefensor) {
         });
     }
 
-    if (locDB && locDB.nome === "A Barragem de Magma") {
-        [atacante, defensor].forEach(criatura => {
-            if (criatura) {
-                // Garante que o array de elementos exista de forma isolada
-                if (!criatura.elementos) criatura.elementos = [];
-                else criatura.elementos = [...criatura.elementos]; 
-                
-                // Se a criatura NÃO tem o elemento Fogo, ela ganha!
-                if (!criatura.elementos.includes('Fogo')) {
-                    criatura.elementos.push('Fogo');
-                    setTimeout(() => window.mostrarMensagemScanner(`🌋 A Barragem de Magma: ${criatura.nome} ganhou o elemento 🔥 Fogo!`), 1500);
-                }
-            }
-        });
-    }
+    
 
     // 🔥 CÁLCULO DE INICIATIVA CORRIGIDO 🔥
     let atributoIniciativa = locDB && locDB.iniciativa ? locDB.iniciativa.toLowerCase() : "velocidade"; // Velocidade é o padrão se falhar
