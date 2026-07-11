@@ -2848,12 +2848,13 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
                 titulo.style.color = "#ffd700";
             }
 
-            // 🔥 A MÁGICA DA LIMPEZA: Desliga o Fogo da Barragem antes de aplicar o novo local!
+            // 🔥 A MÁGICA DA LIMPEZA: Desliga o Fogo da Barragem ANTES de aplicar o novo local!
             let locAntigo = null;
             if (window.localAtivoAtual && typeof LOCAIS_DB !== 'undefined') {
                 locAntigo = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
                 if (!locAntigo && window.inventario) locAntigo = window.inventario.find(l => l.img === window.localAtivoAtual);
             }
+            
             if (locAntigo && locAntigo.nome === "A Barragem de Magma") {
                 let todasAsCartas = [...Object.values(campoJogador), ...(window.campoOponente ? Object.values(window.campoOponente) : [])];
                 todasAsCartas.forEach(c => {
@@ -2865,7 +2866,7 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
                 window.mostrarMensagemScanner("A fumaça da Barragem de Magma se dissipou!");
             }
             
-            // Grava o estado do local ativo
+            // Grava o estado do NOVO local ativo
             window.localAtivoAtual = resultadoFinal;
             
             if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
