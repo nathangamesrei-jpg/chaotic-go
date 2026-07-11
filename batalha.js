@@ -4107,6 +4107,7 @@ window.executarPassagemDeTurnoLocal = function() {
                     if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") setTimeout(() => { window.passarTurno(); }, 4000);
                 }
             }
+            setTimeout(window.aplicarDanoVenenoLetalSeguro, 300);
         });
     } else {
         if (emCombate && window.qtdMaoOponente > 5) {
@@ -4152,38 +4153,7 @@ window.executarPassagemDeTurnoLocal = function() {
                     window.mostrarMensagemScanner("Sua vez! Movimente suas criaturas.");
                 }
             }
-        });
-    }
-        // ==========================================
-    // 🐍 GATILHO PASSIVO: Dano de Veneno Letal no Início do Turno
-    // ==========================================
-    let ladoParaSofrerDano = window.estadoTurno.jogadorAtual === 'jogador' ? campoJogador : window.campoOponente;
-    let prefixoLado = window.estadoTurno.jogadorAtual === 'jogador' ? 'jog-' : 'op-';
-
-    if (ladoParaSofrerDano) {
-        Object.keys(ladoParaSofrerDano).forEach(chave => {
-            let monstro = ladoParaSofrerDano[chave];
-            if (monstro && monstro.hpAtual > 0 && monstro.envenenadoLetal) {
-                // Arranca 5 de HP direto!
-                monstro.hpAtual -= 5;
-                if (monstro.hpAtual < 0) monstro.hpAtual = 0;
-                
-                let nomeDono = window.estadoTurno.jogadorAtual === 'jogador' ? "Seu" : "O";
-                window.mostrarMensagemScanner(`🐍 ${nomeDono} campeão ${monstro.nome} sofreu 5 de dano do Veneno Letal!`);
-                if(window.tocarSFX) window.tocarSFX('notificacao');
-                
-                // Efeito visual de veneno (Pisca Roxo/Verde)
-                let elCard = document.getElementById(prefixoLado + chave);
-                if(elCard) {
-                    elCard.style.filter = "hue-rotate(270deg) saturate(200%)";
-                    elCard.style.animation = "shake 0.5s";
-                    setTimeout(() => { elCard.style.filter = ""; elCard.style.animation = ""; }, 600);
-                }
-
-                if (monstro.hpAtual === 0) {
-                    setTimeout(() => window.encerrarCombateMorte(prefixoLado + chave), 1000);
-                }
-            }
+           setTimeout(window.aplicarDanoVenenoLetalSeguro, 300);
         });
     }
 
@@ -6634,3 +6604,37 @@ Object.defineProperty(window, 'modoAlvo', {
         }
     }
 });
+
+// ==========================================
+// 🐍 EXORCISTA DO VENENO: Execução Segura Pós-Banner
+// ==========================================
+window.aplicarDanoVenenoLetalSeguro = function() {
+    let ladoParaSofrerDano = window.estadoTurno.jogadorAtual === 'jogador' ? campoJogador : window.campoOponente;
+    let prefixoLado = window.estadoTurno.jogadorAtual === 'jogador' ? 'jog-' : 'op-';
+
+    if (ladoParaSofrerDano) {
+        Object.keys(ladoParaSofrerDano).forEach(chave => {
+            let monstro = ladoParaSofrerDano[chave];
+            if (monstro && monstro.hpAtual > 0 && monstro.envenenadoLetal) {
+                monstro.hpAtual -= 5;
+                if (monstro.hpAtual < 0) monstro.hpAtual = 0;
+                
+                let nomeDono = window.estadoTurno.jogadorAtual === 'jogador' ? "Seu" : "O";
+                window.mostrarMensagemScanner(`🐍 ${nomeDono} campeão ${monstro.nome} sofreu 5 de dano do Veneno Letal!`);
+                if(window.tocarSFX) window.tocarSFX('notificacao');
+                
+                let elCard = document.getElementById(prefixoLado + chave);
+                if(elCard) {
+                    elCard.style.filter = "hue-rotate(270deg) saturate(200%)";
+                    elCard.style.animation = "shake 0.5s";
+                    setTimeout(() => { elCard.style.filter = ""; elCard.style.animation = ""; }, 600);
+                }
+
+                // Se o veneno matar a criatura aqui, o turno NÃO vai bugar porque os banners já resolveram!
+                if (monstro.hpAtual === 0) {
+                    setTimeout(() => window.encerrarCombateMorte(prefixoLado + chave), 1000);
+                }
+            }
+        });
+    }
+};
