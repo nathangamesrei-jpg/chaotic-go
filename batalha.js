@@ -4379,15 +4379,33 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
     // 🔥 REGRA OFICIAL TCG: Ataques NORMAIS só entram no SEU turno (sem burst inimigo)
 
     let podeAtacar = (emCombate && ehMeuTurno && !window.aguardandoResposta);
-
     let temPontos = (ptsAtuais >= custo);
 
+    // 🌪️ CADEADO ELEMENTAL: TORNADO (Checa os elementos dinâmicos do momento)
+    let bloqueioTornado = false;
+    if (cartaInventario.nome === "TORNADO" && emCombate) {
+        let idMeuAtivo = window.estadoCombate.atacante;
+        let p1Card = obterCriaturaNoSlot(idMeuAtivo);
+        if (p1Card && p1Card.dono !== 'jogador') idMeuAtivo = window.estadoCombate.defensor;
+        
+        let meuMonstro = obterCriaturaNoSlot(idMeuAtivo);
+        if (meuMonstro) {
+            let elementosAtuais = meuMonstro.elementos || [];
+            // O '.some()' checa se há QUALQUER Ar/Vento correndo nas veias dele
+            let temAr = elementosAtuais.some(e => e.toLowerCase() === 'ar' || e.toLowerCase() === 'vento');
+            if (!temAr) bloqueioTornado = true;
+        }
+    }
 
-let btnUsarHTML = "";
+    let btnUsarHTML = "";
     
     if (window.turnosPresoVinha && window.turnosPresoVinha['jogador'] > 0) {
         btnUsarHTML = `<p style="font-size: 10px; color: #4CAF50; margin-bottom: 10px;">🌿 Preso na Vinha! Ataques bloqueados neste turno.</p>`;
     } else if (window.aguardandoResposta) {
+        btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Ataques não podem ser ativados em resposta na Corrente (Burst)!</p>`;
+    } else if (bloqueioTornado) {
+        btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>☁️ Requer Elemento Ar</button>`;
+    } else if (podeAtacar) {
         btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Ataques não podem ser ativados em resposta na Corrente (Burst)!</p>`;
     } else if (podeAtacar) {
         if (temPontos) {
@@ -4750,6 +4768,24 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                             
                             if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
                                  window.enviarAcaoRede({ tipo: 'ativar_armadilha_vinha' });
+                            }
+                        }
+                        // 🌪️ EFEITO: TORNADO (ID 109)
+                        if (ataqueDB && ataqueDB.id === 109) {
+                            window.mostrarMensagemScanner("🌪️ TORNADO ATIVADO! A mão inimiga foi varrida de volta para o baralho!");
+                            
+                            // Ajuste visual numérico na nossa tela do que aconteceu com ele
+                            if (window.qtdMaoOponente > 0) {
+                                window.qtdBaralhoOponente += window.qtdMaoOponente;
+                                window.qtdMaoOponente = 0;
+                            }
+                            
+                            let saque = Math.min(2, window.qtdBaralhoOponente);
+                            window.qtdBaralhoOponente -= saque;
+                            window.qtdMaoOponente += saque;
+
+                            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                 window.enviarAcaoRede({ tipo: 'ativar_tornado' });
                             }
                         }
                         // ⚡ EFEITO: SPEED (ID 108) - Compra de Carta Extra
@@ -6171,6 +6207,28 @@ window.processarAcaoInimiga = function(acao) {
             atualizarDecksEMaoCards(); // Desenha a carta extra na tela fantasma do oponente
         }
     }    
+        else if (acao.tipo === 'ativar_tornado') {
+        window.mostrarMensagemScanner(`🌪️ FULMINANTE! O Tornado oponente varreu a sua mão!`);
+        if(window.tocarSFX) window.tocarSFX('erro');
+        
+        // Suga a mão do jogador para dentro do baralho
+        if (window.maoAtaques && window.maoAtaques.length > 0) {
+            window.baralhoAtaques = window.baralhoAtaques.concat(window.maoAtaques);
+            window.maoAtaques = [];
+        }
+        
+        // Embaralha tudo e devolve apenas 2 cartas miseráveis!
+        if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
+            window.baralhoAtaques = embaralharArray(window.baralhoAtaques);
+            
+            let limiteComprar = Math.min(2, window.baralhoAtaques.length);
+            for (let i = 0; i < limiteComprar; i++) {
+                window.maoAtaques.push(window.baralhoAtaques.shift());
+            }
+        }
+        
+        atualizarDecksEMaoCards(); // Renderiza o buraco na mão na tela da vítima
+    }
     else if (acao.tipo === 'ativar_armadilha_vinha') {
         if (!window.turnosPresoVinha) window.turnosPresoVinha = { jogador: 0, oponente: 0 };
         window.turnosPresoVinha['jogador'] = 1; // Nós somos a vítima se recebemos isso da rede
