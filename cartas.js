@@ -161,6 +161,18 @@ const ATAQUES = [
         efeito: "Causa 10 de Dano. Seu oponente não pode atacar nos 2 próximos turnos.", 
         raridade: 0.6
     },
+    {
+        id: 112, 
+        nome: "MÃO MÃO", 
+        custo: 1, 
+        danoBase: 5, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, ar: 0 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/mao_mao.jpg", 
+        efeito: "Causa 5 de Dano. Seu oponente não pode atacar no próximo turno.", 
+        raridade: 0.5
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
