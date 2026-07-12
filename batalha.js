@@ -4220,10 +4220,21 @@ window.executarPassagemDeTurnoLocal = function() {
 
     // 🔥 TIMING REVOLUCIONÁRIO (End of Turn): O Veneno pune o jogador que está TERMINANDO o turno!
     let jogadorSaindo = window.estadoTurno.jogadorAtual;
+    
     // 🔥 LIMPEZA DA VINHA: Se quem está saindo do turno estava preso, a prisão acaba agora!
     if (window.turnosPresoVinha && window.turnosPresoVinha[jogadorSaindo] > 0) {
         window.turnosPresoVinha[jogadorSaindo] = 0;
     }
+
+    // 🔥 CONTAGEM REGRESSIVA: Mão Eletrônica (Diminui 1 turno da penalidade)
+    if (!window.bloqueioAtaqueTurnos) window.bloqueioAtaqueTurnos = { jogador: 0, oponente: 0 };
+    if (window.bloqueioAtaqueTurnos[jogadorSaindo] > 0) {
+        window.bloqueioAtaqueTurnos[jogadorSaindo] -= 1;
+        if (window.bloqueioAtaqueTurnos[jogadorSaindo] === 0) {
+            window.mostrarMensagemScanner(`⚡ Sistema restaurado! ${jogadorSaindo === 'jogador' ? 'Você' : 'O Oponente'} pode voltar a atacar.`);
+        }
+    }
+
     let ladoParaSofrerDano = jogadorSaindo === 'jogador' ? campoJogador : window.campoOponente;
     let prefixoLado = jogadorSaindo === 'jogador' ? 'jog-' : 'op-';
 
@@ -4266,26 +4277,24 @@ window.executarPassagemDeTurnoLocal = function() {
                 window.pontosAtaque['oponente'] += 1;
                 
                 // 🔥 CORREÇÃO: Conta o lixo corretamente, seja número ou lista online!
-            
-         
-            let qtdLixoOp = Array.isArray(window.lixoAtaquesOponente) ? window.lixoAtaquesOponente.length : window.lixoAtaquesOponente;
-            if (window.qtdBaralhoOponente <= 0 && qtdLixoOp > 0) {
-                window.qtdBaralhoOponente = qtdLixoOp;
-                window.lixoAtaquesOponente = Array.isArray(window.lixoAtaquesOponente) ? [] : 0;
+                let qtdLixoOp = Array.isArray(window.lixoAtaquesOponente) ? window.lixoAtaquesOponente.length : window.lixoAtaquesOponente;
+                if (window.qtdBaralhoOponente <= 0 && qtdLixoOp > 0) {
+                    window.qtdBaralhoOponente = qtdLixoOp;
+                    window.lixoAtaquesOponente = Array.isArray(window.lixoAtaquesOponente) ? [] : 0;
+                }
+                if (window.qtdBaralhoOponente > 0) {
+                    window.qtdMaoOponente++; 
+                    window.qtdBaralhoOponente--; 
+                }
             }
-            if (window.qtdBaralhoOponente > 0) {
-                window.qtdMaoOponente++; 
-               window.qtdBaralhoOponente--; 
-            }
-          }
         }
 
         let btn = document.getElementById('btn-passar-turno');
         if(btn) { btn.style.display = 'block'; btn.disabled = true; btn.innerHTML = "TURNO<br>OPONENTE"; }
         
         window.mostrarBannerTCG('TURNO DO INIMIGO', 'rgba(100, 0, 0, 0.8)', '#e53935', () => {
-    window.iniciarCronometroTurno(); // ⏱️ Liga o relógio na vez dele
-    if (emCombate) {
+            window.iniciarCronometroTurno(); // ⏱️ Liga o relógio na vez dele
+            if (emCombate) {
                 window.mostrarMensagemScanner("Turno do oponente no combate...");
                 if (!window.salaBatalhaAtual || window.salaBatalhaAtual === "sala_simulada") setTimeout(() => { window.passarTurno(); }, 4000);
             } else {
@@ -4329,20 +4338,20 @@ window.executarPassagemDeTurnoLocal = function() {
             } else {
                 window.pontosAtaque['jogador'] += 1;
                 if ((!window.baralhoAtaques || window.baralhoAtaques.length === 0) && window.lixoAtaques && window.lixoAtaques.length > 0) {
-                window.mostrarMensagemScanner("Baralho vazio! Reembaralhando o Lixo...");
-                window.baralhoAtaques = embaralharArray(window.lixoAtaques);
-                window.lixoAtaques = []; 
+                    window.mostrarMensagemScanner("Baralho vazio! Reembaralhando o Lixo...");
+                    window.baralhoAtaques = embaralharArray(window.lixoAtaques);
+                    window.lixoAtaques = []; 
+                }
+                if (window.baralhoAtaques && window.baralhoAtaques.length > 0) window.maoAtaques.push(window.baralhoAtaques.shift());
             }
-           if (window.baralhoAtaques && window.baralhoAtaques.length > 0) window.maoAtaques.push(window.baralhoAtaques.shift());
-          }
         }
 
         let btn = document.getElementById('btn-passar-turno');
         if(btn) { btn.style.display = 'block'; btn.disabled = false; btn.innerHTML = "PASSAR<br>TURNO"; }
         
-       window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
-    window.iniciarCronometroTurno(); // ⏱️ Liga o relógio na sua vez
-    if (emCombate) {
+        window.mostrarBannerTCG('SUA VEZ', 'rgba(0, 100, 0, 0.8)', '#4CAF50', () => {
+            window.iniciarCronometroTurno(); // ⏱️ Liga o relógio na sua vez
+            if (emCombate) {
                 window.mostrarMensagemScanner("Sua vez de atacar! +1 Ponto e +1 Carta.");
             } else {
                 if (window.combateFinalizadoNesteTurno) {
@@ -4456,8 +4465,13 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
 
     let btnUsarHTML = "";
     
+    // Inicia a variável caso seja a primeira vez abrindo
+    if (!window.bloqueioAtaqueTurnos) window.bloqueioAtaqueTurnos = { jogador: 0, oponente: 0 };
+
     if (window.turnosPresoVinha && window.turnosPresoVinha['jogador'] > 0) {
         btnUsarHTML = `<p style="font-size: 10px; color: #4CAF50; margin-bottom: 10px;">🌿 Preso na Vinha! Ataques bloqueados neste turno.</p>`;
+    } else if (window.bloqueioAtaqueTurnos['jogador'] > 0) {
+        btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>⚡ Hackeado! (${window.bloqueioAtaqueTurnos['jogador']} Turno(s) Restante(s))</button>`;
     } else if (window.aguardandoResposta) {
         btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Ataques não podem ser ativados em resposta na Corrente (Burst)!</p>`;
     } else if (bloqueioTornado) {
@@ -4820,6 +4834,19 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                             setTimeout(() => {
                                 window.abrirModalSonar();
                             }, 500);
+                        }
+
+                        // ⚡ EFEITO: MÃO ELETRÔNICA (ID 111)
+                        if (ataqueDB && ataqueDB.id === 111 && danoFinalAposBurst > 0) {
+                            let vitima = (window.estadoTurno.jogadorAtual === 'jogador') ? 'oponente' : 'jogador';
+                            if (!window.bloqueioAtaqueTurnos) window.bloqueioAtaqueTurnos = { jogador: 0, oponente: 0 };
+                            window.bloqueioAtaqueTurnos[vitima] = 2; // Trava por 2 turnos
+                            
+                            window.mostrarMensagemScanner(`⚡ MÃO ELETRÔNICA! O sistema de ataque de ${vitima === 'jogador' ? 'Você' : 'Oponente'} foi hackeado por 2 turnos!`);
+                            
+                            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                 window.enviarAcaoRede({ tipo: 'ativar_mao_eletronica' });
+                            }
                         }
 
                         
@@ -6265,6 +6292,15 @@ window.processarAcaoInimiga = function(acao) {
             atualizarDecksEMaoCards(); // Desenha a carta extra na tela fantasma do oponente
         }
     }    
+
+        else if (acao.tipo === 'ativar_mao_eletronica') {
+        if (!window.bloqueioAtaqueTurnos) window.bloqueioAtaqueTurnos = { jogador: 0, oponente: 0 };
+        window.bloqueioAtaqueTurnos['jogador'] = 2; // Nós recebemos o ataque, nós somos a vítima
+        window.mostrarMensagemScanner(`⚡ MÃO ELETRÔNICA! Seus ataques foram hackeados e bloqueados por 2 turnos!`);
+        if(window.tocarSFX) window.tocarSFX('erro');
+    }
+
+            
         else if (acao.tipo === 'sonar_busca_concluida') {
         window.mostrarMensagemScanner("🕵️‍♂️ O oponente usou SONAR e buscou uma carta no deck!");
         // Incrementa a mão virtual dele na nossa tela
