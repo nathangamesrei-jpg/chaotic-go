@@ -125,6 +125,18 @@ const ATAQUES = [
         efeito: "Compre mais 1 carta do monte de cartas de ataque.", 
         raridade: 0.5
     },
+    {
+        id: 109, 
+        nome: "TORNADO", 
+        custo: 0, 
+        danoBase: 0, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, ar: 0 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/tornado.jpg", 
+        efeito: "Seu oponente embaralha a mão de cartas de ataque dele no monte e depois compra 2 cartas. Só pode ser usado se o seu campeão ativo tiver o elemento Ar.", 
+        raridade: 0.6
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
