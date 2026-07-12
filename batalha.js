@@ -4150,6 +4150,10 @@ window.executarPassagemDeTurnoLocal = function() {
 
     // 🔥 TIMING REVOLUCIONÁRIO (End of Turn): O Veneno pune o jogador que está TERMINANDO o turno!
     let jogadorSaindo = window.estadoTurno.jogadorAtual;
+    // 🔥 LIMPEZA DA VINHA: Se quem está saindo do turno estava preso, a prisão acaba agora!
+    if (window.turnosPresoVinha && window.turnosPresoVinha[jogadorSaindo] > 0) {
+        window.turnosPresoVinha[jogadorSaindo] = 0;
+    }
     let ladoParaSofrerDano = jogadorSaindo === 'jogador' ? campoJogador : window.campoOponente;
     let prefixoLado = jogadorSaindo === 'jogador' ? 'jog-' : 'op-';
 
@@ -4185,10 +4189,15 @@ window.executarPassagemDeTurnoLocal = function() {
         if(window.campoOponente) Object.values(window.campoOponente).forEach(c => { if(c) c.moveuNesteTurno = false; });
         if(campoJogador) Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
-        if (emCombate) {
-            window.pontosAtaque['oponente'] += 1;
+       if (emCombate) {
+            if (window.turnosPresoVinha && window.turnosPresoVinha['oponente'] > 0) {
+                window.mostrarMensagemScanner("🌿 Oponente preso na Vinha! Sem saque de cartas ou pontos de ataque neste turno.");
+            } else {
+                window.pontosAtaque['oponente'] += 1;
+                
+                // 🔥 CORREÇÃO: Conta o lixo corretamente, seja número ou lista online!
             
-            // 🔥 CORREÇÃO: Conta o lixo corretamente, seja número ou lista online!
+         
             let qtdLixoOp = Array.isArray(window.lixoAtaquesOponente) ? window.lixoAtaquesOponente.length : window.lixoAtaquesOponente;
             if (window.qtdBaralhoOponente <= 0 && qtdLixoOp > 0) {
                 window.qtdBaralhoOponente = qtdLixoOp;
@@ -4244,8 +4253,11 @@ window.executarPassagemDeTurnoLocal = function() {
         if(campoJogador) Object.values(campoJogador).forEach(c => { if(c) c.moveuNesteTurno = false; });
         
         if (emCombate) {
-            window.pontosAtaque['jogador'] += 1;
-            if ((!window.baralhoAtaques || window.baralhoAtaques.length === 0) && window.lixoAtaques && window.lixoAtaques.length > 0) {
+            if (window.turnosPresoVinha && window.turnosPresoVinha['jogador'] > 0) {
+                window.mostrarMensagemScanner("🌿 Preso na Vinha! Você não comprou carta nem ganhou pontos de ataque neste turno.");
+            } else {
+                window.pontosAtaque['jogador'] += 1;
+                if ((!window.baralhoAtaques || window.baralhoAtaques.length === 0) && window.lixoAtaques && window.lixoAtaques.length > 0) {
                 window.mostrarMensagemScanner("Baralho vazio! Reembaralhando o Lixo...");
                 window.baralhoAtaques = embaralharArray(window.lixoAtaques);
                 window.lixoAtaques = []; 
@@ -4369,8 +4381,11 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
     let temPontos = (ptsAtuais >= custo);
 
 
-//
-   let btnUsarHTML = "";
+let btnUsarHTML = "";
+    
+    if (window.turnosPresoVinha && window.turnosPresoVinha['jogador'] > 0) {
+        btnUsarHTML = `<p style="font-size: 10px; color: #4CAF50; margin-bottom: 10px;">🌿 Preso na Vinha! Ataques bloqueados neste turno.</p>`;
+    } else if (window.aguardandoResposta) {
     
     if (window.aguardandoResposta) {
         btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Ataques não podem ser ativados em resposta na Corrente (Burst)!</p>`;
@@ -4725,7 +4740,18 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                  window.enviarAcaoRede({ tipo: 'aplicar_status', alvo: alvoAtualId, status: 'envenenadoLetal', valor: true });
                             }
                         }
-
+                        // 🌿 EFEITO: Armadilha de Vinha (ID 107)
+                        if (ataqueDB && ataqueDB.id === 107 && danoFinalAposBurst > 0) {
+                            let vitima = (window.estadoTurno.jogadorAtual === 'jogador') ? 'oponente' : 'jogador';
+                            if (!window.turnosPresoVinha) window.turnosPresoVinha = { jogador: 0, oponente: 0 };
+                            window.turnosPresoVinha[vitima] = 1;
+                            
+                            window.mostrarMensagemScanner(`🌿 ARMADILHA DE VINHA! O próximo turno de ${vitima === 'jogador' ? 'Você' : 'Oponente'} foi anulado!`);
+                            
+                            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                 window.enviarAcaoRede({ tipo: 'ativar_armadilha_vinha' });
+                            }
+                        }
                         if (!morreuPeloDanoBruto && alvo.hpAtual === 0) {
                             setTimeout(() => window.encerrarCombateMorte(alvoAtualId), 1000);
                         }
@@ -5524,6 +5550,11 @@ window.usarHabilidade = function(fullId) {
     let custoHab = (monstroDB && monstroDB.custoHabilidade !== undefined) ? monstroDB.custoHabilidade : 1;
 
     if (criatura && criatura.fichasHabilidade >= custoHab) {
+        if (window.turnosPresoVinha && window.turnosPresoVinha['jogador'] > 0) {
+            window.mostrarMensagemScanner("🌿 Você está preso na Armadilha de Vinha! Habilidades bloqueadas.");
+            if(window.tocarSFX) window.tocarSFX('erro');
+            return;
+        }
         window.fecharModalAcoes();
 
         // 🕵️‍♂️ DETETIVE: Busca a carta no banco para saber se ela precisa de alvo
@@ -5613,7 +5644,11 @@ window.prepararMugic = function(fullId) {
     
 
     if (criatura && criatura.fichasHabilidade > 0) {
-
+    if (window.turnosPresoVinha && window.turnosPresoVinha['jogador'] > 0) {
+            window.mostrarMensagemScanner("🌿 Você está preso na Armadilha de Vinha! Magias bloqueadas.");
+            if(window.tocarSFX) window.tocarSFX('erro');
+            return;
+        }
         window.conjuradorMugicAtual = fullId; // Salva o mago escolhido!
 
         window.fecharModalAcoes();
@@ -6096,6 +6131,11 @@ window.processarAcaoInimiga = function(acao) {
     else if (acao.tipo === 'morte') {
         let alvoReal = inverterId(acao.alvo);
         window.encerrarCombateMorte(alvoReal);
+    }
+        else if (acao.tipo === 'ativar_armadilha_vinha') {
+        if (!window.turnosPresoVinha) window.turnosPresoVinha = { jogador: 0, oponente: 0 };
+        window.turnosPresoVinha['jogador'] = 1; // Nós somos a vítima se recebemos isso da rede
+        window.mostrarMensagemScanner(`🌿 ARMADILHA DE VINHA! Você não poderá agir ou comprar cartas no seu próximo turno!`);
     }
         else if (acao.tipo === 'aplicar_status') {
         // 🔥 RECEPTOR: O inimigo aplicou um status especial (como Veneno Letal) numa carta nossa!
