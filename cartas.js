@@ -101,6 +101,18 @@ const ATAQUES = [
         efeito: "Causa envenenamento. A cada turno do seu oponente, a criatura atingida perde 5 de energia. Este efeito não pode ser curado.", 
         raridade: 0.6
     },
+    {
+        id: 107, 
+        nome: "Armadilha de Vinha", 
+        custo: 1, 
+        danoBase: 5, 
+        danoElemental: { fogo: 0, agua: 0, terra: 5, ar: 0 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/armadilha_vinha.jpg", 
+        efeito: "Causa 5 de dano de Terra. Seu oponente não pode atacar, ativar habilidades, magias e nem comprar cartas no próximo turno.", 
+        raridade: 0.7
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
