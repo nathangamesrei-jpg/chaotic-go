@@ -113,6 +113,18 @@ const ATAQUES = [
         efeito: "Causa 5 de dano de Terra. Seu oponente não pode atacar, ativar habilidades, magias e nem comprar cartas no próximo turno.", 
         raridade: 0.7
     },
+    {
+        id: 108, 
+        nome: "SPEED", 
+        custo: 0, 
+        danoBase: 0, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, ar: 0 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/speed.jpg", 
+        efeito: "Compre mais 1 carta do monte de cartas de ataque.", 
+        raridade: 0.5
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
