@@ -4752,6 +4752,28 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                  window.enviarAcaoRede({ tipo: 'ativar_armadilha_vinha' });
                             }
                         }
+                        // ⚡ EFEITO: SPEED (ID 108) - Compra de Carta Extra
+                        if (ataqueDB && ataqueDB.id === 108) {
+                            // Inteligência do Motor: Se o deck estiver vazio, reembaralha o lixo para você comprar!
+                            if ((!window.baralhoAtaques || window.baralhoAtaques.length === 0) && window.lixoAtaques && window.lixoAtaques.length > 0) {
+                                window.baralhoAtaques = embaralharArray(window.lixoAtaques);
+                                window.lixoAtaques = [];
+                                window.mostrarMensagemScanner("Baralho vazio! Reembaralhando o Lixo para o efeito de SPEED...");
+                            }
+
+                            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) {
+                                window.maoAtaques.push(window.baralhoAtaques.shift());
+                                window.mostrarMensagemScanner(`⚡ SPEED ativado! Você comprou uma carta de ataque extra.`);
+                                atualizarDecksEMaoCards(); // Desenha a nova carta na tela
+                                
+                                // Avisa o adversário para colocar a carta na sua mão virtual
+                                if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                    window.enviarAcaoRede({ tipo: 'comprar_carta_extra' });
+                                }
+                            } else {
+                                window.mostrarMensagemScanner(`⚡ SPEED ativado, mas você não tem mais cartas no jogo!`);
+                            }
+                        }
                         if (!morreuPeloDanoBruto && alvo.hpAtual === 0) {
                             setTimeout(() => window.encerrarCombateMorte(alvoAtualId), 1000);
                         }
@@ -6132,7 +6154,24 @@ window.processarAcaoInimiga = function(acao) {
         let alvoReal = inverterId(acao.alvo);
         window.encerrarCombateMorte(alvoReal);
     }
-        else if (acao.tipo === 'ativar_armadilha_vinha') {
+    else if (acao.tipo === 'comprar_carta_extra') {
+        // 🔥 RECEPTOR: O oponente usou a carta SPEED e comprou uma carta extra!
+        
+        // Corrige os baralhos do inimigo se o deck dele esvaziou e ele comprou do lixo
+        let qtdLixoOp = Array.isArray(window.lixoAtaquesOponente) ? window.lixoAtaquesOponente.length : window.lixoAtaquesOponente;
+        if (window.qtdBaralhoOponente <= 0 && qtdLixoOp > 0) {
+             window.qtdBaralhoOponente = qtdLixoOp;
+             window.lixoAtaquesOponente = Array.isArray(window.lixoAtaquesOponente) ? [] : 0;
+        }
+
+        if (window.qtdBaralhoOponente > 0) {
+            window.qtdBaralhoOponente--;
+            window.qtdMaoOponente++;
+            window.mostrarMensagemScanner("⚡ O oponente usou SPEED e comprou uma carta extra!");
+            atualizarDecksEMaoCards(); // Desenha a carta extra na tela fantasma do oponente
+        }
+    }    
+    else if (acao.tipo === 'ativar_armadilha_vinha') {
         if (!window.turnosPresoVinha) window.turnosPresoVinha = { jogador: 0, oponente: 0 };
         window.turnosPresoVinha['jogador'] = 1; // Nós somos a vítima se recebemos isso da rede
         window.mostrarMensagemScanner(`🌿 ARMADILHA DE VINHA! Você não poderá agir ou comprar cartas no seu próximo turno!`);
