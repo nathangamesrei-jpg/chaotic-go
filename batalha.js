@@ -4035,6 +4035,66 @@ window.openModalNatyFix = function(fullId, qtdGanha) {
 
 /////////////////////////////////////////////////////////////////////
 
+
+// 🔥 MOTOR DO SONAR: Busca de Cartas
+window.abrirModalSonar = function() {
+    let cartasBusca = [];
+    
+    // Filtra cartas de custo 1 ou menos (procurando no banco ATAQUES)
+    window.baralhoAtaques.forEach(id => {
+        let cardData = ATAQUES.find(a => a.id == id || a.nome == id);
+        if (cardData && cardData.custo <= 1) {
+            cartasBusca.push({ id, data: cardData });
+        }
+    });
+
+    if (cartasBusca.length === 0) {
+        window.mostrarMensagemScanner("⚠️ Nenhuma carta de custo 1 ou inferior encontrada no baralho.");
+        window.passarTurno(true); // Se não achou, segue o jogo
+        return;
+    }
+
+    let htmlCartas = "";
+    cartasBusca.forEach(item => {
+        htmlCartas += `
+            <div onclick="window.confirmarEscolhaSonar('${item.id}')" style="width: 80px; height: 115px; background-image: url('${item.data.img}'); background-size: cover; background-position: center; border: 2px solid #00bcd4; border-radius: 5px; cursor: pointer;">
+            </div>
+        `;
+    });
+
+    const modalHTML = `
+        <div class="modal-overlay" id="overlay-sonar" style="z-index: 1000000; background: rgba(0,0,0,0.95); flex-direction: column; display:flex; justify-content:center; align-items:center;">
+            <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif;">🕵️‍♂️ SONAR ATIVADO</h2>
+            <p style="color: #fff; margin-bottom: 20px;">Escolha uma carta de Custo 1 ou inferior:</p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">${htmlCartas}</div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+};
+
+window.confirmarEscolhaSonar = function(idCarta) {
+    document.getElementById('overlay-sonar').remove();
+    
+    // Puxa a carta do deck
+    let index = window.baralhoAtaques.indexOf(parseInt(idCarta));
+    if (index > -1) {
+        window.baralhoAtaques.splice(index, 1);
+        window.maoAtaques.push(idCarta);
+        
+        // Embaralha o deck pós-busca
+        window.baralhoAtaques = embaralharArray(window.baralhoAtaques);
+        
+        window.mostrarMensagemScanner("✅ Carta encontrada e adicionada à mão.");
+        atualizarDecksEMaoCards();
+        
+        if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+            window.enviarAcaoRede({ tipo: 'sonar_busca_concluida' });
+        }
+    }
+};
+
+
+
 window.passarTurno = function(ignorarLimite) {
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
 
@@ -4677,6 +4737,8 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                 }
                             }
                         }
+
+
                         
                         // 🌑 EFEITO: Mão Negra (ID 102)
                         if (ataqueDB && ataqueDB.id === 102) {
@@ -4695,6 +4757,8 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                             }
                         }
 
+
+                        
                         // 🌪️ EFEITO: Vento Forte (ID 105)
                         if (ataqueDB && ataqueDB.id === 105 && danoFinalAposBurst > 0) {
                             let temOculta = false;
@@ -4712,6 +4776,8 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                 window.mostrarMensagemScanner("🌪️ Vento Forte teve sucesso, mas não há campeões ocultos para revelar.");
                             }
                         }
+
+                        
                         // 🐍 EFEITO: Armadilha de Víbora (ID 106)
                         if (ataqueDB && ataqueDB.id === 106 && danoFinalAposBurst > 0) {
                             alvo.envenenadoLetal = true; // Cria a flag de Incurável!
@@ -4722,6 +4788,8 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                  window.enviarAcaoRede({ tipo: 'aplicar_status', alvo: alvoAtualId, status: 'envenenadoLetal', valor: true });
                             }
                         }
+
+                        
                         // 🌿 EFEITO: Armadilha de Vinha (ID 107)
                         if (ataqueDB && ataqueDB.id === 107 && danoFinalAposBurst > 0) {
                             let vitima = (window.estadoTurno.jogadorAtual === 'jogador') ? 'oponente' : 'jogador';
@@ -4734,6 +4802,17 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                  window.enviarAcaoRede({ tipo: 'ativar_armadilha_vinha' });
                             }
                         }
+
+
+                        
+                        // 🕵️‍♂️ EFEITO: SONAR (ID 110)
+                        if (ataqueDB && ataqueDB.id === 110) {
+                            setTimeout(() => {
+                                window.abrirModalSonar();
+                            }, 500);
+                        }
+
+                        
                         // 🌪️ EFEITO: TORNADO (ID 109)
                         if (ataqueDB && ataqueDB.id === 109) {
                             window.mostrarMensagemScanner("🌪️ TORNADO ATIVADO! A mão inimiga foi varrida de volta para o baralho!");
@@ -4752,6 +4831,8 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                  window.enviarAcaoRede({ tipo: 'ativar_tornado' });
                             }
                         }
+
+                        
                         // ⚡ EFEITO: SPEED (ID 108) - Compra de Carta Extra
                         if (ataqueDB && ataqueDB.id === 108) {
                             // Inteligência do Motor: Se o deck estiver vazio, reembaralha o lixo para você comprar!
@@ -4774,6 +4855,9 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                                 window.mostrarMensagemScanner(`⚡ SPEED ativado, mas você não tem mais cartas no jogo!`);
                             }
                         }
+
+
+                        
                         if (!morreuPeloDanoBruto && alvo.hpAtual === 0) {
                             setTimeout(() => window.encerrarCombateMorte(alvoAtualId), 1000);
                         }
@@ -6171,6 +6255,13 @@ window.processarAcaoInimiga = function(acao) {
             atualizarDecksEMaoCards(); // Desenha a carta extra na tela fantasma do oponente
         }
     }    
+        else if (acao.tipo === 'sonar_busca_concluida') {
+        window.mostrarMensagemScanner("🕵️‍♂️ O oponente usou SONAR e buscou uma carta no deck!");
+        // Incrementa a mão virtual dele na nossa tela
+        if (window.qtdMaoOponente > 0) window.qtdMaoOponente++;
+        if (window.qtdBaralhoOponente > 0) window.qtdBaralhoOponente--;
+        atualizarDecksEMaoCards();
+    }
         else if (acao.tipo === 'ativar_tornado') {
         window.mostrarMensagemScanner(`🌪️ FULMINANTE! O Tornado oponente varreu a sua mão!`);
         if(window.tocarSFX) window.tocarSFX('erro');
