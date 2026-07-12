@@ -137,6 +137,18 @@ const ATAQUES = [
         efeito: "Seu oponente embaralha a mão de cartas de ataque dele no monte e depois compra 2 cartas. Só pode ser usado se o seu campeão ativo tiver o elemento Ar.", 
         raridade: 0.6
     },
+    {
+        id: 110, 
+        nome: "SONAR", 
+        custo: 2, 
+        danoBase: 0, 
+        danoElemental: { fogo: 0, agua: 0, terra: 10, ar: 10 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/sonar.jpg", 
+        efeito: "Pegue uma carta de ataque de custo 1 ou inferior do monte e adicione na sua mão.", 
+        raridade: 0.8
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
