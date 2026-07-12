@@ -353,13 +353,8 @@ window.carregarDeckParaBatalha = function(salaId, souP1) {
 function atualizarTelaBatalha() {
     const slots = ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'];
 
-    // 🔥 NOVO: DETETIVE DE LOCAIS (Para Auras Globais da Mesa)
-    let locDBAtual = null;
-    if (window.localAtivoAtual) {
-        if (typeof LOCAIS_DB !== 'undefined') locDBAtual = LOCAIS_DB.find(l => l.img === window.localAtivoAtual);
-        if (!locDBAtual && window.inventario) locDBAtual = window.inventario.find(l => l.img === window.localAtivoAtual);
-    }
-    let temAuraMagma = locDBAtual && locDBAtual.nome === "A Barragem de Magma";
+    // 🔥 NOVO: DETETIVE DE LOCAIS (Para Auras Globais da Mesa de forma Sincronizada)
+    let temAuraMagma = window.nomeLocalAtivoAtual === "A Barragem de Magma";
 
     // ==========================================
     // 🕵️‍♂️ DETETIVE DE AURAS - SEU LADO DA MESA
@@ -376,28 +371,29 @@ function atualizarTelaBatalha() {
         
         if (carta) {
             let dbCartaOriginal = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === carta.nome) : null;
-            let temFogoNatural = dbCartaOriginal && dbCartaOriginal.elementos && dbCartaOriginal.elementos.includes('Fogo');
-            let ehNaty = carta.nome === "Naty"; // Naty é a única que ganha elementos para sempre
+            let ehNaty = carta.nome === "Naty";
 
-            // 🌪️ AURA GURU (VENTO) - Blindada
+            // 🌪️ AURA GURU (VENTO)
             if (temGuruAuraJog && carta.nome !== "Guru") {
                 if (!carta.elementos) carta.elementos = [];
                 if (!carta.elementos.includes('Ar')) carta.elementos.push('Ar');
             } else {
-                let temArNatural = dbCartaOriginal && dbCartaOriginal.elementos && dbCartaOriginal.elementos.includes('Ar');
-                if (!temArNatural && !ehNaty && carta.elementos && carta.elementos.includes('Ar')) {
-                    carta.elementos = carta.elementos.filter(el => el !== 'Ar');
+                let temArNatural = dbCartaOriginal && dbCartaOriginal.elementos && dbCartaOriginal.elementos.map(e => e.toLowerCase()).includes('ar');
+                if (!temArNatural && !ehNaty && carta.elementos) {
+                    carta.elementos = carta.elementos.filter(el => el.toLowerCase() !== 'ar');
                 }
             }
 
-            // 🔥 AURA BARRAGEM DE MAGMA (FOGO) - Blindada
+            // 🔥 AURA BARRAGEM DE MAGMA (FOGO) - Sincronização Global por Nome
             if (temAuraMagma) {
                 if (!carta.elementos) carta.elementos = [];
-                if (!carta.elementos.includes('Fogo')) carta.elementos.push('Fogo');
+                if (!carta.elementos.map(e => e.toLowerCase()).includes('fogo')) {
+                    carta.elementos.push('Fogo');
+                }
             } else {
-                // LIMPEZA SUPREMA: Se a aura sumiu, não é Fogo de nascença e não é a Naty, deleta o Fogo na marra!
-                if (!temFogoNatural && !ehNaty && carta.elementos && carta.elementos.includes('Fogo')) {
-                    carta.elementos = carta.elementos.filter(el => el !== 'Fogo');
+                let temFogoNatural = dbCartaOriginal && dbCartaOriginal.elementos && dbCartaOriginal.elementos.map(e => e.toLowerCase()).includes('fogo');
+                if (!temFogoNatural && !ehNaty && carta.elementos) {
+                    carta.elementos = carta.elementos.filter(el => el.toLowerCase() !== 'fogo');
                 }
             }
         }
@@ -423,28 +419,29 @@ function atualizarTelaBatalha() {
 
         if (cartaOp) {
             let dbCartaOpOriginal = typeof MONSTROS !== 'undefined' ? MONSTROS.find(m => m.nome === cartaOp.nome) : null;
-            let temFogoNaturalOp = dbCartaOpOriginal && dbCartaOpOriginal.elementos && dbCartaOpOriginal.elementos.includes('Fogo');
             let ehNatyOp = cartaOp.nome === "Naty";
 
-            // 🌪️ AURA GURU (VENTO) - Blindada
+            // 🌪️ AURA GURU (VENTO) oponente
             if (temGuruAuraOp && cartaOp.nome !== "Guru") {
                 if (!cartaOp.elementos) cartaOp.elementos = [];
                 if (!cartaOp.elementos.includes('Ar')) cartaOp.elementos.push('Ar');
             } else {
-                let temArNaturalOp = dbCartaOpOriginal && dbCartaOpOriginal.elementos && dbCartaOpOriginal.elementos.includes('Ar');
-                if (!temArNaturalOp && !ehNatyOp && cartaOp.elementos && cartaOp.elementos.includes('Ar')) {
-                    cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Ar');
+                let temArNaturalOp = dbCartaOpOriginal && dbCartaOpOriginal.elementos && dbCartaOpOriginal.elementos.map(e => e.toLowerCase()).includes('ar');
+                if (!temArNaturalOp && !ehNatyOp && cartaOp.elementos) {
+                    cartaOp.elementos = cartaOp.elementos.filter(el => el.toLowerCase() !== 'ar');
                 }
             }
 
-            // 🔥 AURA BARRAGEM DE MAGMA (FOGO) - Blindada
+            // 🔥 AURA BARRAGEM DE MAGMA (FOGO) oponente - Sincronização Global por Nome
             if (temAuraMagma) {
                 if (!cartaOp.elementos) cartaOp.elementos = [];
-                if (!cartaOp.elementos.includes('Fogo')) cartaOp.elementos.push('Fogo');
+                if (!cartaOp.elementos.map(e => e.toLowerCase()).includes('fogo')) {
+                    cartaOp.elementos.push('Fogo');
+                }
             } else {
-                // LIMPEZA SUPREMA Oponente
-                if (!temFogoNaturalOp && !ehNatyOp && cartaOp.elementos && cartaOp.elementos.includes('Fogo')) {
-                    cartaOp.elementos = cartaOp.elementos.filter(el => el !== 'Fogo');
+                let temFogoNaturalOp = dbCartaOpOriginal && dbCartaOpOriginal.elementos && dbCartaOpOriginal.elementos.map(e => e.toLowerCase()).includes('fogo');
+                if (!temFogoNaturalOp && !ehNatyOp && cartaOp.elementos) {
+                    cartaOp.elementos = cartaOp.elementos.filter(el => el.toLowerCase() !== 'fogo');
                 }
             }
         }
@@ -475,6 +472,7 @@ function atualizarTelaBatalha() {
             ultimaAcaoProcessada: window.ultimaAcaoProcessada,
             modo: modoAtual, 
             localAtivoAtual: window.localAtivoAtual,
+            nomeLocalAtivoAtual: window.nomeLocalAtivoAtual,
             estadoCombate: window.estadoCombate,
             combateFinalizadoNesteTurno: window.combateFinalizadoNesteTurno,
             combateIniciadoNesteTurno: window.combateIniciadoNesteTurno,
@@ -2758,8 +2756,8 @@ window.localAtivoAtual = null;
 
 window.localAtivoAtual = null;
 
-window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = null) {
-    window.pausarCronometro();
+window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = null, nomeForcado = null) {
+window.pausarCronometro();
     
     // 🔥 O RELÓGIO DE ALTERNÂNCIA: Descobre de quem é o deck que fornecerá o Local agora!
     let donoDesteLocal = window.donoDaRoletaLocal || 'jogador';
@@ -2806,14 +2804,28 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
     }
     if (imagensParaPiscar.length === 0) imagensParaPiscar = [...imagensDoDeck];
 
-    // 3. DECIDE A CARTA VENCEDORA ANTES DA ANIMAÇÃO (Previsão do Futuro)
+    // 3. DECIDE A CARTA VENCEDORA ANTES DA ANIMAÇÃO (Previsão do Futuro Sincronizada)
     let resultadoFinal = localForcado;
+    let nomeDoLocalVencedor = nomeForcado;
+
     if (!resultadoFinal) {
         resultadoFinal = imagensDoDeck[Math.floor(Math.random() * imagensDoDeck.length)];
         
-        // 🔥 BLINDAGEM DA REDE: Só quem iniciou o sorteio (jogadorDaVez) propaga o sinal para a nuvem.
+        let objLocalVencedor = null;
+        if (typeof LOCAIS_DB !== 'undefined') objLocalVencedor = LOCAIS_DB.find(x => x.img === resultadoFinal || x.cartaBlank === resultadoFinal);
+        if (!objLocalVencedor && window.inventario) objLocalVencedor = window.inventario.find(x => x.img === resultadoFinal || x.cartaBlank === resultadoFinal);
+        nomeDoLocalVencedor = objLocalVencedor ? objLocalVencedor.nome : "A Barragem de Magma";
+        
+        // 🔥 BLINDAGEM DA REDE: Passando Imagem E Nome para o Oponente não quebrar as Auras!
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada" && jogadorDaVez === 'jogador') {
-            window.enviarAcaoRede({ tipo: 'girar_roleta_local', img: resultadoFinal });
+            window.enviarAcaoRede({ tipo: 'girar_roleta_local', img: resultadoFinal, nome: nomeDoLocalVencedor });
+        }
+    } else {
+        if (!nomeDoLocalVencedor) {
+            let objLocalVencedor = null;
+            if (typeof LOCAIS_DB !== 'undefined') objLocalVencedor = LOCAIS_DB.find(x => x.img === resultadoFinal || x.cartaBlank === resultadoFinal);
+            if (!objLocalVencedor && window.inventario) objLocalVencedor = window.inventario.find(x => x.img === resultadoFinal || x.cartaBlank === resultadoFinal);
+            nomeDoLocalVencedor = objLocalVencedor ? objLocalVencedor.nome : "A Barragem de Magma";
         }
     }
 
@@ -2868,22 +2880,29 @@ window.sortearLocalAnimado = function(jogadorDaVez, callback, localForcado = nul
                 window.mostrarMensagemScanner("A fumaça da Barragem de Magma se dissipou!");
             }
             
-            // Grava o estado do NOVO local ativo
+           // Grava o estado do NOVO local ativo de forma unificada
             window.localAtivoAtual = resultadoFinal;
+            window.nomeLocalAtivoAtual = nomeDoLocalVencedor; // Registra o nome globalmente
             
             if (typeof atualizarLocaisAtivosNaMesa === "function") atualizarLocaisAtivosNaMesa();
             
             if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { localDaBatalha: resultadoFinal });
+                window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { 
+                    localDaBatalha: resultadoFinal,
+                    nomeLocalDaBatalha: nomeDoLocalVencedor 
+                });
             }
 
             setTimeout(() => {
                 let modal = document.getElementById('overlay-roleta-local');
                 if (modal) modal.remove();
                 
+                // 🔥 O EXORCISTA EM AÇÃO: Força o recálculo e renderização da mesa assim que a roleta fecha!
+                atualizarTelaBatalha();
+                
                 if(callback) callback();
                 window.retomarCronometro();
-            }, 2000); 
+            }, 2000);
         }
     }
     
@@ -6101,22 +6120,23 @@ window.processarAcaoInimiga = function(acao) {
         window.mostrarMensagemScanner("O Oponente não respondeu. Resolvendo a corrente...");
         setTimeout(() => window.resolverBurst(), 1000);
     }
-    else if (acao.tipo === 'girar_roleta_local') {
-        // 🔥 A NUVEM AVISOU: O Inimigo iniciou a roleta dele lá, faça a mesma coisa aqui com a carta que ele escolheu!
+   else if (acao.tipo === 'girar_roleta_local') {
         window.mostrarMensagemScanner("O Oponente está sorteando o Local...");
         
         window.sortearLocalAnimado('oponente', () => {
-            window.localAtivoAtual = acao.img; // Força a gravar a variável do local que a nuvem enviou!
+            window.localAtivoAtual = acao.img;
+            window.nomeLocalAtivoAtual = acao.nome; // Sincroniza o nome recebido da rede
             
-            // 🔥 FORÇA O REFRESH DO LOCAL NA MESA E GUARDA NO SAVE!
             if (typeof atualizarLocaisAtivosNaMesa === 'function') atualizarLocaisAtivosNaMesa();
             
             if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
-                // Atualiza também no Firebase como variável fixa da sala para reconexão funcionar
-                window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { localDaBatalha: acao.img });
+                window._dbUpdate('salas_drome/' + window.salaBatalhaAtual, { 
+                    localDaBatalha: acao.img,
+                    nomeLocalDaBatalha: acao.nome
+                });
             }
             window.mostrarMensagemScanner("Local revelado! Aguarde a jogada do oponente.");
-        }, acao.img); // A variável acao.img entra como o 'localForcado' na animação
+        }, acao.img, acao.nome); // Encaminha imagem e nome para a roleta local piscar
     }
         else if (acao.tipo === 'naty_escolha_pronta') {
         let alvoReal = inverterId(acao.alvo); 
@@ -6459,6 +6479,7 @@ window.recuperarBatalhaSalva = function(salaId, souP1) {
         window.ultimaAcaoProcessada = s.ultimaAcaoProcessada || 0; 
         
         window.localAtivoAtual = s.localAtivoAtual || null;
+        window.nomeLocalAtivoAtual = s.nomeLocalAtivoAtual || null;
         window.estadoCombate = s.estadoCombate || { ativo: false, atacante: null, defensor: null };
         window.combateFinalizadoNesteTurno = s.combateFinalizadoNesteTurno || false;
         window.combateIniciadoNesteTurno = s.combateIniciadoNesteTurno || false;
