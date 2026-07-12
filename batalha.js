@@ -4205,8 +4205,9 @@ window.executarPassagemDeTurnoLocal = function() {
             }
             if (window.qtdBaralhoOponente > 0) {
                 window.qtdMaoOponente++; 
-                window.qtdBaralhoOponente--; 
+               window.qtdBaralhoOponente--; 
             }
+          }
         }
 
         let btn = document.getElementById('btn-passar-turno');
@@ -4262,7 +4263,8 @@ window.executarPassagemDeTurnoLocal = function() {
                 window.baralhoAtaques = embaralharArray(window.lixoAtaques);
                 window.lixoAtaques = []; 
             }
-            if (window.baralhoAtaques && window.baralhoAtaques.length > 0) window.maoAtaques.push(window.baralhoAtaques.shift());
+           if (window.baralhoAtaques && window.baralhoAtaques.length > 0) window.maoAtaques.push(window.baralhoAtaques.shift());
+          }
         }
 
         let btn = document.getElementById('btn-passar-turno');
@@ -4386,8 +4388,6 @@ let btnUsarHTML = "";
     if (window.turnosPresoVinha && window.turnosPresoVinha['jogador'] > 0) {
         btnUsarHTML = `<p style="font-size: 10px; color: #4CAF50; margin-bottom: 10px;">🌿 Preso na Vinha! Ataques bloqueados neste turno.</p>`;
     } else if (window.aguardandoResposta) {
-    
-    if (window.aguardandoResposta) {
         btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Ataques não podem ser ativados em resposta na Corrente (Burst)!</p>`;
     } else if (podeAtacar) {
         if (temPontos) {
