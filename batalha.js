@@ -4353,31 +4353,18 @@ window.descartarCartaAtaque = function(index, idAtaque) {
 
 
 window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
-
     if (document.getElementById('overlay-ataque')) return;
 
-
-
     let ataqueDB = typeof ATAQUES !== 'undefined' ? ATAQUES.find(a => a.nome === cartaInventario.nome) : null;
-
     let custo = ataqueDB ? ataqueDB.custo : 0;
-
     let dano = ataqueDB ? ataqueDB.danoBase : 0;
-
     let img = ataqueDB ? ataqueDB.img : cartaInventario.img;
 
-
-
     let ptsAtuais = window.pontosAtaque['jogador'] || 0;
-
     let emCombate = window.estadoCombate && window.estadoCombate.ativo;
-
     let ehMeuTurno = (window.estadoTurno.jogadorAtual === 'jogador');
-
     
-
     // 🔥 REGRA OFICIAL TCG: Ataques NORMAIS só entram no SEU turno (sem burst inimigo)
-
     let podeAtacar = (emCombate && ehMeuTurno && !window.aguardandoResposta);
     let temPontos = (ptsAtuais >= custo);
 
@@ -4406,8 +4393,6 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
     } else if (bloqueioTornado) {
         btnUsarHTML = `<button class="btn-acao-modal" style="border-color: #555; color: #555; background: #222;" disabled>☁️ Requer Elemento Ar</button>`;
     } else if (podeAtacar) {
-        btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Ataques não podem ser ativados em resposta na Corrente (Burst)!</p>`;
-    } else if (podeAtacar) {
         if (temPontos) {
             // 🤝 SE FOR A ALIANÇA, O BOTÃO É OUTRO!
             if (ataqueDB && ataqueDB.id === 103) {
@@ -4422,47 +4407,26 @@ window.abrirModalAtaque = function(indexMao, idAtaque, cartaInventario) {
         btnUsarHTML = `<p style="font-size: 10px; color: #ff9800; margin-bottom: 10px;">Ataques permitidos apenas durante o seu turno no Combate!</p>`;
     }
 
-
     const modalHTML = `
-
         <div class="modal-overlay" id="overlay-ataque" style="z-index: 9999999;" onclick="if(event.target === this) this.remove()">
-
             <div class="modal-content-fichas" style="text-align:center;">
-
                 <h3 style="color:#e53935;margin-bottom:5px;">${cartaInventario.nome}</h3>
-
                 <div onclick="window.ampliarCartaClicada('${img}')" style="width:140px;height:200px;margin:0 auto 10px auto;background-image:url('${img}');background-size:cover;background-position:center;border:2px solid #e53935;border-radius:10px;box-shadow: 0 0 15px rgba(229, 57, 53, 0.4); cursor: pointer;">
-
                     <div style="width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; opacity: 0; background: rgba(0,0,0,0.5); border-radius: 8px; transition: 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0'">
-
                         <span style="color: white; font-weight: bold; font-size: 12px;">🔍 VER CARTA</span>
-
                     </div>
-
                 </div>
-
                 <p style="font-size:14px; color:#ffd700; margin-bottom:5px;">Seus Pontos de Ataque: <b style="font-size:18px;">${ptsAtuais}</b></p>
-
                 <p style="font-size:12px; color:#fff; margin-bottom:15px;">Dano Base: <b>${dano}</b> | Custo: <b>${custo}</b></p>
-
                 <div style="display:flex;flex-direction:column;gap:10px;">
-
                     ${btnUsarHTML}
-
                     <button class="btn-acao-modal btn-cancelar" onclick="document.getElementById('overlay-ataque').remove()">Cancelar</button>
-
                 </div>
-
             </div>
-
         </div>
-
     `;
-
     document.getElementById('tela-batalha').insertAdjacentHTML('beforeend', modalHTML);
-
 };
-
 
 
 window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaque) {
