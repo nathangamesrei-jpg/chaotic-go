@@ -149,6 +149,18 @@ const ATAQUES = [
         efeito: "Pegue uma carta de ataque de custo 1 ou inferior do monte e adicione na sua mão.", 
         raridade: 0.8
     },
+    {
+        id: 111, 
+        nome: "MÃO ELETRÔNICA", 
+        custo: 3, 
+        danoBase: 10, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, ar: 0 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/mao_eletronica.jpg", 
+        efeito: "Causa 10 de Dano. Seu oponente não pode atacar nos 2 próximos turnos.", 
+        raridade: 0.6
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
