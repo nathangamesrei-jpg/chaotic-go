@@ -4036,50 +4036,59 @@ window.openModalNatyFix = function(fullId, qtdGanha) {
 /////////////////////////////////////////////////////////////////////
 
 
-// 🔥 MOTOR DO SONAR: Busca de Cartas
+// 🔥 MOTOR DO SONAR: Busca de Cartas (AGORA BLINDADO PARA REDE E OBJETOS)
 window.abrirModalSonar = function() {
     let cartasBusca = [];
     
-    // Filtra cartas de custo 1 ou menos (procurando no banco ATAQUES)
-    window.baralhoAtaques.forEach(id => {
-        let cardData = ATAQUES.find(a => a.id == id || a.nome == id);
+    // Filtra cartas de custo 1 ou menos (procurando no banco ATAQUES e Inventário)
+    window.baralhoAtaques.forEach(item => {
+        let buscaId = (typeof item === 'object') ? (item.id || item.nome) : item;
+        let cardData = null;
+        
+        if (typeof ATAQUES !== 'undefined') cardData = ATAQUES.find(a => String(a.id) === String(buscaId) || a.nome === buscaId);
+        if (!cardData && window.inventario) cardData = window.inventario.find(a => String(a.id) === String(buscaId) || a.nome === buscaId);
+
         if (cardData && cardData.custo <= 1) {
-            cartasBusca.push({ id, data: cardData });
+            cartasBusca.push({ idOriginal: item, idLimpo: buscaId, data: cardData });
         }
     });
 
     if (cartasBusca.length === 0) {
         window.mostrarMensagemScanner("⚠️ Nenhuma carta de custo 1 ou inferior encontrada no baralho.");
-        window.passarTurno(true); // Se não achou, segue o jogo
         return;
     }
 
     let htmlCartas = "";
     cartasBusca.forEach(item => {
         htmlCartas += `
-            <div onclick="window.confirmarEscolhaSonar('${item.id}')" style="width: 80px; height: 115px; background-image: url('${item.data.img}'); background-size: cover; background-position: center; border: 2px solid #00bcd4; border-radius: 5px; cursor: pointer;">
+            <div onclick="window.confirmarEscolhaSonar('${item.idLimpo}')" style="width: 80px; height: 115px; background-image: url('${item.data.img}'); background-size: cover; background-position: center; border: 2px solid #00bcd4; border-radius: 5px; cursor: pointer; box-shadow: 0 0 10px #00bcd4; transition: 0.2s;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
             </div>
         `;
     });
 
     const modalHTML = `
-        <div class="modal-overlay" id="overlay-sonar" style="z-index: 1000000; background: rgba(0,0,0,0.95); flex-direction: column; display:flex; justify-content:center; align-items:center;">
-            <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif;">🕵️‍♂️ SONAR ATIVADO</h2>
-            <p style="color: #fff; margin-bottom: 20px;">Escolha uma carta de Custo 1 ou inferior:</p>
-            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center;">${htmlCartas}</div>
+        <div class="modal-overlay" id="overlay-sonar" style="z-index: 10000000; background: rgba(0,0,0,0.95); flex-direction: column; display:flex; justify-content:center; align-items:center;">
+            <h2 style="color: #00bcd4; font-family: 'Arial Black', sans-serif; text-shadow: 0 0 15px #00bcd4; margin-bottom: 20px;">🕵️‍♂️ SONAR ATIVADO</h2>
+            <p style="color: #fff; margin-bottom: 20px; font-size: 14px;">Escolha uma carta de Custo 1 ou inferior:</p>
+            <div style="display:flex; gap:10px; flex-wrap:wrap; justify-content:center; max-width: 90%;">${htmlCartas}</div>
+            <button class="btn-acao-modal" style="width: 150px; background: #222; border: 2px solid #ff5555; color: #ff5555; margin-top: 30px;" onclick="document.getElementById('overlay-sonar').remove(); window.mostrarMensagemScanner('Busca no Sonar cancelada.');">CANCELAR</button>
         </div>
     `;
     document.body.insertAdjacentHTML('beforeend', modalHTML);
 };
 
-window.confirmarEscolhaSonar = function(idCarta) {
+window.confirmarEscolhaSonar = function(idLimpoRecebido) {
     document.getElementById('overlay-sonar').remove();
     
-    // Puxa a carta do deck
-    let index = window.baralhoAtaques.indexOf(parseInt(idCarta));
+    // Busca a carta usando a chave mestra (Ignora se o array tem Números, Strings ou Objetos)
+    let index = window.baralhoAtaques.findIndex(item => {
+        let cid = (typeof item === 'object') ? (item.id || item.nome) : item;
+        return String(cid) === String(idLimpoRecebido);
+    });
+
     if (index > -1) {
-        window.baralhoAtaques.splice(index, 1);
-        window.maoAtaques.push(idCarta);
+        let cartaRemovida = window.baralhoAtaques.splice(index, 1)[0]; 
+        window.maoAtaques.push(cartaRemovida);
         
         // Embaralha o deck pós-busca
         window.baralhoAtaques = embaralharArray(window.baralhoAtaques);
@@ -4090,9 +4099,10 @@ window.confirmarEscolhaSonar = function(idCarta) {
         if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
             window.enviarAcaoRede({ tipo: 'sonar_busca_concluida' });
         }
+    } else {
+        window.mostrarMensagemScanner("❌ Erro de sincronia: Carta não encontrada no deck.");
     }
 };
-
 
 
 window.passarTurno = function(ignorarLimite) {
