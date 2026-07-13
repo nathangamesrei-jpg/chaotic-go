@@ -4599,7 +4599,7 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                         if ((textoElementos.includes('ar') || textoElementos.includes('vento')) && dAr > 0) { danoExtra += parseInt(dAr); msgBonus += `[+${dAr} ☁️] `; }
                     }
                 }
-                // ==========================================
+            // ==========================================
                 // ⚔️ MOTOR DE EQUIPAMENTOS: BÔNUS DE DANO (Braceletes)
                 // ==========================================
                 if (minhaCriatura.equipamento && minhaCriatura.equipamentoRevelado) {
@@ -4629,9 +4629,25 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                         msgBonus += `[+${bonus} Check ${iconesAttr[attr] || ''}] `;
                     }
                 }
+            } // <-- Fecha o if (minhaCriatura)
+        } // <-- Fecha o if (ataqueDB && idMeuMonstro && idMonstroInimigo)
+
+        // ==========================================
+        // 👻 EFEITOS DINÂMICOS DE CARTA (Graveyard Scaling)
+        // ==========================================
+        if (ataqueDB && ataqueDB.id === 113) {
+            let qtdMortos = 0;
+            // Filtra o seu cemitério contando APENAS nomes de monstros (ignora magias e equips)
+            if (window.cemiterio && window.cemiterio.length > 0 && typeof MONSTROS !== 'undefined') {
+                qtdMortos = window.cemiterio.filter(nomeMorto => MONSTROS.some(m => m.nome === nomeMorto)).length;
+            }
+            
+            if (qtdMortos > 0) {
+                let bonusPurgatorio = qtdMortos * 5;
+                danoExtra += bonusPurgatorio;
+                msgBonus += `[👻 +${bonusPurgatorio} Purgatório] `;
             }
         }
-
         
         // ==========================================
         // 🗺️ MOTOR DE LOCAIS: MODIFICADORES DE DANO
