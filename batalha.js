@@ -4849,6 +4849,24 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                             }
                         }
 
+
+                        // 👊 EFEITO: MÃO MÃO (ID 112)
+                        if (ataqueDB && ataqueDB.id === 112 && danoFinalAposBurst > 0) {
+                            let vitima = (window.estadoTurno.jogadorAtual === 'jogador') ? 'oponente' : 'jogador';
+                            if (!window.bloqueioAtaqueTurnos) window.bloqueioAtaqueTurnos = { jogador: 0, oponente: 0 };
+                            
+                            // Math.max garante que se ele já estiver preso por 2 turnos, a carta não vai reduzir pra 1 turno!
+                            window.bloqueioAtaqueTurnos[vitima] = Math.max(window.bloqueioAtaqueTurnos[vitima], 1);
+                            
+                            window.mostrarMensagemScanner(`👊 MÃO MÃO! O sistema de ataque de ${vitima === 'jogador' ? 'Você' : 'Oponente'} foi esmagado por 1 turno!`);
+                            
+                            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                 window.enviarAcaoRede({ tipo: 'ativar_mao_mao' });
+                            }
+                        }
+
+
+                        
                         
                         // 🌪️ EFEITO: TORNADO (ID 109)
                         if (ataqueDB && ataqueDB.id === 109) {
@@ -6293,6 +6311,16 @@ window.processarAcaoInimiga = function(acao) {
         }
     }    
 
+
+        else if (acao.tipo === 'ativar_mao_mao') {
+        if (!window.bloqueioAtaqueTurnos) window.bloqueioAtaqueTurnos = { jogador: 0, oponente: 0 };
+        // Nós recebemos a ação, então nós somos a vítima
+        window.bloqueioAtaqueTurnos['jogador'] = Math.max(window.bloqueioAtaqueTurnos['jogador'], 1); 
+        window.mostrarMensagemScanner(`👊 MÃO MÃO! Seus ataques foram esmagados e bloqueados por 1 turno!`);
+        if(window.tocarSFX) window.tocarSFX('erro');
+    }
+
+            
         else if (acao.tipo === 'ativar_mao_eletronica') {
         if (!window.bloqueioAtaqueTurnos) window.bloqueioAtaqueTurnos = { jogador: 0, oponente: 0 };
         window.bloqueioAtaqueTurnos['jogador'] = 2; // Nós recebemos o ataque, nós somos a vítima
