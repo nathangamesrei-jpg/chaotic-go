@@ -173,6 +173,18 @@ const ATAQUES = [
         efeito: "Causa 5 de Dano. Seu oponente não pode atacar no próximo turno.", 
         raridade: 0.5
     },
+    {
+        id: 113, 
+        nome: "PURGATÓRIO", 
+        custo: 0, 
+        danoBase: 0, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, ar: 0 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/purgatorio.jpg", 
+        efeito: "Causa 0 de Dano. Ganha +5 de Dano extra para cada campeão seu derrotado (no cemitério).", 
+        raridade: 0.5
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
