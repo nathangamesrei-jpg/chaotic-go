@@ -185,6 +185,18 @@ const ATAQUES = [
         efeito: "Causa 0 de Dano. Ganha +5 de Dano extra para cada campeão seu derrotado (no cemitério).", 
         raridade: 0.5
     },
+    {
+        id: 114, 
+        nome: "ESQUELETO", 
+        custo: 2, 
+        danoBase: 10, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, ar: 0 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/esqueleto.jpg", 
+        efeito: "Causa 10 de Dano. Ganha +5 de Dano extra para cada campeão seu derrotado (no cemitério).", 
+        raridade: 0.6
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
