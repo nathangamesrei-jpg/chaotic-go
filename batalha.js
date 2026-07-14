@@ -4635,7 +4635,10 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
         // ==========================================
         // 👻 EFEITOS DINÂMICOS DE CARTA (Graveyard Scaling)
         // ==========================================
-        if (ataqueDB && ataqueDB.id === 113) {
+       // ==========================================
+        // 👻 EFEITOS DINÂMICOS DE CARTA (Graveyard Scaling)
+        // ==========================================
+        if (ataqueDB && (ataqueDB.id === 113 || ataqueDB.id === 114)) {
             let qtdMortos = 0;
             // Filtra o seu cemitério contando APENAS nomes de monstros (ignora magias e equips)
             if (window.cemiterio && window.cemiterio.length > 0 && typeof MONSTROS !== 'undefined') {
@@ -4643,9 +4646,10 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
             }
             
             if (qtdMortos > 0) {
-                let bonusPurgatorio = qtdMortos * 5;
-                danoExtra += bonusPurgatorio;
-                msgBonus += `[👻 +${bonusPurgatorio} Purgatório] `;
+                let bonusCemiterio = qtdMortos * 5;
+                danoExtra += bonusCemiterio;
+                // Exibe dinamicamente o nome da carta que ativou o efeito (Purgatório ou Esqueleto)
+                msgBonus += `[👻 +${bonusCemiterio} ${ataqueDB.nome}] `;
             }
         }
         
