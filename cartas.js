@@ -197,6 +197,18 @@ const ATAQUES = [
         efeito: "Causa 10 de Dano. Ganha +5 de Dano extra para cada campeão seu derrotado (no cemitério).", 
         raridade: 0.6
     },
+    {
+        id: 115, 
+        nome: "SOPRO", 
+        custo: 0, 
+        danoBase: 0, 
+        danoElemental: { fogo: 0, agua: 0, terra: 0, ar: 0 }, 
+        checkAtributo: null, 
+        tipoCarta: "Ataque", 
+        img: "cartas/ataques/sopro.jpg", 
+        efeito: "Pegue uma carta aleatória de ataque da mão do seu oponente e descarte.", 
+        raridade: 0.5
+    },
     /* ===================================================
     EXEMPLO DE COMO CRIAR UM ATAQUE COM CHECAGEM NO FUTURO:
     ===================================================
