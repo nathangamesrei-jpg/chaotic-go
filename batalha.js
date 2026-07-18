@@ -4885,6 +4885,21 @@ window.usarCartaAtaque = function(indexMao, idAtaque, custo, danoBase, nomeAtaqu
                             }
                         }
 
+                        // 💨 EFEITO: SOPRO (ID 115)
+                        if (ataqueDB && ataqueDB.id === 115) {
+                            window.mostrarMensagemScanner(`💨 SOPRO! Uma ventania atinge a mão do oponente...`);
+                            
+                            if (window.salaBatalhaAtual && window.salaBatalhaAtual !== "sala_simulada") {
+                                window.enviarAcaoRede({ tipo: 'ativar_sopro' });
+                            } else {
+                                // Lógica para o modo offline (bot)
+                                if (window.qtdMaoOponente > 0) {
+                                    window.qtdMaoOponente--;
+                                    window.mostrarMensagemScanner(`💨 O oponente descartou uma carta.`);
+                                    atualizarDecksEMaoCards();
+                                }
+                            }
+                        }
 
                         
                         
@@ -6332,6 +6347,25 @@ window.processarAcaoInimiga = function(acao) {
     }    
 
 
+
+        else if (acao.tipo === 'ativar_sopro') {
+        window.mostrarMensagemScanner(`💨 SOPRO INIMIGO! Uma ventania atingiu sua mão!`);
+        
+        if (window.maoAtaques && window.maoAtaques.length > 0) {
+            // Sorteia um índice aleatório da sua própria mão
+            let indexAleatorio = Math.floor(Math.random() * window.maoAtaques.length);
+            
+            // Remove a carta daquele índice
+            window.maoAtaques.splice(indexAleatorio, 1);
+            
+            window.mostrarMensagemScanner(`❌ Você perdeu uma carta de ataque aleatória!`);
+            atualizarDecksEMaoCards();
+            
+            if(window.tocarSFX) window.tocarSFX('erro'); // Toca o som de alerta/perda
+        } else {
+            window.mostrarMensagemScanner(`💨 O Sopro não teve efeito porque sua mão já estava vazia.`);
+        }
+    }
         else if (acao.tipo === 'ativar_mao_mao') {
         if (!window.bloqueioAtaqueTurnos) window.bloqueioAtaqueTurnos = { jogador: 0, oponente: 0 };
         // Nós recebemos a ação, então nós somos a vítima
